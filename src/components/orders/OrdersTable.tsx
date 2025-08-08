@@ -30,13 +30,23 @@ export function OrdersTable({
   onSelectOrder,
   onRefresh,
   isLoading,
-  isUpdating,
+  isUpdating = {},
 }: OrdersTableProps) {
+  const { t, ready } = useTranslation();
+
+  // عرض مؤشر تحميل إذا لم تكن الترجمات جاهزة
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-8 h-8 animate-spin" />
+      </div>
+    );
+  }
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const { t } = useTranslation();
   const [sortConfig, setSortConfig] = useState<{ key: SortField; direction: SortDirection }>({
     key: 'created_at',
     direction: 'desc',

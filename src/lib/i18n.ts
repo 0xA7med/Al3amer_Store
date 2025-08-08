@@ -193,14 +193,14 @@ i18n
     resources,
     lng: 'ar',
     fallbackLng: 'ar',
-    
+    debug: process.env.NODE_ENV === 'development',
     interpolation: {
-      escapeValue: false,
+      escapeValue: false, // لا داعي لتهريب القيم لأن React يقوم بذلك تلقائياً
     },
-    
     react: {
-      useSuspense: false,
-    }
+      useSuspense: false // تعطيل Suspense للتحكم اليدوي في عرض المحتوى
+    },
+    returnNull: false // تجنب إرجاع null للقيم غير المعرفة
   })
 
 export default i18n
