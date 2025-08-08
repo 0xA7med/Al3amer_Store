@@ -54,15 +54,6 @@ export function OrdersTable({
     cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
     returned: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
   };
-
-  // طرق الدفع
-  const paymentMethods: Record<string, string> = {
-    all: t('all'),
-    cash_on_delivery: t('paymentMethods.cashOnDelivery', 'الدفع عند الاستلام'),
-    paymob_card: t('paymentMethods.creditCard', 'بطاقة ائتمانية'),
-    paymob_wallet: t('paymentMethods.eWallet', 'محفظة إلكترونية'),
-    bank_transfer: t('paymentMethods.bankTransfer', 'تحويل بنكي'),
-  };
   
   // مفاتيح حالات الطلب
   const orderStatuses: OrderStatus[] = [
@@ -73,6 +64,14 @@ export function OrdersTable({
     'delivered',
     'cancelled',
     'returned'
+  ];
+  
+  // مفاتيح طرق الدفع
+  const paymentMethodKeys = [
+    'cash_on_delivery',
+    'paymob_card',
+    'paymob_wallet',
+    'bank_transfer'
   ];
 
   // تحويل التاريخ إلى تنسيق مقروء
@@ -180,10 +179,10 @@ export function OrdersTable({
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
                   >
-                    <option value="all">{t('all')}</option>
+                    <option value="all">{t('all_statuses')}</option>
                     {orderStatuses.map((status) => (
                       <option key={status} value={status}>
-                        {t(`orderStatus.${status}`, status)}
+                        {t(`orderStatus.${status}`)}
                       </option>
                     ))}
                   </select>
@@ -195,9 +194,10 @@ export function OrdersTable({
                     value={paymentFilter}
                     onChange={(e) => setPaymentFilter(e.target.value)}
                   >
-                    {Object.entries(paymentMethods).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
+                    <option value="all">{t('all')}</option>
+                    {paymentMethodKeys.map((method) => (
+                      <option key={method} value={method}>
+                        {t(`paymentMethod.${method}`)}
                       </option>
                     ))}
                   </select>
@@ -279,14 +279,14 @@ export function OrdersTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="px-2 py-1 border rounded-md text-xs font-medium">
-                      {paymentMethods[order.payment_method as keyof typeof paymentMethods] || order.payment_method}
-                    </div>
+                    {order.payment_method ? (
+                      t(`paymentMethod.${order.payment_method}`, order.payment_method)
+                    ) : '-'}
                   </TableCell>
                   <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
-                      {t(`orderStatus.${order.status}`, order.status)}
+                      {t(`orderStatus.${order.status}`)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

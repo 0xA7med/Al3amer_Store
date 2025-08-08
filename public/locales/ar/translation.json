@@ -8,14 +8,21 @@
     "cancelled": "ملغي",
     "returned": "مرتجع"
   },
+  "paymentMethod": {
+    "all": "الكل",
+    "cash_on_delivery": "الدفع عند الاستلام",
+    "paymob_card": "بطاقة ائتمانية",
+    "paymob_wallet": "محفظة إلكترونية",
+    "bank_transfer": "تحويل بنكي"
+  },
   "filter": "تصفية",
   "all": "الكل",
+  "all_statuses": "كل الحالات",
   "searchPlaceholder": "ابحث عن طلب...",
   "refresh": "تحديث",
   "orderNumber": "رقم الطلب",
   "customer": "العميل",
   "date": "التاريخ",
-  "paymentMethod": "طريقة الدفع",
   "amount": "المبلغ",
   "status": "الحالة",
   "actions": "الإجراءات",
