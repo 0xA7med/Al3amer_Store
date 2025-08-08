@@ -161,9 +161,7 @@ const resources = {
       
       // Search and Filters
       searchProducts: 'البحث في المنتجات',
-      filterByCategory: 'تصفية حسب الفئة',
       filterByPrice: 'تصفية حسب السعر',
-      sortBy: 'ترتيب حسب',
       priceRange: 'نطاق السعر',
       from: 'من',
       to: 'إلى',

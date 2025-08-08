@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, MoreHorizontal } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +108,8 @@ export function OrdersTable({
         comparison = a.total_amount - b.total_amount;
         break;
       case 'order_number':
-        comparison = a.order_number - b.order_number;
+        // تحويل order_number إلى رقم قبل إجراء المقارنة
+        comparison = Number(a.order_number) - Number(b.order_number);
         break;
       default:
         comparison = 0;
