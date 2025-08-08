@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
 import type { OrderWithDetails, OrderStatus } from '@/lib/supabase/types';
+import { statusLabels, statusColors } from '@/types/order';
 
 interface OrdersTableProps {
   orders: OrderWithDetails[];

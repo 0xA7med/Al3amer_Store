@@ -1,4 +1,4 @@
-import { Order as BaseOrder } from '@/lib/supabase/types';
+import { Order as SupabaseOrder } from '@/lib/supabase/types';
 
 export interface OrderItem {
   id: string;

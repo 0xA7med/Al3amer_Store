@@ -777,7 +777,7 @@ const OrdersAdmin: React.FC = () => {
                 مسح الفلاتر
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => fetchOrders({})} className="gap-1.5">
+              <Button variant="outline" onClick={() => fetchOrders(sortBy)} className="gap-1.5">
                 <RefreshCw className="h-4 w-4" />
                 تحديث القائمة
               </Button>
