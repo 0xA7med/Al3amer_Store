@@ -413,9 +413,9 @@ export function OrdersTable({
                   </TableCell>
                   <TableCell className="font-medium">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
-                    <Badge className={`${statusColors[order.status]} whitespace-nowrap`}>
-                      {statusLabels[order.status]}
-                    </Badge>
+                    <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
+                      {String(statusLabels[order.status])}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
