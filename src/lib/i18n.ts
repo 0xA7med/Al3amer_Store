@@ -1,5 +1,5 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
 const resources = {
   ar: {
@@ -195,12 +195,22 @@ i18n
     fallbackLng: 'ar',
     debug: process.env.NODE_ENV === 'development',
     interpolation: {
-      escapeValue: false, // لا داعي لتهريب القيم لأن React يقوم بذلك تلقائياً
+      escapeValue: false // لا داعي لتهريب القيم لأن React يقوم بذلك تلقائياً
     },
     react: {
       useSuspense: false // تعطيل Suspense للتحكم اليدوي في عرض المحتوى
     },
-    returnNull: false // تجنب إرجاع null للقيم غير المعرفة
-  })
+    returnNull: false, // تجنب إرجاع null للقيم غير المعرفة
+    // إعدادات إضافية لتحسين الأداء
+    keySeparator: '.',
+    nsSeparator: ':',
+    defaultNS: 'translation',
+    fallbackNS: 'translation',
+    saveMissing: false,
+    parseMissingKeyHandler: (key: string) => {
+      console.warn(`Missing translation: ${key}`);
+      return key;
+    }
+  });
 
 export default i18n
