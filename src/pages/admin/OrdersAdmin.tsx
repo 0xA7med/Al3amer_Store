@@ -653,23 +653,22 @@ const OrdersAdmin: React.FC = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className="capitalize border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 text-foreground"
+                      <div 
+                        className="capitalize border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 text-foreground rounded-md px-2 py-1 text-xs"
                       >
                         {paymentMethods[order.payment_method as keyof typeof paymentMethods] || order.payment_method || 'غير محدد'}
-                      </Badge>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end">
-                        <Badge 
-                          className={`${statusColors[order.status]} px-2.5 py-1 text-xs font-medium`}
+                        <div 
+                          className={`${statusColors[order.status]} px-2.5 py-1 text-xs font-medium rounded-md`}
                         >
                           <span className="flex items-center gap-1.5">
                             {statusIcons[order.status]}
                             {statusLabels[order.status]}
                           </span>
-                        </Badge>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>

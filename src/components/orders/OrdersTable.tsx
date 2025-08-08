@@ -282,7 +282,7 @@ export function OrdersTable({
                     <div className="flex flex-col">
                       <span>{formatDate(order.created_at)}</span>
                       <span className="text-xs text-gray-500">
-                        {format(new Date(order.created_at), 'hh:mm a', { locale: ar })}
+                        {useMemo(() => format(new Date(order.created_at), 'hh:mm a', { locale: ar }), [order.created_at])}
                       </span>
                     </div>
                   </TableCell>
