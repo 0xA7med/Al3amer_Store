@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
+
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
+}
+
+
+
+img {
+  object-position: top;
+}
+
+/* Arabic RTL Styles */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl .ltr-content {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Arabic Font */
+body {
+  font-family: 'Cairo', 'Noto Sans Arabic', 'Amiri', system-ui, sans-serif;
+}
+
+/* Arabic Number Styles */
+.arabic-numbers {
+  font-feature-settings: "lnum" 1;
+}
+
+/* RTL Layout Fixes */
+.rtl .flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+.rtl .text-left {
+  text-align: right;
+}
+
+.rtl .text-right {
+  text-align: left;
+}
+
+/* Custom Button Styles for Arabic */
+.btn-alamer {
+  @apply bg-alamer-blue hover:bg-alamer-blue-dark text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+}
+
+.btn-alamer-secondary {
+  @apply bg-alamer-gold hover:bg-alamer-gold-dark text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+}
+
+.btn-alamer-outline {
+  @apply border-2 border-alamer-blue text-alamer-blue hover:bg-alamer-blue hover:text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200;
+}
+
+/* Card Styles */
+.card-alamer {
+  @apply bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300;
+}
+
+/* Input Styles for Arabic */
+.input-alamer {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-alamer-blue focus:border-transparent transition-colors duration-200 font-arabic;
+}
+
+/* Price Display */
+.price-display {
+  @apply text-alamer-blue font-bold text-xl;
+}
+
+.original-price {
+  @apply text-gray-500 line-through text-lg;
+}
+
+/* WhatsApp Button */
+.whatsapp-btn {
+  @apply bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200;
+}
+
+/* Loading Animation */
+.loading-spinner {
+  @apply animate-spin rounded-full border-4 border-gray-200 border-t-alamer-blue;
+}
+
+/* Hero Section */
+.hero-gradient {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+}
+
+/* Product Grid */
+.product-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+/* Category Badge */
+.category-badge {
+  @apply inline-block bg-alamer-gold text-white text-sm font-medium px-3 py-1 rounded-full;
+}
+
+/* Discount Badge */
+.discount-badge {
+  @apply absolute top-2 right-2 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded-full;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  @apply flex items-center space-x-2 text-sm text-gray-600 mb-6;
+}
+
+.breadcrumb a {
+  @apply hover:text-alamer-blue transition-colors duration-200;
+}
+
+/* Status Badges */
+.status-pending {
+  @apply bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm font-medium;
+}
+
+.status-confirmed {
+  @apply bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium;
+}
+
+.status-shipped {
+  @apply bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium;
+}
+
+.status-delivered {
+  @apply bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium;
+}
+
+.status-cancelled {
+  @apply bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium;
+}
+
+/* Mobile Menu */
+@media (max-width: 768px) {
+  .mobile-menu {
+    @apply fixed inset-0 bg-white z-50 transform transition-transform duration-300;
+  }
+  
+  .mobile-menu.closed {
+    @apply -translate-x-full;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Hide scrollbar for infinite scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
