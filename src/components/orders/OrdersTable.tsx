@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale/ar';
+import { TimeDisplay, DateDisplay } from '@/components/ui/TimeDisplay';
 import { Search, Filter, ChevronDown, ChevronUp, MoreHorizontal, RefreshCw } from 'lucide-react';
 
 // استيراد المكونات
@@ -78,12 +79,7 @@ export function OrdersTable({
 
   // تحويل التاريخ إلى تنسيق مقروء
   const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: ar });
-    } catch (error) {
-      console.error('خطأ في تنسيق التاريخ:', error);
-      return 'تاريخ غير صالح';
-    }
+    return <DateDisplay date={dateString} />;
   };
 
   // تصفية الطلبات
@@ -281,9 +277,7 @@ export function OrdersTable({
                   <TableCell>
                     <div className="flex flex-col">
                       <span>{formatDate(order.created_at)}</span>
-                      <span className="text-xs text-gray-500">
-                        {useMemo(() => format(new Date(order.created_at), 'hh:mm a', { locale: ar }), [order.created_at])}
-                      </span>
+                      <TimeDisplay date={order.created_at} />
                     </div>
                   </TableCell>
                   <TableCell>
