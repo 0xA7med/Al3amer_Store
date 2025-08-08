@@ -1,7 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale/ar';
 import { TimeDisplay, DateDisplay } from '@/components/ui/TimeDisplay';
 import { Search, Filter, ChevronDown, ChevronUp, MoreHorizontal, RefreshCw } from 'lucide-react';
 
@@ -46,17 +44,6 @@ export function OrdersTable({
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // الحالة الافتراضية للطلبات مع الترجمات
-  const statusLabels: Record<OrderStatus, string> = {
-    pending: t('pending', 'قيد المراجعة'),
-    confirmed: t('confirmed', 'تم التأكيد'),
-    processing: t('processing', 'قيد التنفيذ'),
-    shipped: t('shipped', 'تم الشحن'),
-    delivered: t('delivered', 'تم التوصيل'),
-    cancelled: t('cancelled', 'ملغي'),
-    returned: t('returned', 'مرتجع'),
-  };
-
   // ألوان الحالات
   const statusColors: Record<OrderStatus, string> = {
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
@@ -70,12 +57,23 @@ export function OrdersTable({
 
   // طرق الدفع
   const paymentMethods: Record<string, string> = {
-    all: 'الكل',
-    cash_on_delivery: 'الدفع عند الاستلام',
-    paymob_card: 'بطاقة ائتمانية',
-    paymob_wallet: 'محفظة إلكترونية',
-    bank_transfer: 'تحويل بنكي',
+    all: t('all'),
+    cash_on_delivery: t('paymentMethods.cashOnDelivery', 'الدفع عند الاستلام'),
+    paymob_card: t('paymentMethods.creditCard', 'بطاقة ائتمانية'),
+    paymob_wallet: t('paymentMethods.eWallet', 'محفظة إلكترونية'),
+    bank_transfer: t('paymentMethods.bankTransfer', 'تحويل بنكي'),
   };
+  
+  // مفاتيح حالات الطلب
+  const orderStatuses: OrderStatus[] = [
+    'pending',
+    'confirmed',
+    'processing',
+    'shipped',
+    'delivered',
+    'cancelled',
+    'returned'
+  ];
 
   // تحويل التاريخ إلى تنسيق مقروء
   const formatDate = (dateString: string) => {
@@ -160,7 +158,7 @@ export function OrdersTable({
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="ابحث عن طلب..."
+              placeholder={t('searchPlaceholder')}
               className="w-full bg-background pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -170,28 +168,28 @@ export function OrdersTable({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
                 <Filter className="ml-2 h-4 w-4" />
-                تصفية
+                {t('filter')}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
               <div className="p-2 space-y-2">
                 <div>
-                  <p className="text-sm font-medium mb-1">حالة الطلب</p>
+                  <p className="text-sm font-medium mb-1">{t('status')}</p>
                   <select
                     className="w-full p-2 border rounded-md"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
                   >
-                    <option value="all">الكل</option>
-                    {Object.entries(statusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
+                    <option value="all">{t('all')}</option>
+                    {orderStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {t(`orderStatus.${status}`, status)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <p className="text-sm font-medium mb-1">طريقة الدفع</p>
+                  <p className="text-sm font-medium mb-1">{t('paymentMethod')}</p>
                   <select
                     className="w-full p-2 border rounded-md"
                     value={paymentFilter}
@@ -210,7 +208,7 @@ export function OrdersTable({
         </div>
         <Button variant="outline" size="sm" className="h-9" onClick={onRefresh} disabled={isLoading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          تحديث
+          {t('refresh')}
         </Button>
       </div>
 
@@ -233,21 +231,21 @@ export function OrdersTable({
               </TableHead>
               <TableHead className="w-[100px]" onClick={() => handleSort('order_number')}>
                 <div className="flex items-center cursor-pointer">
-                  رقم الطلب
+                  {t('orderNumber')}
                   {renderSortIcon('order_number')}
                 </div>
               </TableHead>
-              <TableHead>العميل</TableHead>
-              <TableHead>التاريخ</TableHead>
-              <TableHead>طريقة الدفع</TableHead>
+              <TableHead>{t('customer')}</TableHead>
+              <TableHead>{t('date')}</TableHead>
+              <TableHead>{t('paymentMethod')}</TableHead>
               <TableHead className="text-right" onClick={() => handleSort('total_amount')}>
                 <div className="flex items-center justify-end cursor-pointer">
-                  المبلغ
+                  {t('amount')}
                   {renderSortIcon('total_amount')}
                 </div>
               </TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead className="text-right">الإجراءات</TableHead>
+              <TableHead>{t('status')}</TableHead>
+              <TableHead className="text-right">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -288,7 +286,7 @@ export function OrdersTable({
                   <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
-                      {statusLabels[order.status]}
+                      {t(`orderStatus.${order.status}`, order.status)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -301,17 +299,17 @@ export function OrdersTable({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onSelectOrder(order)}>
-                          عرض التفاصيل
+                          {t('viewDetails')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => window.open(`/admin/orders/${order.id}/print`, '_blank')}>
-                          طباعة الفاتورة
+                          {t('printInvoice')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => onStatusChange(order.id, 'cancelled')}
                           disabled={isUpdating[order.id]}
                         >
-                          {isUpdating[order.id] ? 'جاري الإلغاء...' : 'إلغاء الطلب'}
+                          {isUpdating[order.id] ? t('cancelling') : t('cancelOrder')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -321,7 +319,7 @@ export function OrdersTable({
             ) : (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
-                  لا توجد طلبات
+                  {t('noOrders')}
                 </TableCell>
               </TableRow>
             )}

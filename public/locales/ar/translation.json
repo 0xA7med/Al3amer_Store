@@ -1,0 +1,27 @@
+{
+  "orderStatus": {
+    "pending": "قيد المراجعة",
+    "confirmed": "تم التأكيد",
+    "processing": "قيد التنفيذ",
+    "shipped": "تم الشحن",
+    "delivered": "تم التوصيل",
+    "cancelled": "ملغي",
+    "returned": "مرتجع"
+  },
+  "filter": "تصفية",
+  "all": "الكل",
+  "searchPlaceholder": "ابحث عن طلب...",
+  "refresh": "تحديث",
+  "orderNumber": "رقم الطلب",
+  "customer": "العميل",
+  "date": "التاريخ",
+  "paymentMethod": "طريقة الدفع",
+  "amount": "المبلغ",
+  "status": "الحالة",
+  "actions": "الإجراءات",
+  "viewDetails": "عرض التفاصيل",
+  "printInvoice": "طباعة الفاتورة",
+  "cancelOrder": "إلغاء الطلب",
+  "cancelling": "جاري الإلغاء...",
+  "noOrders": "لا توجد طلبات"
+}
