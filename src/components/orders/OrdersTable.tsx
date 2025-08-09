@@ -4,7 +4,8 @@ import { TimeDisplay, DateDisplay } from '@/components/ui/TimeDisplay';
 import { Search, Filter, ChevronDown, ChevronUp, MoreHorizontal, RefreshCw } from 'lucide-react';
 
 // استيراد المكونات
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -34,12 +35,22 @@ export function OrdersTable({
 }: OrdersTableProps) {
   const { t, ready, i18n } = useTranslation();
   const [isMounted, setIsMounted] = React.useState(false);
+  const [sortField, setSortField] = React.useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
 
   // تعيين isMounted إلى true عند تحميل المكون
   React.useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
+
+  // دالة إعادة تعيين الفلاتر
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setSortField('created_at');
+    setSortDirection('desc');
+  };
 
   // استخدام t مباشرة من useTranslation بدون دالة وسيطة
   // (تمت إزالة الدالة المخصصة واستخدام t مباشرة)
@@ -185,8 +196,10 @@ export function OrdersTable({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                <Filter className="ml-2 h-4 w-4" />
+              <Button 
+                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9')}
+              >
+                <Filter className="mr-2 h-4 w-4" />
                 {t('filter')}
               </Button>
             </DropdownMenuTrigger>
@@ -225,9 +238,21 @@ export function OrdersTable({
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button 
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-2')}
+            onClick={handleResetFilters} 
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')} />
+            {t('refresh')}
+          </Button>
         </div>
-        <Button variant="outline" size="sm" className="h-9" onClick={onRefresh} disabled={isLoading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        <Button 
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9')}
+          onClick={onRefresh} 
+          disabled={isLoading}
+        >
+          <RefreshCw className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')} />
           {t('refresh')}
         </Button>
       </div>
