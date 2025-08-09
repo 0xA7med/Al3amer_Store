@@ -41,11 +41,8 @@ export function OrdersTable({
     return () => setIsMounted(false);
   }, []);
 
-  // استخدام t مباشرة من useTranslation
-  const translate = (key: string, defaultValue: string = ''): string => {
-    if (!ready || !isMounted) return defaultValue;
-    return t(key, { defaultValue });
-  };
+  // استخدام t مباشرة من useTranslation بدون دالة وسيطة
+  // (تمت إزالة الدالة المخصصة واستخدام t مباشرة)
 
   // عرض مؤشر تحميل إذا لم تكن الترجمات جاهزة
   if (!ready) {
@@ -303,13 +300,13 @@ export function OrdersTable({
                   </TableCell>
                   <TableCell>
                     {order.payment_method ? (
-                      translate(`paymentMethod.${order.payment_method}`, order.payment_method)
+                      t(`paymentMethod.${order.payment_method}`)
                     ) : '-'}
                   </TableCell>
                   <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
-                      {translate(`orderStatus.${order.status}`, order.status)}
+                      {t(`orderStatus.${order.status}`)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
