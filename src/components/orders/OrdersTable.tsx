@@ -98,6 +98,13 @@ export function OrdersTable({
   ];
   
   // مفاتيح طرق الدفع
+  const paymentMethodTranslations: Record<string, string> = {
+    'cash': 'الدفع عند الاستلام',
+    'credit_card': 'بطاقة ائتمان',
+    'bank_transfer': 'تحويل بنكي',
+    'wallet': 'المحفظة',
+    'other': 'أخرى'
+  };
   const paymentMethodKeys = [
     'cash_on_delivery',
     'paymob_card',
@@ -325,10 +332,12 @@ export function OrdersTable({
                   </TableCell>
                   <TableCell>
                     {order.payment_method ? (
-                      t(`paymentMethod.${order.payment_method}`)
-                    ) : '-'}
+                      paymentMethodTranslations[order.payment_method] || order.payment_method
+                    ) : 'N/A'}
                   </TableCell>
-                  <TableCell className="font-medium text-right">{formatCurrencySync(order.total_amount)}</TableCell>
+                  <TableCell className="font-medium text-right">
+                    {formatCurrencySync(order.total_amount, 'ج.م', 2)}
+                  </TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
                       {t(`orderStatus.${order.status}`)}

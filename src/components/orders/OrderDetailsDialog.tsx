@@ -47,14 +47,28 @@ interface OrderDetailsDialogProps {
   isUpdating: Record<string, boolean>;
 }
 
-export function OrderDetailsDialog({
+const OrderDetailsDialogComponent = ({
   isOpen,
   onOpenChange,
   order,
   onStatusChange,
-  isUpdating,
-}: OrderDetailsDialogProps) {
-  if (!order) return null;
+  isUpdating = {},
+}: OrderDetailsDialogProps) => {
+  // Render nothing if no order is provided
+  if (!order) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الطلب</DialogTitle>
+          </DialogHeader>
+          <div className="p-4 text-center text-gray-500">
+            لا يوجد طلب محدد للعرض
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Set default values for optional fields
   const {
@@ -96,7 +110,7 @@ export function OrderDetailsDialog({
   }, [shippingAddress]);
   
   // Format date in Arabic - make sure this is synchronous
-  const formatDate = (dateString: string): string => {
+  const formatDate = React.useCallback((dateString: string): string => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'تاريخ غير صالح';
@@ -106,25 +120,9 @@ export function OrderDetailsDialog({
       console.error('Error formatting date:', error);
       return 'تاريخ غير صالح';
     }
-  };
+  }, []);
   
   // Use the synchronous version from utils
-  
-  // Ensure we have a valid order before rendering
-  if (!order) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الطلب</DialogTitle>
-          </DialogHeader>
-          <div className="p-4 text-center text-gray-500">
-            جاري تحميل بيانات الطلب...
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   const statusLabels: Record<OrderStatus, string> = {
     pending: 'قيد المراجعة',
@@ -136,17 +134,17 @@ export function OrderDetailsDialog({
     returned: 'مرتجع',
   };
 
-  const statusIcons: Record<OrderStatus, React.ReactNode> = {
-    pending: <Clock className="h-4 w-4 ml-1" />,
-    confirmed: <CheckCircle className="h-4 w-4 ml-1 text-blue-500" />,
-    processing: <RefreshCw className="h-4 w-4 ml-1 animate-spin text-purple-500" />,
-    shipped: <Truck className="h-4 w-4 ml-1 text-indigo-500" />,
-    delivered: <CheckCircle className="h-4 w-4 ml-1 text-green-500" />,
-    cancelled: <XCircle className="h-4 w-4 ml-1 text-red-500" />,
-    returned: <Package className="h-4 w-4 ml-1 text-gray-500" />,
-  };
+  const statusIcons = React.useMemo(() => ({
+    pending: <Clock className="h-4 w-4 ml-1" key="pending" />,
+    confirmed: <CheckCircle className="h-4 w-4 ml-1 text-blue-500" key="confirmed" />,
+    processing: <RefreshCw className="h-4 w-4 ml-1 animate-spin text-purple-500" key="processing" />,
+    shipped: <Truck className="h-4 w-4 ml-1 text-indigo-500" key="shipped" />,
+    delivered: <CheckCircle className="h-4 w-4 ml-1 text-green-500" key="delivered" />,
+    cancelled: <XCircle className="h-4 w-4 ml-1 text-red-500" key="cancelled" />,
+    returned: <Package className="h-4 w-4 ml-1 text-gray-500" key="returned" />,
+  }), []);
 
-  const statusColors: Record<OrderStatus, string> = {
+  const statusColors = React.useMemo(() => ({
     pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
     confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
     processing: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
@@ -154,24 +152,28 @@ export function OrderDetailsDialog({
     delivered: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
     cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
     returned: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-  };
+  }), []);
 
-  const paymentMethods: Record<string, string> = {
+  const paymentMethods = React.useMemo(() => ({
     cash_on_delivery: 'الدفع عند الاستلام',
     paymob_card: 'بطاقة ائتمانية',
     paymob_wallet: 'محفظة إلكترونية',
     bank_transfer: 'تحويل بنكي',
-  };
+  }), []);
 
   const [isChangingStatus, setIsChangingStatus] = React.useState(false);
   const [currentOrder, setCurrentOrder] = React.useState<ExtendedOrderWithDetails>(order);
 
   // Update local state when order prop changes
   React.useEffect(() => {
-    setCurrentOrder(order);
+    if (order) {
+      setCurrentOrder(order);
+    }
   }, [order]);
 
-  const handleStatusChange = async (newStatus: OrderStatus) => {
+  const handleStatusChange = React.useCallback(async (newStatus: OrderStatus) => {
+    if (!order) return;
+    
     try {
       setIsChangingStatus(true);
       const success = await onStatusChange(order.id, newStatus);
@@ -189,9 +191,10 @@ export function OrderDetailsDialog({
     } finally {
       setIsChangingStatus(false);
     }
-  };
+  }, [order, onStatusChange, onOpenChange]);
 
-  return (
+  // Memoize the dialog content to prevent unnecessary re-renders
+  const dialogContent = React.useMemo(() => (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -203,15 +206,13 @@ export function OrderDetailsDialog({
                 {statusLabels[order.status]}
               </Badge>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 -mr-2"
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               onClick={() => onOpenChange(false)}
             >
-              <X className="h-4 w-4" />
-              <span className="sr-only">إغلاق</span>
-            </Button>
+              إغلاق
+            </button>
           </DialogTitle>
         </DialogHeader>
 
@@ -275,7 +276,8 @@ export function OrderDetailsDialog({
                 </p>
                 <p className="flex items-center justify-between">
                   <span>حالة الدفع:</span>
-                  <Badge variant={payment_status === 'paid' ? 'default' : 'secondary'}>
+                  <Badge 
+                    className={payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
                     {payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}
                   </Badge>
                 </p>
@@ -288,7 +290,7 @@ export function OrderDetailsDialog({
                 <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
                   <p className="flex justify-between text-base font-medium">
                     <span>المجموع:</span>
-                    <span>{formatCurrencySync(order.total_amount)}</span>
+                    <span>{formatCurrencySync(Number(order.total_amount) || 0, 'ج.م', 0)}</span>
                   </p>
                 </div>
               </div>
@@ -299,22 +301,18 @@ export function OrderDetailsDialog({
               <h3 className="font-medium text-gray-900 dark:text-white mb-3">تغيير حالة الطلب</h3>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(statusLabels).map(([status, label]) => (
-                  <Button
+                  <button
                     key={status}
-                    variant={order.status === status ? 'default' : 'outline'}
-                    size="sm"
-                    className="justify-start"
+                    type="button"
+                    className={`w-full mb-2 px-3 py-1.5 rounded-md border border-gray-300 text-sm font-medium ${status === currentOrder.status ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center`}
                     onClick={() => handleStatusChange(status as OrderStatus)}
                     disabled={isUpdating[order.id]}
                   >
-                    {statusIcons[status as OrderStatus]}
-                    <span>{label}</span>
-                    {isUpdating[order.id] && order.status === status && (
-                      <span className="animate-spin ml-1">
-                        <RefreshCw className="h-3 w-3" />
-                      </span>
+                    {statusLabels[status as OrderStatus]}
+                    {isUpdating[order.id] && (
+                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                     )}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
@@ -464,9 +462,9 @@ export function OrderDetailsDialog({
                       {tracking_url && (
                         <a
                           href={tracking_url}
-                          target="_blank"
+                          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1 border border-gray-300 p-1 rounded"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1"
+                          target="_blank"
                         >
                           تتبع الشحنة
                           <svg
@@ -493,5 +491,9 @@ export function OrderDetailsDialog({
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
+  ), [isOpen, onOpenChange, order, isChangingStatus, isUpdating, handleStatusChange]);
+
+  return dialogContent;
+};
+
+export const OrderDetailsDialog = React.memo(OrderDetailsDialogComponent);
