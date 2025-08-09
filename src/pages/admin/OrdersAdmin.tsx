@@ -116,6 +116,18 @@ const OrdersAdmin: React.FC = () => {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<ExtendedOrderWithDetails | null>(null);
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
+  // نافذة طلبات العميل السابقة
+  const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState<Array<{
+    id: string;
+    order_number: string | number;
+    created_at: string;
+    status: OrderStatus | string;
+    total_amount: number;
+    payment_method?: string;
+  }>>([]);
+  const [customerMeta, setCustomerMeta] = useState<{ userId?: string; name?: string; email?: string; phone?: string } | null>(null);
+  const [isLoadingCustomerOrders, setIsLoadingCustomerOrders] = useState(false);
   
   // تحديث حالة الطلب
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
@@ -213,7 +225,12 @@ const OrdersAdmin: React.FC = () => {
             // تعيين total_amount من total_price إذا كان غير محدد
             total_amount: order.total_amount || order.total_price || 0,
             // بناء user و order_items حسب هيكل الدالة
-            user: order.user || { id: '', full_name: 'عميل غير معروف', email: '', phone: '' },
+            user: order.user || {
+              id: order.user_id || '',
+              full_name: order.customer_name || 'عميل غير معروف',
+              email: order.customer_email || '',
+              phone: order.customer_phone || '',
+            },
             order_items: (order.order_items || []).map((item: any) => ({
               ...item,
               product: item.product || { 
@@ -295,6 +312,53 @@ const OrdersAdmin: React.FC = () => {
       return true;
     });
   }, [orders, filterStatus, filterPayment, search]);
+
+  // إحصائيات سريعة
+  const stats = useMemo(() => {
+    const total = filteredOrders.length;
+    const sumAmount = filteredOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
+    const byStatus: Record<string, number> = {};
+    filteredOrders.forEach(o => {
+      byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+    });
+    return { total, sumAmount, byStatus };
+  }, [filteredOrders]);
+
+  // تصدير الطلبات الحالية إلى CSV
+  const exportOrdersToCSV = useCallback(() => {
+    const headers = [
+      'order_id',
+      'order_number',
+      'created_at',
+      'customer_name',
+      'customer_email',
+      'customer_phone',
+      'payment_method',
+      'status',
+      'total_amount',
+    ];
+    const rows = filteredOrders.map((o) => [
+      o.id,
+      String(o.order_number ?? ''),
+      o.created_at,
+      (o as any).customer_name || o.user?.full_name || '',
+      (o as any).customer_email || o.user?.email || '',
+      (o as any).customer_phone || o.user?.phone || '',
+      o.payment_method || '',
+      o.status,
+      String(o.total_amount ?? 0),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [filteredOrders]);
   
   // تحديث حالة الطلبات المحددة
   const handleBulkUpdateStatus = useCallback(async (status: OrderStatus) => {
@@ -351,6 +415,33 @@ const OrdersAdmin: React.FC = () => {
     setSelectedOrder(extendedOrder);
     setIsOrderDetailsOpen(true);
   };
+
+  // جلب جميع طلبات العميل لعرضها في نافذة مستقلة
+  const openCustomerOrders = useCallback(async (order: OrderWithDetails) => {
+    const userId = order.user?.id;
+    if (!userId) return;
+    setCustomerMeta({ userId, name: order.user?.full_name, email: order.user?.email, phone: order.user?.phone });
+    setIsCustomerOrdersOpen(true);
+    setIsLoadingCustomerOrders(true);
+    try {
+      if (!isSupabaseConfigured) {
+        setCustomerOrders([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, order_number, created_at, status, total_amount, payment_method')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setCustomerOrders((data || []) as any);
+    } catch (err) {
+      console.error('فشل جلب طلبات العميل:', err);
+      setCustomerOrders([]);
+    } finally {
+      setIsLoadingCustomerOrders(false);
+    }
+  }, []);
 
   // إغلاق تفاصيل الطلب
   const closeOrderDetails = () => {
@@ -436,6 +527,34 @@ const OrdersAdmin: React.FC = () => {
           <p className="text-muted-foreground">عرض وإدارة طلبات المتجر</p>
         </div>
         
+        {/* إحصائيات سريعة */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card className="bg-white dark:bg-gray-800/60">
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground mb-1">إجمالي الطلبات</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-gray-800/60">
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground mb-1">إجمالي المبيعات</div>
+              <div className="text-2xl font-bold">{formatCurrencySync(stats.sumAmount, 'ر.س', 2)}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-gray-800/60">
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground mb-1">قيد المراجعة</div>
+              <div className="text-2xl font-bold">{stats.byStatus['pending'] || 0}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-gray-800/60">
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground mb-1">مكتملة</div>
+              <div className="text-2xl font-bold">{stats.byStatus['delivered'] || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* تبويبات حالة الطلبات */}
         <Tabs 
           defaultValue="all" 
@@ -469,7 +588,7 @@ const OrdersAdmin: React.FC = () => {
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" onClick={exportOrdersToCSV}>
                   <Download className="h-4 w-4" />
                   <span className="sr-only">تصدير</span>
                 </Button>
@@ -650,7 +769,14 @@ const OrdersAdmin: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col items-end">
-                        <span className="font-medium">{(order as any).customer_name || 'عميل'}</span>
+                        <button
+                          type="button"
+                          className="font-medium text-alamer-blue hover:underline text-right"
+                          onClick={() => openCustomerOrders(order)}
+                          title="عرض جميع طلبات العميل"
+                        >
+                          {order.user?.full_name || (order as any).customer_name || 'عميل'}
+                        </button>
                         <span className="text-xs text-muted-foreground">{(order as any).customer_email || ''}</span>
                         <span className="text-xs text-muted-foreground">{(order as any).customer_phone || ''}</span>
                       </div>
@@ -821,6 +947,63 @@ const OrdersAdmin: React.FC = () => {
         onStatusChange={handleUpdateOrderStatus}
         isUpdating={isUpdating}
       />
+
+      {/* نافذة طلبات العميل السابقة */}
+      <Dialog open={isCustomerOrdersOpen} onOpenChange={setIsCustomerOrdersOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>طلبات العميل</span>
+              {customerMeta?.name && (
+                <span className="text-sm text-muted-foreground">{customerMeta.name}</span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 mb-3">
+            <div className="text-sm text-muted-foreground">
+              {customerMeta?.email && <span className="ml-3">{customerMeta.email}</span>}
+              {customerMeta?.phone && <span>{customerMeta.phone}</span>}
+            </div>
+            {!isLoadingCustomerOrders && customerOrders.length > 0 && (
+              <div className="text-sm text-foreground">
+                إجمالي الطلبات: <span className="font-medium">{customerOrders.length}</span> — إجمالي المبالغ: <span className="font-medium">{formatCurrencySync(customerOrders.reduce((s, o) => s + (o.total_amount || 0), 0), 'ر.س', 2)}</span>
+              </div>
+            )}
+          </div>
+          <div className="max-h-[60vh] overflow-auto border rounded-md">
+            {isLoadingCustomerOrders ? (
+              <div className="p-6 text-center text-muted-foreground">جاري التحميل...</div>
+            ) : customerOrders.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">لا توجد طلبات سابقة لهذا العميل</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">رقم الطلب</TableHead>
+                    <TableHead className="text-right">التاريخ</TableHead>
+                    <TableHead className="text-right">المبلغ</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customerOrders.map((co) => (
+                    <TableRow key={co.id} className="hover:bg-muted/50">
+                      <TableCell className="font-mono">#{String(co.order_number || co.id).toString().substring(0, 10)}</TableCell>
+                      <TableCell>{format(new Date(co.created_at), 'dd/MM/yyyy', { locale: ar })}</TableCell>
+                      <TableCell className="font-medium">{formatCurrencySync(co.total_amount || 0, 'ر.س', 2)}</TableCell>
+                      <TableCell>
+                        <div className={`${statusColors[(co.status as OrderStatus) || 'pending'] || ''} px-2 py-1 text-xs rounded-md inline-block`}>
+                          {statusLabels[(co.status as OrderStatus) || 'pending'] || co.status}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </TooltipProvider>
   );

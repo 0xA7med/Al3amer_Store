@@ -365,6 +365,40 @@ const ProductsAdmin: React.FC = () => {
       return 0;
     });
 
+  // تصدير المنتجات إلى CSV (حسب المرشّح الحالي)
+  const exportProductsToCSV = () => {
+    const headers = [
+      'product_id',
+      'title_ar',
+      'price',
+      'original_price',
+      'stock',
+      'is_active',
+      'is_featured',
+      'categories'
+    ];
+    const rows = filtered.map(p => [
+      p.product_id,
+      p.title_ar,
+      String(p.price ?? ''),
+      String(p.original_price ?? ''),
+      String(p.stock ?? ''),
+      p.is_active ? '1' : '0',
+      p.is_featured ? '1' : '0',
+      (p.categories || []).map((c:any) => c.name_ar).join('|')
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // إضافة منتج جديد إلى قاعدة البيانات
   const handleAddProduct = async () => {
     if (!isSupabaseConfigured) {
@@ -619,6 +653,14 @@ const ProductsAdmin: React.FC = () => {
             className="flex items-center gap-2"
           >
             إدارة التصنيفات
+          </Button>
+          <Button 
+            onClick={exportProductsToCSV} 
+            variant="outline" 
+            className="flex items-center gap-2"
+            disabled={filtered.length === 0}
+          >
+            تصدير CSV
           </Button>
           <Button 
             onClick={() => {
