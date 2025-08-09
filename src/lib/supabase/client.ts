@@ -1,20 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'لم يتم تعيين متغيرات البيئة المطلوبة. الرجاء التأكد من وجود ملف .env يحتوي على VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY'
-  );
+if (!envUrl || !envKey) {
+  console.warn('[Supabase] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Using fallback values; API calls will fail gracefully.');
 }
 
-// التحقق من صحة عنوان URL
-let validatedUrl: string;
-try {
-  validatedUrl = new URL(supabaseUrl).toString();
-} catch (error) {
-  throw new Error(`عنوان URL الخاص بـ Supabase غير صالح: ${supabaseUrl}`);
+// التحقق من صحة عنوان URL أو استخدام قيمة افتراضية غير صالحة لمنع التعطل
+let validatedUrl: string = 'https://invalid.supabase.local';
+if (envUrl) {
+  try {
+    validatedUrl = new URL(envUrl).toString();
+  } catch (error) {
+    console.error(`[Supabase] Invalid URL provided: ${envUrl}. Falling back to a placeholder URL.`);
+  }
 }
 
-export const supabase = createClient(validatedUrl, supabaseAnonKey);
+const anonKey = envKey || 'invalid-anon-key';
+
+export const supabase = createClient(validatedUrl, anonKey);

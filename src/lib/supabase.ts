@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs';
 
-// التحقق من صحة المتغيرات البيئية
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase environment variables');
-  throw new Error('Missing Supabase environment variables');
+// قراءة المتغيرات البيئية مع التعامل الآمن عند غيابها
+const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+export const isSupabaseConfigured = Boolean(envUrl && envKey);
+if (!envUrl || !envKey) {
+  console.error('[Supabase] Missing environment variables VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Running in degraded mode.');
 }
 
-// تكوين Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// تكوين Supabase (قيمة افتراضية آمنة لتفادي تعطل التطبيق)
+const supabaseUrl = envUrl || 'https://invalid.supabase.local';
+const supabaseAnonKey = envKey || 'invalid-anon-key';
 
 // تكوين خيارات العميل
 const options = {
@@ -32,7 +34,11 @@ const options = {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, options);
 
 // اختبار الاتصال
-console.log('Supabase client initialized with URL:', supabaseUrl.substring(0, 30) + '...');
+try {
+  console.log('Supabase client initialized with URL:', supabaseUrl.substring(0, 30) + '...');
+} catch (_) {
+  // تجاهل في حال كانت القيمة قصيرة
+}
 
 // Database types
 export interface Category {
