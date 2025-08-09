@@ -14,7 +14,7 @@ import { format, subDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Search, Filter as FilterIcon, X, Eye, RefreshCw, Check, X as XIcon, Truck, Package, CheckCircle, XCircle, Calendar, Download, MoreHorizontal, ArrowUpDown, CreditCard, Plus, Clock, Settings, PackageCheck } from 'lucide-react';
 import { formatCurrencySync } from '@/lib/utils';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { OrderWithDetails, OrderStatus, statusLabels, statusColors, paymentMethods } from '@/types/order';
 import type { ExtendedOrderWithDetails } from '@/components/orders/OrderDetailsDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
@@ -120,6 +120,10 @@ const OrdersAdmin: React.FC = () => {
   // تحديث حالة الطلب
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     if (!orderId) return false;
+    if (!isSupabaseConfigured) {
+      toast.error('تغيير الحالة غير متاح حالياً بدون إعداد مفاتيح Supabase');
+      return false;
+    }
     
     try {
       setIsUpdating(prev => ({ ...prev, [orderId]: true }));
@@ -164,6 +168,12 @@ const OrdersAdmin: React.FC = () => {
   const fetchOrders = useCallback(async (sortByParam: string) => {
     setLoading(true);
     setError(null);
+    if (!isSupabaseConfigured) {
+      setOrders([]);
+      setError('لوحة الطلبات تعمل حالياً بدون اتصال بقاعدة البيانات. الرجاء تهيئة مفاتيح Supabase على Vercel');
+      setLoading(false);
+      return [];
+    }
     
     try {
       console.log('جاري جلب الطلبات...');
@@ -288,6 +298,10 @@ const OrdersAdmin: React.FC = () => {
   
   // تحديث حالة الطلبات المحددة
   const handleBulkUpdateStatus = useCallback(async (status: OrderStatus) => {
+    if (!isSupabaseConfigured) {
+      toast.error('التعديل الجماعي غير متاح بدون إعداد Supabase');
+      return;
+    }
     const orderIds = orders
       .filter(order => selectedOrders.includes(order.id))
       .map(order => order.id);
@@ -347,6 +361,10 @@ const OrdersAdmin: React.FC = () => {
   
   // تحديث حالة الطلب
   const handleUpdateOrderStatus = useCallback(async (orderId: string, status: OrderStatus): Promise<boolean> => {
+    if (!isSupabaseConfigured) {
+      toast.error('تحديث الحالة غير متاح بدون إعداد Supabase');
+      return false;
+    }
     try {
       setIsUpdating(prev => ({ ...prev, [orderId]: true }));
       const { error } = await supabase
@@ -373,6 +391,9 @@ const OrdersAdmin: React.FC = () => {
 
   // تحديث الطلب المحدد
   const refreshOrder = useCallback(async (orderId: string) => {
+    if (!isSupabaseConfigured) {
+      return null;
+    }
     try {
       // جلب أحدث بيانات الطلب
       const { data: orderData, error: orderError } = await supabase

@@ -6,7 +6,7 @@ import { useCart } from '@/contexts/CartContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useSearch } from '@/contexts/SearchContext'
 import { getSiteSettings } from '@/lib/supabase';
 
@@ -37,8 +37,13 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!isSupabaseConfigured) {
+        setProducts([]);
+        setLoadingProducts(false);
+        return;
+      }
       setLoadingProducts(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });

@@ -33,10 +33,11 @@ module.exports = {
 					DEFAULT: '#3b82f6',
 					foreground: 'hsl(var(--secondary-foreground))',
 				},
-				accent: {
-					DEFAULT: '#fbbf24',
-					foreground: 'hsl(var(--accent-foreground))',
-				},
+                accent: {
+                    // تحويل اللون البرتقالي إلى أحمر متناسق مع هوية الموقع
+                    DEFAULT: '#dc2626', // red-600
+                    foreground: 'hsl(var(--accent-foreground))',
+                },
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))',
@@ -53,14 +54,14 @@ module.exports = {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',
 				},
-				// Alamer Center brand colors
+                // Alamer Center brand colors (استبدال الذهبي بأحمر متناسق)
 				alamer: {
 					blue: '#1e40af',
 					'blue-light': '#3b82f6',
 					'blue-dark': '#1e3a8a',
-					gold: '#fbbf24',
-					'gold-light': '#fcd34d',
-					'gold-dark': '#f59e0b',
+                    gold: '#dc2626',        // red-600
+                    'gold-light': '#ef4444', // red-500
+                    'gold-dark': '#b91c1c',  // red-700
 				},
 			},
 			borderRadius: {

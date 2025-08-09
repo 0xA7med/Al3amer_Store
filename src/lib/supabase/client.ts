@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
 const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+export const isSupabaseConfigured = Boolean(envUrl && envKey);
 
 if (!envUrl || !envKey) {
   console.warn('[Supabase] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Using fallback values; API calls will fail gracefully.');

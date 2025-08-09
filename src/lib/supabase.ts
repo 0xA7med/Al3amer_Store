@@ -256,6 +256,9 @@ export const getCategories = async () => {
 
 // API functions for site settings
 export const getSiteSettings = async () => {
+  if (!isSupabaseConfigured) {
+    return [] as SiteSettings[];
+  }
   const { data, error } = await supabase
     .from('site_settings')
     .select('*')

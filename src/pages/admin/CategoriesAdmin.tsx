@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 interface Category {
@@ -48,6 +48,12 @@ const CategoriesAdmin: React.FC = () => {
   }, [navigate]);
 
   const fetchCategories = async () => {
+    if (!isSupabaseConfigured) {
+      setCategories([]);
+      setLoading(false);
+      setError('لا يمكن جلب التصنيفات بدون إعداد Supabase');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -87,6 +93,10 @@ const CategoriesAdmin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isSupabaseConfigured) {
+      setError('حفظ التصنيف غير متاح بدون إعداد Supabase');
+      return;
+    }
     
     if (!formData.name_ar) {
       setError('يرجى إدخال اسم التصنيف بالعربية');
@@ -150,6 +160,10 @@ const CategoriesAdmin: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
+    if (!isSupabaseConfigured) {
+      setError('حذف التصنيف غير متاح بدون إعداد Supabase');
+      return;
+    }
     
     setLoading(true);
     try {

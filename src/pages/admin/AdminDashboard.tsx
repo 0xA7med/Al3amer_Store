@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +22,11 @@ const AdminDashboard: React.FC = () => {
 
   React.useEffect(() => {
     const fetchStats = async () => {
+      if (!isSupabaseConfigured) {
+        setLoading(false);
+        setError('لوحة التحكم تعمل بدون اتصال بقاعدة البيانات. يرجى ضبط مفاتيح Supabase.');
+        return;
+      }
       setLoading(true);
       setError(null);
       try {

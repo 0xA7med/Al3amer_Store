@@ -44,7 +44,11 @@ export default function ModernCategoriesSlider({ categories }: ModernCategoriesS
     containerRef.current.scrollBy({ left: offset, behavior: 'smooth' });
   };
 
-  if (!categories || categories.length === 0) return null;
+  if (!categories || categories.length === 0) return (
+    <div className="w-full py-8 text-center text-gray-500">
+      لا توجد فئات متاحة حالياً
+    </div>
+  );
 
   return (
     <div className="relative w-full flex items-center justify-center py-6 md:py-10">

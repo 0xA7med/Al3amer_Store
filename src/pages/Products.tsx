@@ -2,7 +2,7 @@ import React from 'react'
 import { Input } from '@/components/ui/input'
 import ProductCard from '@/components/products/ProductCard'
 import { useSearch } from '@/contexts/SearchContext'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 import { useTranslation } from 'react-i18next';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -26,6 +26,12 @@ const Products: React.FC = () => {
 
   React.useEffect(() => {
     const fetchProducts = async () => {
+      if (!isSupabaseConfigured) {
+        setProducts([]);
+        setCategories([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -45,7 +51,6 @@ const Products: React.FC = () => {
           setProducts([]);
         } else {
           setProducts(data);
-          // استخراج التصنيفات الفريدة
           const uniqueCategories = Array.from(new Set(data.map((p:any) => p.category).filter(Boolean)));
           setCategories(uniqueCategories);
         }

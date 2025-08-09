@@ -1,4 +1,4 @@
-import { supabase } from './client';
+import { supabase, isSupabaseConfigured } from './client';
 
 export interface SalesData {
   month: string;
@@ -36,6 +36,7 @@ export interface InventoryStatus {
 }
 
 export const getMonthlySalesSummary = async (from?: string, to?: string): Promise<SalesData[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     let query = supabase
       .from('orders')
@@ -85,6 +86,7 @@ export const getMonthlySalesSummary = async (from?: string, to?: string): Promis
 };
 
 export const getProductCountByCategory = async (): Promise<ProductData[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     // جلب عدد المنتجات في كل فئة من جدول العلاقة product_categories
     const { data: productCategories, error } = await supabase
@@ -113,6 +115,7 @@ export const getProductCountByCategory = async (): Promise<ProductData[]> => {
 };
 
 export const getTopSellingProducts = async (limit = 5, from?: string, to?: string): Promise<TopProduct[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     let query = supabase
       .from('order_items')
@@ -173,6 +176,7 @@ export const getTopSellingProducts = async (limit = 5, from?: string, to?: strin
 };
 
 export const getDailySales = async (from?: string, to?: string): Promise<DailySales[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     let query = supabase
       .from('orders')
@@ -222,6 +226,7 @@ export const getDailySales = async (from?: string, to?: string): Promise<DailySa
 };
 
 export const getInventoryStatus = async (): Promise<InventoryStatus[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     const { data, error } = await supabase
       .from('products')
@@ -246,6 +251,7 @@ export const getInventoryStatus = async (): Promise<InventoryStatus[]> => {
 };
 
 export const getSalesByCategory = async (from?: string, to?: string): Promise<{name: string; sales: number}[]> => {
+  if (!isSupabaseConfigured) return [];
   try {
     // جلب بيانات المبيعات مع معلومات الفئات
     let query = supabase

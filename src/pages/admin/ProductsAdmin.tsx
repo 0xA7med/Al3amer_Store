@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, Trash2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 interface Category {
@@ -239,6 +239,10 @@ const ProductsAdmin: React.FC = () => {
   // Fetch categories from database
   useEffect(() => {
     const fetchCategories = async () => {
+      if (!isSupabaseConfigured) {
+        setCategories([]);
+        return;
+      }
       const { data, error } = await supabase
         .from('categories')
         .select('category_id, name_ar, name_en, is_active')
@@ -256,6 +260,12 @@ const ProductsAdmin: React.FC = () => {
   // Fetch products from database with categories
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!isSupabaseConfigured) {
+        setProducts([]);
+        setLoading(false);
+        setError('لا يمكن جلب المنتجات دون ضبط مفاتيح Supabase محلياً (.env.local)');
+        return;
+      }
       setLoading(true);
       try {
         // First get all products
@@ -357,6 +367,10 @@ const ProductsAdmin: React.FC = () => {
 
   // إضافة منتج جديد إلى قاعدة البيانات
   const handleAddProduct = async () => {
+    if (!isSupabaseConfigured) {
+      setError('إضافة المنتجات غير متاحة بدون إعداد Supabase');
+      return;
+    }
     if (!newProduct.title_ar || newProduct.price === '' || newProduct.price === undefined || !selectedCategoryIds.length) {
       alert('يرجى ملء الحقول المطلوبة واختيار تصنيف واحد على الأقل');
       return;
@@ -414,6 +428,12 @@ const ProductsAdmin: React.FC = () => {
   
   // Helper function to fetch products with categories
   const fetchProducts = async () => {
+    if (!isSupabaseConfigured) {
+      setProducts([]);
+      setLoading(false);
+      setError('لا يمكن جلب المنتجات بدون إعداد Supabase');
+      return;
+    }
     setLoading(true);
     try {
       // First get all products
@@ -496,6 +516,10 @@ const ProductsAdmin: React.FC = () => {
   // حذف منتج من قاعدة البيانات
   const handleDelete = async (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+    if (!isSupabaseConfigured) {
+      setError('حذف المنتج غير متاح بدون إعداد Supabase');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -513,6 +537,10 @@ const ProductsAdmin: React.FC = () => {
 
   // تعديل منتج في قاعدة البيانات
   const handleSaveEdit = async () => {
+    if (!isSupabaseConfigured) {
+      setError('تعديل المنتج غير متاح بدون إعداد Supabase');
+      return;
+    }
     if (!editingProduct || !newProduct.title_ar || newProduct.price === '' || newProduct.price === undefined || !selectedCategoryIds.length) {
       alert('يرجى ملء الحقول المطلوبة واختيار تصنيف واحد على الأقل');
       return;

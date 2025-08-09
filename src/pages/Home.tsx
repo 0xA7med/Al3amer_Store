@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, ShoppingBag, Truck, Headphones, Shield, Star } from 'lucide-react'
-import { Product, Category } from '@/lib/supabase'
+import { Product, Category, isSupabaseConfigured } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import ProductCard from '@/components/products/ProductCard'
 import { Button } from '@/components/ui/button'
@@ -96,21 +96,72 @@ const Home: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_featured', true)
-          .order('created_at', { ascending: false });
-        if (productsError) throw productsError;
-        setFeaturedProducts(productsData || []);
-        // جلب الفئات من قاعدة البيانات
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-        if (categoriesError) throw categoriesError;
-        setCategories(categoriesData || []);
+        if (!isSupabaseConfigured) {
+          // Fallback: تحميل بيانات تجريبية من public
+          const res = await fetch('/data/sample-products.json');
+          const sample: any[] = await res.json();
+          const nowIso = new Date().toISOString();
+          const mapped: Product[] = sample.map((p, idx) => ({
+            product_id: `sample-${idx}`,
+            title_ar: p.title_ar,
+            title_en: p.title_en,
+            short_desc_ar: p.short_desc_ar,
+            full_desc_ar: p.full_desc_ar,
+            price: p.price,
+            original_price: p.original_price,
+            stock: p.stock ?? 0,
+            min_stock_alert: 0,
+            category_id: undefined,
+            category_name: p.category_name,
+            technical_specs_ar: p.technical_specs_ar,
+            image_urls: p.image_urls,
+            thumbnail_url: p.thumbnail_url,
+            video_review_links: [],
+            whatsapp_message_text: p.whatsapp_message_text,
+            discount_percentage: p.original_price ? Math.max(0, Math.round(((p.original_price - p.price) / p.original_price) * 100)) : 0,
+            is_featured: !!p.is_featured,
+            is_active: true,
+            view_count: 0,
+            sale_count: 0,
+            rating_average: 0,
+            rating_count: 0,
+            seo_title: undefined,
+            seo_description: undefined,
+            sku: p.sku,
+            barcode: undefined,
+            tags: p.tags || [],
+            weight: undefined,
+            dimensions: undefined,
+            created_at: nowIso,
+            updated_at: nowIso,
+          }));
+          setFeaturedProducts(mapped.filter(p => p.is_featured));
+          const uniqueCats = Array.from(new Set(sample.map(p => p.category_name).filter(Boolean)));
+          const fallbackCategories: Category[] = uniqueCats.map((name: string, idx: number) => ({
+            category_id: `sample-${idx}`,
+            name_ar: name,
+            display_order: idx,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as unknown as Category));
+          setCategories(fallbackCategories);
+        } else {
+          const { data: productsData, error: productsError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_featured', true)
+            .order('created_at', { ascending: false });
+          if (productsError) throw productsError;
+          setFeaturedProducts(productsData || []);
+          const { data: categoriesData, error: categoriesError } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
+          if (categoriesError) throw categoriesError;
+          setCategories(categoriesData || []);
+        }
       } catch (err) {
         setError('فشل في تحميل المنتجات أو الفئات');
       } finally {
@@ -190,7 +241,7 @@ const Home: React.FC = () => {
                   </Button>
                 </Link>
                 <Link to="/about">
-                  <Button size="lg" className="bg-alamer-gold text-alamer-blue font-bold border-2 border-alamer-gold hover:bg-alamer-gold-dark hover:text-white transition-colors">
+                  <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:shadow-lg border border-red-700 transition-colors gap-2">
                     {t('learnMore')}
                     <ArrowLeft className="mr-2" size={20} />
                   </Button>
