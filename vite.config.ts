@@ -22,7 +22,8 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
-    minify: 'terser',
+    // استخدام esbuild الافتراضي للتصغير لتجنب الحاجة إلى تثبيت terser
+    minify: 'esbuild',
     rollupOptions: {
       input: {
         main: './index.html',
