@@ -13,6 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency } from '@/lib/utils';
 import type { OrderWithDetails, OrderStatus } from '@/lib/supabase/types';
 
+declare module 'react-i18next' {
+  interface CustomTypeOptions {
+    returnNull: false;
+  }
+}
+
 interface OrdersTableProps {
   orders: OrderWithDetails[];
   onStatusChange: (orderId: string, newStatus: OrderStatus) => Promise<boolean>;
@@ -37,6 +43,16 @@ export function OrdersTable({
   const [isMounted, setIsMounted] = React.useState(false);
   const [sortField, setSortField] = React.useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<OrderStatus | 'all'>('all');
+  const [paymentFilter, setPaymentFilter] = React.useState<string>('all');
+  const [dateRange, setDateRange] = React.useState<{ from?: Date; to?: Date }>({});
+  const [selectedOrders, setSelectedOrders] = React.useState<Set<string>>(new Set());
+  const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const [sortConfig, setSortConfig] = React.useState<{ key: SortField; direction: SortDirection }>({
+    key: 'created_at',
+    direction: 'desc',
+  });
 
   // تعيين isMounted إلى true عند تحميل المكون
   React.useEffect(() => {
@@ -51,9 +67,18 @@ export function OrdersTable({
     setSortField('created_at');
     setSortDirection('desc');
   };
-
-  // استخدام t مباشرة من useTranslation بدون دالة وسيطة
-  // (تمت إزالة الدالة المخصصة واستخدام t مباشرة)
+  
+  // دالة مساعدة للترجمة مع قيمة افتراضية
+  const translate = (key: string, defaultValue: string = ''): string => {
+    if (!ready) return defaultValue;
+    try {
+      const result = t(key, { defaultValue });
+      return result || defaultValue;
+    } catch (error) {
+      console.error('Translation error:', error);
+      return defaultValue;
+    }
+  };
 
   // عرض مؤشر تحميل إذا لم تكن الترجمات جاهزة
   if (!ready) {
@@ -63,17 +88,6 @@ export function OrdersTable({
       </div>
     );
   }
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
-  const [paymentFilter, setPaymentFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [sortConfig, setSortConfig] = useState<{ key: SortField; direction: SortDirection }>({
-    key: 'created_at',
-    direction: 'desc',
-  });
-  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // ألوان الحالات
   const statusColors: Record<OrderStatus, string> = {
@@ -316,28 +330,41 @@ export function OrdersTable({
                   <TableCell>
                     <div className="font-medium">{order.user?.full_name || 'مجهول'}</div>
                     <div className="text-sm text-muted-foreground">{order.user?.phone || order.user?.email || '-'}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span>{formatDate(order.created_at)}</span>
-                      <TimeDisplay date={order.created_at} />
-                    </div>
-                  </TableCell>
-                  <TableCell>
                     {order.payment_method ? (
-                      t(`paymentMethod.${order.payment_method}`)
-                    ) : '-'}
+                      <>{translate(`paymentMethod.${order.payment_method}`, order.payment_method)}</>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
-                      {t(`orderStatus.${order.status}`)}
+                      {translate(`orderStatus.${order.status}`, order.status)}
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onSelectOrder(order)}>
+                        {t('viewDetails')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => window.open(`/admin/orders/${order.id}/print`, '_blank')}>
+                        {t('printInvoice')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => onStatusChange(order.id, 'cancelled')}
+                        disabled={isUpdating[order.id]}
+                      >
+                        {isUpdating[order.id] ? t('cancelling') : t('cancelOrder')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-8 w-8 p-0')}>
                           <span className="sr-only">فتح القائمة</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
