@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrencySync } from '@/lib/utils';
 import type { OrderWithDetails, OrderStatus } from '@/lib/supabase/types';
 
 interface OrdersTableProps {
@@ -328,7 +328,7 @@ export function OrdersTable({
                       t(`paymentMethod.${order.payment_method}`)
                     ) : '-'}
                   </TableCell>
-                  <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
+                  <TableCell className="font-medium text-right">{formatCurrencySync(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
                       {t(`orderStatus.${order.status}`)}
