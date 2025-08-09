@@ -41,10 +41,10 @@ export function OrdersTable({
     return () => setIsMounted(false);
   }, []);
 
-  // دالة مساعدة للترجمة الآمنة
+  // استخدام t مباشرة من useTranslation
   const translate = (key: string, defaultValue: string = ''): string => {
-    if (!isMounted || !ready) return defaultValue;
-    return i18n.exists(key) ? i18n.t(key) : defaultValue;
+    if (!ready || !isMounted) return defaultValue;
+    return t(key, { defaultValue });
   };
 
   // عرض مؤشر تحميل إذا لم تكن الترجمات جاهزة
