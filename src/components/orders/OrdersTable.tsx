@@ -32,7 +32,20 @@ export function OrdersTable({
   isLoading,
   isUpdating = {},
 }: OrdersTableProps) {
-  const { t, ready } = useTranslation();
+  const { t, ready, i18n } = useTranslation();
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  // تعيين isMounted إلى true عند تحميل المكون
+  React.useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  // دالة مساعدة للترجمة الآمنة
+  const translate = (key: string, defaultValue: string = ''): string => {
+    if (!isMounted || !ready) return defaultValue;
+    return i18n.exists(key) ? i18n.t(key) : defaultValue;
+  };
 
   // عرض مؤشر تحميل إذا لم تكن الترجمات جاهزة
   if (!ready) {
@@ -290,13 +303,13 @@ export function OrdersTable({
                   </TableCell>
                   <TableCell>
                     {order.payment_method ? (
-                      t(`paymentMethod.${order.payment_method}`, order.payment_method)
+                      translate(`paymentMethod.${order.payment_method}`, order.payment_method)
                     ) : '-'}
                   </TableCell>
                   <TableCell className="font-medium text-right">{formatCurrency(order.total_amount)}</TableCell>
                   <TableCell>
                     <div className={`${statusColors[order.status]} whitespace-nowrap text-xs font-medium rounded px-2 py-1`}>
-                      {t(`orderStatus.${order.status}`)}
+                      {translate(`orderStatus.${order.status}`, order.status)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
