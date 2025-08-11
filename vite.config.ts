@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '/',
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -24,13 +24,16 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
-    // استخدام esbuild الافتراضي للتصغير لتجنب الحاجة إلى تثبيت terser
     minify: 'esbuild',
     rollupOptions: {
-      input: {
-        main: './index.html',
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          vendor: ['@supabase/supabase-js', 'i18next', 'react-i18next'],
+        },
       },
     },
+    chunkSizeWarningLimit: 1000, // زيادة حد تحذير حجم الحزمة
   },
   optimizeDeps: {
     include: [
@@ -46,5 +49,4 @@ export default defineConfig({
       target: 'es2020',
     },
   },
-})
-
+}));
