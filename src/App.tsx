@@ -1,29 +1,29 @@
 import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom'
-import { CartProvider } from '@/contexts/CartContext'
-import { AuthProvider, useAuth } from '@/contexts/AuthContext'
-import Layout from '@/components/layout/Layout'
-import AdminLayout from '@/components/layout/AdminLayout'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { CartProvider } from './contexts/CartContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import Layout from './components/layout/Layout'
+import AdminLayout from './components/layout/AdminLayout'
+import LoadingSpinner from './components/ui/LoadingSpinner'
 import './lib/i18n'
 
 // Lazy load admin components
-const Home = lazy(() => import('@/pages/Home'))
-const Products = lazy(() => import('@/pages/Products'))
-const ProductDetails = lazy(() => import('@/pages/ProductDetails'))
-const Cart = lazy(() => import('@/pages/Cart'))
-const Checkout = lazy(() => import('@/pages/Checkout'))
-const OrderSuccess = lazy(() => import('@/pages/OrderSuccess'))
-const About = lazy(() => import('@/pages/About'))
-const Contact = lazy(() => import('@/pages/Contact'))
-const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'))
-const ProductsAdmin = lazy(() => import('@/pages/admin/ProductsAdmin'))
-const CategoriesAdmin = lazy(() => import('@/pages/admin/CategoriesAdmin'))
-const OrdersAdmin = lazy(() => import('@/pages/admin/OrdersAdmin'))
-const ReportsAdmin = lazy(() => import('@/pages/admin/ReportsAdmin'))
-const SettingsAdmin = lazy(() => import('@/pages/admin/SettingsAdmin'))
-const AuthLogin = lazy(() => import('@/pages/AuthLogin'))
-const AdminIndex = lazy(() => import('@/pages/admin'))
+const Home = lazy(() => import('./pages/Home'))
+const Products = lazy(() => import('./pages/Products'))
+const ProductDetails = lazy(() => import('./pages/ProductDetails'))
+const Cart = lazy(() => import('./pages/Cart'))
+const Checkout = lazy(() => import('./pages/Checkout'))
+const OrderSuccess = lazy(() => import('./pages/OrderSuccess'))
+const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const ProductsAdmin = lazy(() => import('./pages/admin/ProductsAdmin'))
+const CategoriesAdmin = lazy(() => import('./pages/admin/CategoriesAdmin'))
+const OrdersAdmin = lazy(() => import('./pages/admin/OrdersAdmin'))
+const ReportsAdmin = lazy(() => import('./pages/admin/ReportsAdmin'))
+const SettingsAdmin = lazy(() => import('./pages/admin/SettingsAdmin'))
+const AuthLogin = lazy(() => import('./pages/AuthLogin'))
+const AdminIndex = lazy(() => import('./pages/admin'))
 
 // Wrapper component for Layout
 const LayoutWrapper: React.FC = () => (
@@ -111,26 +111,18 @@ function App() {
             <Route 
               path="/admin" 
               element={
-                <Suspense fallback={<LoadingSpinner fullScreen />}>
+                <AdminWrapper>
                   <AdminIndex />
-                </Suspense>
+                </AdminWrapper>
               }
             >
-              <Route 
-                element={
-                  <AdminWrapper>
-                    <Outlet />
-                  </AdminWrapper>
-                }
-              >
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="products" element={<ProductsAdmin />} />
-                <Route path="categories" element={<CategoriesAdmin />} />
-                <Route path="orders" element={<OrdersAdmin />} />
-                <Route path="reports" element={<ReportsAdmin />} />
-                <Route path="settings" element={<SettingsAdmin />} />
-              </Route>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="products" element={<ProductsAdmin />} />
+              <Route path="categories" element={<CategoriesAdmin />} />
+              <Route path="orders" element={<OrdersAdmin />} />
+              <Route path="reports" element={<ReportsAdmin />} />
+              <Route path="settings" element={<SettingsAdmin />} />
             </Route>
             
             {/* Fallback route */}
