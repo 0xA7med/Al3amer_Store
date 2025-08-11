@@ -15,14 +15,14 @@ const AuthLogin: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (session && !authLoading) {
+      // Only redirect if we're not already on the target page
       const from = location.state?.from?.pathname || '/admin';
-      // Use setTimeout to prevent navigation during render
-      const timer = setTimeout(() => {
+      if (location.pathname !== from) {
+        console.log('[Auth] Redirecting to:', from);
         navigate(from, { replace: true });
-      }, 0);
-      return () => clearTimeout(timer);
+      }
     }
-  }, [session, navigate, location.state, authLoading]);
+  }, [session, authLoading, navigate, location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
