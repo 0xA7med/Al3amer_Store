@@ -1,41 +1,25 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { useEffect } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
-import { Session } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AdminIndex = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setLoading(false);
-    };
-
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { session, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !session) {
-      navigate('/admin-login');
+      navigate('/admin-login', { replace: true });
     }
   }, [session, loading, navigate]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="flex h-screen items-center justify-center">جاري تحميل صفحة الأدمن...</div>;
   }
 
   if (!session) {
-    return null; // or a redirect component
+    // This will be rendered briefly before the useEffect redirect happens.
+    // Returning null is fine as the redirect will be very fast.
+    return null; 
   }
 
   return <Outlet />;
