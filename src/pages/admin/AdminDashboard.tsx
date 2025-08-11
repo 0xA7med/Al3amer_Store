@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [stats, setStats] = React.useState({
     products: 0,
     orders: 0,
@@ -15,10 +18,10 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!localStorage.getItem('isAdminLoggedIn')) {
+    if (!authLoading && !isAuthenticated) {
       navigate('/admin-login');
     }
-  }, [navigate]);
+  }, [authLoading, isAuthenticated, navigate]);
 
   React.useEffect(() => {
     const fetchStats = async () => {
@@ -53,8 +56,19 @@ const AdminDashboard: React.FC = () => {
       }
       setLoading(false);
     };
-    fetchStats();
-  }, []);
+
+    if (isAuthenticated) {
+      fetchStats();
+    }
+  }, [isAuthenticated]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   const statCards = [
     {
