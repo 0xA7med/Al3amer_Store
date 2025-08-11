@@ -193,18 +193,19 @@ const OrderDetailsDialogComponent = ({
     }
   }, [order, onStatusChange, onOpenChange]);
 
-  // Memoize the dialog content to prevent unnecessary re-renders
-  const dialogContent = React.useMemo(() => (
+  return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center">
-              <span>تفاصيل الطلب #{order.order_number || 'N/A'}</span>
-              <Badge className={`${statusColors[order.status]} mr-2`}>
-                {statusIcons[order.status]}
-                {statusLabels[order.status]}
-              </Badge>
+              <span>تفاصيل الطلب #{order?.order_number || 'N/A'}</span>
+              {order && (
+                <Badge className={`${statusColors[order.status]} mr-2`}>
+                  {statusIcons[order.status]}
+                  {statusLabels[order.status]}
+                </Badge>
+              )}
             </div>
             <button
               type="button"
@@ -216,284 +217,284 @@ const OrderDetailsDialogComponent = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          {/* معلومات العميل */}
-          <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
-                <User className="h-5 w-5 ml-1 text-gray-500" />
-                معلومات العميل
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p className="flex items-center">
-                  <span className="text-gray-500 w-24">الاسم:</span>
-                  <span className="font-medium">{customer_name}</span>
-                </p>
-                <p className="text-gray-500">ملاحظات إضافية:</p>
-                <p className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                  {notes || 'لا توجد ملاحظات'}
-                </p>
-                {customer_email && (
+        {order && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            {/* معلومات العميل */}
+            <div className="space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
+                  <User className="h-5 w-5 ml-1 text-gray-500" />
+                  معلومات العميل
+                </h3>
+                <div className="space-y-2 text-sm">
                   <p className="flex items-center">
-                    <Mail className="h-4 w-4 ml-1 text-gray-400" />
-                    <span className="text-gray-500 w-20">البريد:</span>
-                    <span>{customer_email}</span>
+                    <span className="text-gray-500 w-24">الاسم:</span>
+                    <span className="font-medium">{customer_name}</span>
                   </p>
-                )}
-                {customer_phone && (
-                  <p className="flex items-center">
-                    <Phone className="h-4 w-4 ml-1 text-gray-400" />
-                    <span className="text-gray-500 w-20">الهاتف:</span>
-                    <a href={`tel:${customer_phone}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      {customer_phone}
-                    </a>
+                  <p className="text-gray-500">ملاحظات إضافية:</p>
+                  <p className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                    {notes || 'لا توجد ملاحظات'}
                   </p>
-                )}
+                  {customer_email && (
+                    <p className="flex items-center">
+                      <Mail className="h-4 w-4 ml-1 text-gray-400" />
+                      <span className="text-gray-500 w-20">البريد:</span>
+                      <span>{customer_email}</span>
+                    </p>
+                  )}
+                  {customer_phone && (
+                    <p className="flex items-center">
+                      <Phone className="h-4 w-4 ml-1 text-gray-400" />
+                      <span className="text-gray-500 w-20">الهاتف:</span>
+                      <a href={`tel:${customer_phone}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {customer_phone}
+                      </a>
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* عنوان الشحن */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
-                <MapPin className="h-5 w-5 ml-1 text-gray-500" />
-                عنوان الشحن
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p>{formattedShippingAddress}</p>
+              {/* عنوان الشحن */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
+                  <MapPin className="h-5 w-5 ml-1 text-gray-500" />
+                  عنوان الشحن
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <p>{formattedShippingAddress}</p>
+                </div>
               </div>
-            </div>
 
-            {/* معلومات الدفع */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
-                <CreditCard className="h-5 w-5 ml-1 text-gray-500" />
-                معلومات الدفع
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p className="flex justify-between">
-                  <span className="text-gray-500">طريقة الدفع:</span>
-                  <span>{paymentMethods[order.payment_method] || order.payment_method}</span>
-                </p>
-                <p className="flex items-center justify-between">
-                  <span>حالة الدفع:</span>
-                  <Badge 
-                    className={payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}
-                  </Badge>
-                </p>
-                {transaction_id && (
+              {/* معلومات الدفع */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="font-medium text-gray-900 dark:text-white flex items-center mb-3">
+                  <CreditCard className="h-5 w-5 ml-1 text-gray-500" />
+                  معلومات الدفع
+                </h3>
+                <div className="space-y-2 text-sm">
                   <p className="flex justify-between">
-                    <span className="text-gray-500">رقم المعاملة:</span>
-                    <span className="font-mono">{transaction_id}</span>
+                    <span className="text-gray-500">طريقة الدفع:</span>
+                    <span>{paymentMethods[order.payment_method] || order.payment_method}</span>
                   </p>
-                )}
-                <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
-                  <p className="flex justify-between text-base font-medium">
-                    <span>المجموع:</span>
-                    <span>{formatCurrencySync(Number(order.total_amount) || 0, 'ج.م', 0)}</span>
+                  <p className="flex items-center justify-between">
+                    <span>حالة الدفع:</span>
+                    <Badge
+                      className={payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                      {payment_status === 'paid' ? 'مدفوع' : 'غير مدفوع'}
+                    </Badge>
                   </p>
+                  {transaction_id && (
+                    <p className="flex justify-between">
+                      <span className="text-gray-500">رقم المعاملة:</span>
+                      <span className="font-mono">{transaction_id}</span>
+                    </p>
+                  )}
+                  <div className="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                    <p className="flex justify-between text-base font-medium">
+                      <span>المجموع:</span>
+                      <span>{formatCurrencySync(Number(order.total_amount) || 0, 'ج.م', 0)}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* تغيير حالة الطلب */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <h3 className="font-medium text-gray-900 dark:text-white mb-3">تغيير حالة الطلب</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(statusLabels).map(([status, label]) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={`w-full mb-2 px-3 py-1.5 rounded-md border border-gray-300 text-sm font-medium ${status === currentOrder.status ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center`}
+                      onClick={() => handleStatusChange(status as OrderStatus)}
+                      disabled={isUpdating[order.id]}
+                    >
+                      {statusLabels[status as OrderStatus]}
+                      {isUpdating[order.id] && (
+                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* تغيير حالة الطلب */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-3">تغيير حالة الطلب</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(statusLabels).map(([status, label]) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className={`w-full mb-2 px-3 py-1.5 rounded-md border border-gray-300 text-sm font-medium ${status === currentOrder.status ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex items-center justify-center`}
-                    onClick={() => handleStatusChange(status as OrderStatus)}
-                    disabled={isUpdating[order.id]}
-                  >
-                    {statusLabels[status as OrderStatus]}
-                    {isUpdating[order.id] && (
-                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* تفاصيل المنتجات */}
-          <div className="md:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  المنتجات ({order_items.length || 0})
-                </h3>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {order_items.map((item) => {
-                  const productName = item.product?.title_ar || 'منتج غير معروف';
-                  const imageUrl = item.product?.image_url || '';
-                  
-                  return (
-                    <div key={item.id} className="p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0 h-20 w-20 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
-                          {imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={productName}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-gray-400">
-                              <Package className="h-8 w-8" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="mr-4 flex-1">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                            {productName}
-                          </h4>
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            الكمية: {item.quantity}
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                            {formatCurrencySync(item.price)} × {item.quantity} = {formatCurrencySync(item.price * item.quantity)}
-                          </p>
+            {/* تفاصيل المنتجات */}
+            <div className="md:col-span-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    المنتجات ({order_items.length || 0})
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {order_items.map((item) => {
+                    const productName = item.product?.title_ar || 'منتج غير معروف';
+                    const imageUrl = item.product?.image_url || '';
+                    
+                    return (
+                      <div key={item.id} className="p-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0 h-20 w-20 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={productName}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-gray-400">
+                                <Package className="h-8 w-8" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="mr-4 flex-1">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {productName}
+                            </h4>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                              الكمية: {item.quantity}
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                              {formatCurrencySync(item.price)} × {item.quantity} = {formatCurrencySync(item.price * item.quantity)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {/* ملخص الطلب */}
-              <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">المجموع الفرعي:</span>
-                    <span>{formatCurrencySync(subtotal)}</span>
-                  </div>
-                  {discount_amount > 0 && (
+                {/* ملخص الطلب */}
+                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">الخصم:</span>
-                      <span className="text-red-500">-{formatCurrencySync(discount_amount)}</span>
+                      <span className="text-gray-500">المجموع الفرعي:</span>
+                      <span>{formatCurrencySync(subtotal)}</span>
                     </div>
-                  )}
-                  {shipping_fee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">رسوم الشحن:</span>
-                      <span>{formatCurrencySync(shipping_fee)}</span>
+                    {discount_amount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">الخصم:</span>
+                        <span className="text-red-500">-{formatCurrencySync(discount_amount)}</span>
+                      </div>
+                    )}
+                    {shipping_fee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">رسوم الشحن:</span>
+                        <span>{formatCurrencySync(shipping_fee)}</span>
+                      </div>
+                    )}
+                    {tax_amount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">الضريبة:</span>
+                        <span>{formatCurrencySync(tax_amount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-600 text-base font-medium">
+                      <span>الإجمالي:</span>
+                      <span>{formatCurrencySync(order.total_amount, 'ر.س', 2)}</span>
                     </div>
-                  )}
-                  {tax_amount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">الضريبة:</span>
-                      <span>{formatCurrencySync(tax_amount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-600 text-base font-medium">
-                    <span>الإجمالي:</span>
-                    <span>{formatCurrencySync(order.total_amount, 'ر.س', 2)}</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* ملاحظات الطلب */}
-            {order.notes && (
-              <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                  ملاحظات الطلب
-                </h3>
-                <p className="text-yellow-700 dark:text-yellow-300 text-sm">{order.notes}</p>
-              </div>
-            )}
+              {/* ملاحظات الطلب */}
+              {order.notes && (
+                <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+                    ملاحظات الطلب
+                  </h3>
+                  <p className="text-yellow-700 dark:text-yellow-300 text-sm">{order.notes}</p>
+                </div>
+              )}
 
-            {/* معلومات إضافية */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-2">
-                  معلومات إضافية
-                </h3>
-                <dl className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">رقم الطلب:</dt>
-                    <dd className="font-mono">#{order.order_number}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">تاريخ الطلب:</dt>
-                    <dd>
-                      {format(new Date(order.created_at), 'dd/MM/yyyy - hh:mm a', { locale: ar })}
-                    </dd>
-                  </div>
-                  {order.updated_at && order.updated_at !== order.created_at && (
+              {/* معلومات إضافية */}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-2">
+                    معلومات إضافية
+                  </h3>
+                  <dl className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-gray-500">آخر تحديث:</dt>
+                      <dt className="text-gray-500">رقم الطلب:</dt>
+                      <dd className="font-mono">#{order.order_number}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-gray-500">تاريخ الطلب:</dt>
                       <dd>
-                        {formatDate(order.updated_at)}
+                        {format(new Date(order.created_at), 'dd/MM/yyyy - hh:mm a', { locale: ar })}
                       </dd>
                     </div>
-                  )}
-                </dl>
-              </div>
+                    {order.updated_at && order.updated_at !== order.created_at && (
+                      <div className="flex justify-between">
+                        <dt className="text-gray-500">آخر تحديث:</dt>
+                        <dd>
+                          {formatDate(order.updated_at)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
 
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-2">
-                  حالة الشحن
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                      <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="mr-3">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {statusLabels[order.status]}
-                      </p>
-                      <div className="text-sm text-gray-500">
-                        آخر تحديث: {format(new Date(updated_at), 'dd MMM yyyy, hh:mm a', { locale: ar })}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-2">
+                    حالة الشحن
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="mr-3">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {statusLabels[order.status]}
+                        </p>
+                        <div className="text-sm text-gray-500">
+                          آخر تحديث: {format(new Date(updated_at), 'dd MMM yyyy, hh:mm a', { locale: ar })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  {tracking_number && (
-                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-sm">
-                        <span className="text-gray-500">رقم التتبع:</span>{' '}
-                        <div className="font-medium">{tracking_number || 'لم يتم التحديد بعد'}</div>
-                      </p>
-                      {tracking_url && (
-                        <a
-                          href={tracking_url}
-                          className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1 border border-gray-300 p-1 rounded"
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          تتبع الشحنة
-                          <svg
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                    {tracking_number && (
+                      <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-sm">
+                          <span className="text-gray-500">رقم التتبع:</span>{' '}
+                          <div className="font-medium">{tracking_number || 'لم يتم التحديد بعد'}</div>
+                        </p>
+                        {tracking_url && (
+                          <a
+                            href={tracking_url}
+                            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1 border border-gray-300 p-1 rounded"
+                            rel="noopener noreferrer"
+                            target="_blank"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                        </a>
-                      )}
-                    </div>
-                  )}
+                            تتبع الشحنة
+                            <svg
+                              className="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
-  ), [isOpen, onOpenChange, order, isChangingStatus, isUpdating, handleStatusChange]);
-
-  return dialogContent;
+  );
 };
 
 export const OrderDetailsDialog = React.memo(OrderDetailsDialogComponent);
