@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase/client';
 import { 
   LayoutDashboard, 
   Package, 
@@ -20,9 +22,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAdminLoggedIn');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/admin-login');
   };
 
@@ -46,7 +49,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           {/* Sidebar Header */}
           <div className="p-6 border-b">
             {/* <h2 className="text-xl font-bold text-gray-900">لوحة تحكم المدير</h2> */}
-            <p className="text-sm text-gray-600 mt-1">مرحباً، المدير</p>
+            <p className="text-sm text-gray-600 mt-1">مرحباً, {user?.email}</p>
           </div>
           
           {/* Navigation */}
