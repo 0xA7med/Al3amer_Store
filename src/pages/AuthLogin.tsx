@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '@/lib/supabase/client';
+import { auth } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AuthLogin: React.FC = () => {
@@ -10,31 +10,44 @@ const AuthLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
 
+  // Redirect if already logged in
   useEffect(() => {
-    if (session) {
+    if (session && !authLoading) {
       const from = location.state?.from?.pathname || '/admin';
-      navigate(from, { replace: true });
+      // Use setTimeout to prevent navigation during render
+      const timer = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [session, navigate, location.state]);
+  }, [session, navigate, location.state, authLoading]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!email || !password) {
+      setError('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
+      await auth.signIn(email.trim(), password.trim());
+      // No need to navigate here, the useEffect will handle it
     } catch (error) {
-      setError(error.message || 'فشل تسجيل الدخول');
+      console.error('Login error:', error);
+      
+      // More user-friendly error messages
+      const errorMessage = error.message.includes('Invalid login credentials')
+        ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+        : 'حدث خطأ أثناء تسجيل الدخول. الرجاء المحاولة مرة أخرى لاحقًا.';
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
