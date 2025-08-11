@@ -77,76 +77,70 @@ const PublicRoute: React.FC<{ element: React.ReactNode }> = ({ element }) => {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LayoutWrapper />}>
-              <Route index element={<Suspense fallback={<LoadingSpinner />}><Home /></Suspense>} />
-              <Route path="products" element={<Suspense fallback={<LoadingSpinner />}><Products /></Suspense>} />
-              <Route path="product/:id" element={<Suspense fallback={<LoadingSpinner />}><ProductDetails /></Suspense>} />
-              <Route path="cart" element={<Suspense fallback={<LoadingSpinner />}><Cart /></Suspense>} />
-              <Route path="checkout" element={<Suspense fallback={<LoadingSpinner />}><Checkout /></Suspense>} />
-              <Route path="order-success" element={<Suspense fallback={<LoadingSpinner />}><OrderSuccess /></Suspense>} />
-              <Route path="about" element={<Suspense fallback={<LoadingSpinner />}><About /></Suspense>} />
-              <Route path="contact" element={<Suspense fallback={<LoadingSpinner />}><Contact /></Suspense>} />
-            </Route>
-            
-            {/* Admin Login Route */}
-            <Route 
-              path="/admin-login" 
-              element={
-                <PublicRoute 
-                  element={
-                    <Suspense fallback={<LoadingSpinner fullScreen />}>
-                      <AuthLogin />
-                    </Suspense>
-                  } 
-                />
-              } 
-            />
-            
-            {/* Protected Admin Routes */}
-            <Route 
-              path="/admin" 
-              element={
-                <AdminWrapper>
-                  <AdminIndex />
-                </AdminWrapper>
-              }
-            >
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="products" element={<ProductsAdmin />} />
-              <Route path="categories" element={<CategoriesAdmin />} />
-              <Route path="orders" element={<OrdersAdmin />} />
-              <Route path="reports" element={<ReportsAdmin />} />
-              <Route path="settings" element={<SettingsAdmin />} />
-            </Route>
-            
-            {/* Fallback route */}
-            <Route 
-              path="*" 
-              element={
-                <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                  <div className="text-center p-8 max-w-md w-full">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">404 - الصفحة غير موجودة</h1>
-                    <p className="text-lg text-gray-600 mb-8">عذراً، الصفحة التي تبحث عنها غير موجودة</p>
-                    <a 
-                      href="/" 
-                      className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      العودة للرئيسية
-                    </a>
-                  </div>
-                </div>
-              } 
-            />
-          </Routes>
-        </CartProvider>
-      </AuthProvider>
-    </Router>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<LayoutWrapper />}>
+        <Route index element={<Suspense fallback={<LoadingSpinner />}><Home /></Suspense>} />
+        <Route path="products" element={<Suspense fallback={<LoadingSpinner />}><Products /></Suspense>} />
+        <Route path="product/:id" element={<Suspense fallback={<LoadingSpinner />}><ProductDetails /></Suspense>} />
+        <Route path="cart" element={<Suspense fallback={<LoadingSpinner />}><Cart /></Suspense>} />
+        <Route path="checkout" element={<Suspense fallback={<LoadingSpinner />}><Checkout /></Suspense>} />
+        <Route path="order-success" element={<Suspense fallback={<LoadingSpinner />}><OrderSuccess /></Suspense>} />
+        <Route path="about" element={<Suspense fallback={<LoadingSpinner />}><About /></Suspense>} />
+        <Route path="contact" element={<Suspense fallback={<LoadingSpinner />}><Contact /></Suspense>} />
+      </Route>
+
+      {/* Admin Login Route */}
+      <Route
+        path="/admin-login"
+        element={
+          <PublicRoute
+            element={
+              <Suspense fallback={<LoadingSpinner fullScreen />}>
+                <AuthLogin />
+              </Suspense>
+            }
+          />
+        }
+      />
+
+      {/* Protected Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <AdminWrapper>
+            <AdminIndex />
+          </AdminWrapper>
+        }
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="products" element={<ProductsAdmin />} />
+        <Route path="categories" element={<CategoriesAdmin />} />
+        <Route path="orders" element={<OrdersAdmin />} />
+        <Route path="reports" element={<ReportsAdmin />} />
+        <Route path="settings" element={<SettingsAdmin />} />
+      </Route>
+
+      {/* Fallback route */}
+      <Route
+        path="*"
+        element={
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center p-8 max-w-md w-full">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">404 - الصفحة غير موجودة</h1>
+              <p className="text-lg text-gray-600 mb-8">عذراً، الصفحة التي تبحث عنها غير موجودة</p>
+              <a
+                href="/"
+                className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                العودة للرئيسية
+              </a>
+            </div>
+          </div>
+        }
+      />
+    </Routes>
   )
 }
 
