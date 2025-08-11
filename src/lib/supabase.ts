@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import bcrypt from 'bcryptjs';
 
 // قراءة المتغيرات البيئية مع التعامل الآمن عند غيابها
 const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
@@ -346,20 +345,6 @@ export const generateWhatsAppUrl = (phone: string, message: string) => {
   const encodedMessage = encodeURIComponent(message)
   return `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`
 }
-
-// دالة تسجيل دخول الأدمن
-export const adminLogin = async (email: string, password: string) => {
-  const { data, error } = await supabase
-    .from('admins')
-    .select('*')
-    .ilike('email', email)
-    .single();
-  if (error || !data) return { success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
-  const isMatch = await bcrypt.compare(password, data.password_hash);
-  if (!isMatch) return { success: false, message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
-  await supabase.from('admins').update({ last_login: new Date().toISOString() }).eq('admin_id', data.admin_id);
-  return { success: true, admin: data };
-};
 
 // جلب ملخص المبيعات لكل شهر
 export const getMonthlySalesSummary = async (from?: string, to?: string) => {

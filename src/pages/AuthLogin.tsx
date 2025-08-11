@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminLogin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 const AuthLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,14 +13,19 @@ const AuthLogin: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const res = await adminLogin(email, password);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     setLoading(false);
-    if (res.success) {
-      localStorage.setItem('isAdminLoggedIn', 'true');
+
+    if (error) {
+      setError(error.message || 'فشل تسجيل الدخول');
+    } else {
       setError('');
       navigate('/admin');
-    } else {
-      setError(res.message || 'فشل تسجيل الدخول');
     }
   };
 

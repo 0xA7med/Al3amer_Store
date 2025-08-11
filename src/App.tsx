@@ -18,6 +18,7 @@ import OrdersAdmin from '@/pages/admin/OrdersAdmin';
 import ReportsAdmin from '@/pages/admin/ReportsAdmin';
 import SettingsAdmin from '@/pages/admin/SettingsAdmin';
 import AuthLogin from '@/pages/AuthLogin';
+import AdminIndex from '@/pages/admin';
 import './lib/i18n'
 
 // Wrapper component for Layout
@@ -29,20 +30,21 @@ const LayoutWrapper: React.FC = () => (
 
 // Wrapper component for Admin pages
 const AdminWrapper: React.FC = () => (
-  <Layout>
     <AdminLayout>
       <Outlet />
     </AdminLayout>
-  </Layout>
 );
+
+import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
   return (
     <Router>
-      <CartProvider>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LayoutWrapper />}>
+      <AuthProvider>
+        <CartProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LayoutWrapper />}>
             <Route index element={<Home />} />
             <Route path="products" element={<Products />} />
             <Route path="product/:id" element={<ProductDetails />} />
@@ -54,13 +56,15 @@ function App() {
           </Route>
           
           {/* Admin Routes - Inside main layout but with admin sidebar */}
-          <Route path="/admin" element={<AdminWrapper />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<ProductsAdmin />} />
-            <Route path="categories" element={<CategoriesAdmin />} />
-            <Route path="orders" element={<OrdersAdmin />} />
-            <Route path="reports" element={<ReportsAdmin />} />
-            <Route path="settings" element={<SettingsAdmin />} />
+          <Route path="/admin" element={<AdminIndex />}>
+            <Route element={<AdminWrapper/>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<ProductsAdmin />} />
+              <Route path="categories" element={<CategoriesAdmin />} />
+              <Route path="orders" element={<OrdersAdmin />} />
+              <Route path="reports" element={<ReportsAdmin />} />
+              <Route path="settings" element={<SettingsAdmin />} />
+            </Route>
           </Route>
           {/* Admin Login Route */}
           <Route path="/admin-login" element={<AuthLogin />} />
@@ -75,8 +79,9 @@ function App() {
               </a>
             </div>
           } />
-        </Routes>
-      </CartProvider>
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
     </Router>
   )
 }
