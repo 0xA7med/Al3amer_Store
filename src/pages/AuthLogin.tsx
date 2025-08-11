@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminLogin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AuthLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -8,19 +9,31 @@ const AuthLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  useEffect(() => {
+    if (session) {
+      navigate('/admin', { replace: true });
+    }
+  }, [session, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const res = await adminLogin(email, password);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     setLoading(false);
-    if (res.success) {
-      localStorage.setItem('isAdminLoggedIn', 'true');
-      setError('');
-      navigate('/admin');
+
+    if (error) {
+      setError(error.message || 'فشل تسجيل الدخول');
     } else {
-      setError(res.message || 'فشل تسجيل الدخول');
+      // The useEffect will handle navigation now.
+      setError('');
     }
   };
 
