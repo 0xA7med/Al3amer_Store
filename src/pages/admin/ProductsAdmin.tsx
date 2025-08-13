@@ -1,932 +1,439 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit, Trash2, Filter, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '@/contexts/SettingsContext';
+import { formatCurrencySync } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Textarea } from '@/components/ui/textarea';
 
+// Types
 interface Category {
   category_id: string;
   name_ar: string;
-  name_en?: string;
-  is_active: boolean;
 }
-
-interface Category {
-  category_id: string;
-  name_ar: string;
-  name_en?: string;
-  is_active: boolean;
-}
-
 interface Product {
   product_id: string;
   title_ar: string;
   title_en?: string;
-  price: number | string; // Allow string for form input
-  original_price?: number | string; // Allow string for form input
+  price: number;
+  original_price?: number;
   categories?: Category[];
   category_ids?: string[];
-  stock: number | string; // Allow string for form input
+  stock: number;
   thumbnail_url?: string;
-  image_urls?: string[];
-  short_desc_ar?: string;
-  full_desc_ar?: string;
-  sku?: string;
-  weight?: string;
-  dimensions?: string;
-  is_featured?: boolean;
   is_active?: boolean;
+  is_featured?: boolean;
+  [key: string]: any; // For sorting
 }
+type ProductFormData = Partial<Omit<Product, 'price' | 'stock' | 'original_price'> & {
+  price: string | number;
+  stock: string | number;
+  original_price?: string | number;
+}>;
+
+
+const PRODUCTS_PER_PAGE = 10;
 
 const ProductsAdmin: React.FC = () => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [search, setSearch] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterFeatured, setFilterFeatured] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  
-  const renderProductForm = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Basic Info */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg">المعلومات الأساسية</h3>
-          <div>
-            <Label htmlFor="title_ar">اسم المنتج (العربية) *</Label>
-            <Input
-              id="title_ar"
-              value={newProduct.title_ar || ''}
-              onChange={(e) => setNewProduct({ ...newProduct, title_ar: e.target.value })}
-              placeholder="اسم المنتج بالعربية"
-            />
-          </div>
-          <div>
-            <Label htmlFor="title_en">اسم المنتج (الإنجليزية)</Label>
-            <Input
-              id="title_en"
-              value={newProduct.title_en || ''}
-              onChange={(e) => setNewProduct({ ...newProduct, title_en: e.target.value })}
-              placeholder="اسم المنتج بالإنجليزية"
-            />
-          </div>
-          <div>
-            <Label htmlFor="price">السعر (ج.م) *</Label>
-            <Input
-              id="price"
-              type="number"
-              value={newProduct.price || ''}
-              onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-              placeholder="السعر بالجنيه المصري"
-              min="0"
-              step="0.01"
-            />
-          </div>
-          <div>
-            <Label htmlFor="original_price">السعر الأصلي (ج.م)</Label>
-            <Input
-              id="original_price"
-              type="number"
-              value={newProduct.original_price || ''}
-              onChange={(e) => setNewProduct({ ...newProduct, original_price: e.target.value || undefined })}
-              placeholder="السعر الأصلي (للعروض)"
-              min="0"
-              step="0.01"
-            />
-          </div>
-          <div>
-            <Label htmlFor="stock">الكمية المتوفرة *</Label>
-            <Input
-              id="stock"
-              type="number"
-              value={newProduct.stock || 0}
-              onChange={(e) => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) || 0 })}
-              placeholder="الكمية المتوفرة"
-              min="0"
-            />
-          </div>
-        </div>
-        {/* Categories */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg">التصنيفات</h3>
-          <div>
-            <Label>اختر التصنيفات</Label>
-            <div className="mt-2 space-y-2 max-h-60 overflow-y-auto p-2 border rounded">
-              {categories.map((category) => (
-                <div key={category.category_id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id={`cat-${category.category_id}`}
-                    checked={selectedCategoryIds.includes(category.category_id)}
-                    onChange={() => handleCategoryToggle(category.category_id)}
-                    className="h-4 w-4 text-blue-600 rounded"
-                  />
-                  <label htmlFor={`cat-${category.category_id}`} className="mr-2">
-                    {category.name_ar}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Description */}
-      <div className="space-y-4">
-        <h3 className="font-semibold text-lg">الوصف</h3>
-        <div>
-          <Label htmlFor="short_desc_ar">وصف مختصر</Label>
-          <Input
-            id="short_desc_ar"
-            value={newProduct.short_desc_ar || ''}
-            onChange={(e) => setNewProduct({ ...newProduct, short_desc_ar: e.target.value })}
-            placeholder="وصف مختصر للمنتج"
-          />
-        </div>
-        <div>
-          <Label htmlFor="full_desc_ar">الوصف التفصيلي</Label>
-          <textarea
-            id="full_desc_ar"
-            value={newProduct.full_desc_ar || ''}
-            onChange={(e) => setNewProduct({ ...newProduct, full_desc_ar: e.target.value })}
-            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[100px]"
-            placeholder="وصف تفصيلي للمنتج"
-            rows={5}
-          />
-        </div>
-      </div>
-      {/* Settings */}
-      <div className="space-y-4">
-        <h3 className="font-semibold text-lg">الإعدادات</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <Label htmlFor="featured" className="text-base font-medium">منتج مميز</Label>
-              <p className="text-sm text-gray-600 mt-1">عرض المنتج في الصفحة الرئيسية</p>
-            </div>
-            <Button
-              type="button"
-              variant={newProduct.is_featured ? "default" : "outline"}
-              size="sm"
-              onClick={() => setNewProduct({ ...newProduct, is_featured: !newProduct.is_featured })}
-              className={`min-w-[60px] ${newProduct.is_featured ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-100 hover:bg-gray-200'}`}
-            >
-              {newProduct.is_featured ? 'نعم' : 'لا'}
-            </Button>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <Label htmlFor="active" className="text-base font-medium">منتج نشط</Label>
-              <p className="text-sm text-gray-600 mt-1">إظهار المنتج في المتجر</p>
-            </div>
-            <Button
-              type="button"
-              variant={newProduct.is_active ? "default" : "outline"}
-              size="sm"
-              onClick={() => setNewProduct({ ...newProduct, is_active: !newProduct.is_active })}
-              className={`min-w-[60px] ${newProduct.is_active ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-100 hover:bg-gray-200'}`}
-            >
-              {newProduct.is_active ? 'نعم' : 'لا'}
-            </Button>
-          </div>
-        </div>
-      </div>
-      <div className="flex gap-4 mt-6">
-        <Button onClick={editingProduct ? handleSaveEdit : handleAddProduct} className="flex-1">
-          {editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={handleCancel}
-          className="flex-1"
-        >
-          إلغاء
-        </Button>
-      </div>
-    </div>
-  );
-
-  const handleCategoryToggle = (categoryId: string) => {
-    setSelectedCategoryIds(prev => {
-      if (prev.includes(categoryId)) {
-        return prev.filter(id => id !== categoryId);
-      } else {
-        return [...prev, categoryId];
-      }
-    });
-  };
-
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({
-    price: '',
-    stock: '',
-    is_featured: false,
-    is_active: true,
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch categories from database
-  useEffect(() => {
-    const fetchCategories = async () => {
-      if (!isSupabaseConfigured) {
-        setCategories([]);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('categories')
-        .select('category_id, name_ar, name_en, is_active')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
-      if (!error && data) {
-        setCategories(data);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
+  // Form state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState<ProductFormData>({});
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
-  // Fetch products from database with categories
+  // Filtering and sorting state
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState({ category: 'all', status: 'all' });
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch initial data (products and categories)
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       if (!isSupabaseConfigured) {
-        setProducts([]);
+        setError('Supabase is not configured.');
         setLoading(false);
-        setError('لا يمكن جلب المنتجات دون ضبط مفاتيح Supabase محلياً (.env.local)');
         return;
       }
       setLoading(true);
       try {
-        // First get all products
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false });
-
+        // Fetch all necessary data in parallel
+        const { data: productsData, error: productsError } = await supabase.from('products').select('*').order('created_at', { ascending: false });
         if (productsError) throw productsError;
 
-        // Then get all product-category relationships
-        const { data: productCategoriesData, error: pcError } = await supabase
-          .from('product_categories')
-          .select('product_id, category_id')
-          .order('category_id');
+        const { data: categoriesData, error: categoriesError } = await supabase.from('categories').select('category_id, name_ar').eq('is_active', true);
+        if (categoriesError) throw categoriesError;
+        setCategories(categoriesData || []);
 
+        const { data: pcData, error: pcError } = await supabase.from('product_categories').select('product_id, category_id');
         if (pcError) throw pcError;
 
-        // Then get all categories
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*');
+        // Create a map for efficient lookups
+        const categoriesMap = new Map(categoriesData.map(c => [c.category_id, c]));
+        const productsMap = new Map(productsData.map(p => [p.product_id, { ...p, categories: [] as Category[] }]));
 
-        if (categoriesError) throw categoriesError;
-
-        // Create a map of categories for quick lookup
-        const categoriesMap = new Map(categoriesData?.map(cat => [cat.category_id, cat]) || []);
-
-        // Group categories by product
-        const categoriesByProduct = productCategoriesData?.reduce((acc, item) => {
-          if (!acc[item.product_id]) {
-            acc[item.product_id] = [];
+        // Attach categories to products
+        pcData.forEach(pc => {
+          const product = productsMap.get(pc.product_id);
+          const category = categoriesMap.get(pc.category_id);
+          if (product && category) {
+            product.categories.push(category);
           }
-          const category = categoriesMap.get(item.category_id);
-          if (category) {
-            acc[item.product_id].push(category);
-          }
-          return acc;
-        }, {} as Record<string, Category[]>);
+        });
 
-        // Combine products with their categories
-        const productsWithCategories = productsData?.map(product => {
-          const productCategories = categoriesByProduct[product.product_id] || [];
-          return {
-            ...product,
-            categories: productCategories,
-            category_ids: productCategories.map((c: any) => c.category_id)
-          };
-        }) || [];
-
-        setProducts(productsWithCategories);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        setError('حدث خطأ أثناء جلب المنتجات');
+        setProducts(Array.from(productsMap.values()));
+      } catch (e: any) {
+        setError('Failed to fetch data: ' + e.message);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchProducts();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (!localStorage.getItem('isAdminLoggedIn')) {
-      navigate('/admin-login');
-    }
-  }, [navigate]);
+  // Memoized filtered and paginated products
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(p => {
+        const searchLower = search.toLowerCase();
+        const matchesSearch = search ? p.title_ar.toLowerCase().includes(searchLower) : true;
+        const matchesCategory = filters.category === 'all' || (p.categories || []).some(c => c.category_id === filters.category);
+        const matchesStatus = filters.status === 'all' || (filters.status === 'active' ? p.is_active : !p.is_active);
+        return matchesSearch && matchesCategory && matchesStatus;
+      });
+  }, [products, search, filters]);
 
-  // تصفية وفرز المنتجات
-  const filtered = products
-    .filter(p => {
-      if (search && !(
-        (p.title_ar || '').toLowerCase().includes(search.toLowerCase()) ||
-        (p.categories && p.categories.some(cat => (cat.name_ar || '').toLowerCase().includes(search.toLowerCase()))) ||
-        (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
-      )) return false;
-      if (filterCategory !== 'all' && !(p.category_ids && p.category_ids.includes(filterCategory))) return false;
-      if (filterStatus !== 'all') {
-        if (filterStatus === 'active' && !p.is_active) return false;
-        if (filterStatus === 'inactive' && p.is_active) return false;
-      }
-      if (filterFeatured !== 'all') {
-        if (filterFeatured === 'featured' && !p.is_featured) return false;
-        if (filterFeatured === 'not_featured' && p.is_featured) return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      if (!sortBy) return 0;
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
-      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-      if (aVal === undefined || bVal === undefined) return 0;
-      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
-  // تصدير المنتجات إلى CSV (حسب المرشّح الحالي)
-  const exportProductsToCSV = () => {
-    const headers = [
-      'product_id',
-      'title_ar',
-      'price',
-      'original_price',
-      'stock',
-      'is_active',
-      'is_featured',
-      'categories'
-    ];
-    const rows = filtered.map(p => [
-      p.product_id,
-      p.title_ar,
-      String(p.price ?? ''),
-      String(p.original_price ?? ''),
-      String(p.stock ?? ''),
-      p.is_active ? '1' : '0',
-      p.is_featured ? '1' : '0',
-      (p.categories || []).map((c:any) => c.name_ar).join('|')
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `products_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
-  // إضافة منتج جديد إلى قاعدة البيانات
-  const handleAddProduct = async () => {
-    if (!isSupabaseConfigured) {
-      setError('إضافة المنتجات غير متاحة بدون إعداد Supabase');
-      return;
-    }
-    if (!newProduct.title_ar || newProduct.price === '' || newProduct.price === undefined || !selectedCategoryIds.length) {
-      alert('يرجى ملء الحقول المطلوبة واختيار تصنيف واحد على الأقل');
-      return;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Start a transaction
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .insert({
-          ...newProduct,
-          price: Number(newProduct.price),
-          original_price: newProduct.original_price ? Number(newProduct.original_price) : null,
-          stock: Number(newProduct.stock) || 0,
-          image_urls: newProduct.image_urls || [],
-        })
-        .select()
-        .single();
-      
-      if (productError) throw productError;
-      
-      // Add categories
-      if (selectedCategoryIds.length > 0) {
-        const { error: pcError } = await supabase
-          .from('product_categories')
-          .insert(selectedCategoryIds.map(categoryId => ({
-            product_id: product.product_id,
-            category_id: categoryId
-          })));
-        
-        if (pcError) throw pcError;
-      }
-      
-      // Refresh products list
-      await fetchProducts();
-      
-      // Reset form and close edit mode
-      setShowAdd(false);
-      setEditingProduct(null);
-      setExpandedProductId(null);
-      setNewProduct({ is_featured: false, is_active: true });
-      setSelectedCategoryIds([]);
-      
-      alert('تمت إضافة المنتج بنجاح');
-    } catch (e) {
-      console.error('Error adding product:', e);
-      setError('فشل في إضافة المنتج: ' + (e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Helper function to fetch products with categories
-  const fetchProducts = async () => {
-    if (!isSupabaseConfigured) {
-      setProducts([]);
-      setLoading(false);
-      setError('لا يمكن جلب المنتجات بدون إعداد Supabase');
-      return;
-    }
-    setLoading(true);
-    try {
-      // First get all products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (productsError) throw productsError;
-
-      // Then get all product-category relationships
-      const { data: productCategoriesData, error: pcError } = await supabase
-        .from('product_categories')
-        .select('product_id, categories(category_id, name_ar, name_en, is_active)');
-
-      if (pcError) throw pcError;
-
-      // Group categories by product
-      const categoriesByProduct = productCategoriesData?.reduce((acc, item) => {
-        if (!acc[item.product_id]) {
-          acc[item.product_id] = [];
-        }
-        if (item.categories) {
-          acc[item.product_id].push(item.categories);
-        }
-        return acc;
-      }, {} as Record<string, any[]>);
-
-      // Combine products with their categories
-      const productsWithCategories = productsData?.map(product => {
-        const productCategories = categoriesByProduct[product.product_id] || [];
-        return {
-          ...product,
-          categories: productCategories,
-          category_ids: productCategories.map((c: any) => c.category_id)
-        };
-      }) || [];
-
-      setProducts(productsWithCategories);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setError('حدث خطأ أثناء جلب المنتجات');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setNewProduct({
-      ...product,
-      price: typeof product.price === 'number' ? product.price.toString() : product.price,
-      original_price: product.original_price !== undefined ? 
-        (typeof product.original_price === 'number' ? product.original_price.toString() : product.original_price) : 
-        undefined,
-      stock: typeof product.stock === 'number' ? product.stock.toString() : product.stock,
-    });
-    
-    // Set selected categories for editing
-    if (product.category_ids && product.category_ids.length > 0) {
-      setSelectedCategoryIds([...product.category_ids]);
-    } else if (product.categories && product.categories.length > 0) {
-      setSelectedCategoryIds(product.categories.map(c => c.category_id));
-    } else {
-      setSelectedCategoryIds([]);
-    }
-    
-    setExpandedProductId(product.product_id);
-    setShowAdd(false);
-  };
-
-  const handleCancel = () => {
-    setShowAdd(false);
+  // Form handling
+  const openFormForNew = () => {
     setEditingProduct(null);
-    setExpandedProductId(null);
-    setNewProduct({ is_featured: false, is_active: true });
+    setFormData({ is_active: true, is_featured: false, price: '', stock: '' });
     setSelectedCategoryIds([]);
+    setIsFormOpen(true);
   };
 
-  // حذف منتج من قاعدة البيانات
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
-    if (!isSupabaseConfigured) {
-      setError('حذف المنتج غير متاح بدون إعداد Supabase');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await supabase.from('products').delete().eq('product_id', id);
-      if (error) throw error;
-      // إعادة تحميل المنتجات
-      const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-      setProducts(data || []);
-      alert('تم حذف المنتج بنجاح');
-    } catch (e) {
-      setError('فشل في حذف المنتج');
-    }
-    setLoading(false);
+  const openFormForEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData(product);
+    setSelectedCategoryIds(product.categories?.map(c => c.category_id) || []);
+    setIsFormOpen(true);
   };
 
-  // تعديل منتج في قاعدة البيانات
-  const handleSaveEdit = async () => {
-    if (!isSupabaseConfigured) {
-      setError('تعديل المنتج غير متاح بدون إعداد Supabase');
-      return;
-    }
-    if (!editingProduct || !newProduct.title_ar || newProduct.price === '' || newProduct.price === undefined || !selectedCategoryIds.length) {
-      alert('يرجى ملء الحقول المطلوبة واختيار تصنيف واحد على الأقل');
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSwitchChange = (id: 'is_active' | 'is_featured', checked: boolean) => {
+    setFormData(prev => ({ ...prev, [id]: checked }));
+  };
+
+  const handleCategoryToggle = (categoryId: string) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title_ar || !formData.price || !selectedCategoryIds.length) {
+      alert('Please fill all required fields.');
       return;
     }
 
-    setLoading(true);
+    // Prepare product data, removing fields that shouldn't be directly inserted/updated
+    const { categories, category_ids, product_id, created_at, ...productData } = formData;
+
+    const finalProductData = {
+        ...productData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+        original_price: formData.original_price ? Number(formData.original_price) : undefined,
+    };
+
     try {
-      // تحديث المنتج
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          title_ar: newProduct.title_ar,
-          title_en: newProduct.title_en,
-          price: Number(newProduct.price),
-          original_price: newProduct.original_price ? Number(newProduct.original_price) : null,
-          stock: Number(newProduct.stock),
-          short_desc_ar: newProduct.short_desc_ar,
-          full_desc_ar: newProduct.full_desc_ar,
-          sku: newProduct.sku,
-          weight: newProduct.weight,
-          dimensions: newProduct.dimensions,
-          is_featured: newProduct.is_featured,
-          is_active: newProduct.is_active,
-          updated_at: new Date().toISOString()
-        })
-        .eq('product_id', editingProduct.product_id);
+      let savedProduct: Product;
 
-      if (updateError) throw updateError;
+      if (editingProduct) {
+        // Update existing product
+        const { data, error } = await supabase
+          .from('products')
+          .update(finalProductData)
+          .eq('product_id', editingProduct.product_id)
+          .select()
+          .single();
+        if (error) throw error;
+        savedProduct = data;
 
-      // حذف العلاقات القديمة
-      const { error: deleteError } = await supabase
-        .from('product_categories')
-        .delete()
-        .eq('product_id', editingProduct.product_id);
+        // Update categories
+        const { error: deleteError } = await supabase.from('product_categories').delete().eq('product_id', editingProduct.product_id);
+        if (deleteError) throw deleteError;
 
-      if (deleteError) throw deleteError;
+        const { error: insertError } = await supabase.from('product_categories').insert(
+          selectedCategoryIds.map(catId => ({ product_id: editingProduct.product_id, category_id: catId }))
+        );
+        if (insertError) throw insertError;
 
-      // إضافة العلاقات الجديدة
-      if (selectedCategoryIds.length > 0) {
-        const { error: pcError } = await supabase
-          .from('product_categories')
-          .insert(selectedCategoryIds.map(categoryId => ({
-            product_id: editingProduct.product_id,
-            category_id: categoryId
-          })));
+      } else {
+        // Create new product
+        const { data, error } = await supabase
+          .from('products')
+          .insert(finalProductData)
+          .select()
+          .single();
+        if (error) throw error;
+        savedProduct = data;
 
-        if (pcError) throw pcError;
+        // Add categories
+        const { error: insertError } = await supabase.from('product_categories').insert(
+          selectedCategoryIds.map(catId => ({ product_id: savedProduct.product_id, category_id: catId }))
+        );
+        if (insertError) throw insertError;
       }
 
-      // تحديث قائمة المنتجات
-      await fetchProducts();
+      // Manually update the UI state for the product with its new categories
+      const savedProductCategories = categories.filter(c => selectedCategoryIds.includes(c.category_id));
+      const productWithCategories = { ...savedProduct, categories: savedProductCategories };
 
-      // إغلاق نموذج التعديل
-      setEditingProduct(null);
-      setExpandedProductId(null);
-      setNewProduct({ is_featured: false, is_active: true });
-      setSelectedCategoryIds([]);
+      if (editingProduct) {
+        setProducts(products.map(p => p.product_id === editingProduct.product_id ? productWithCategories : p));
+      } else {
+        setProducts([productWithCategories, ...products]);
+      }
 
-      alert('تم تعديل المنتج بنجاح');
-    } catch (e) {
-      console.error('Error updating product:', e);
-      setError('فشل في تعديل المنتج: ' + (e as Error).message);
-    } finally {
-      setLoading(false);
+      setIsFormOpen(false);
+    } catch (e: any) {
+      setError('Failed to save product: ' + e.message);
     }
   };
+
+  const handleDelete = async (productId: string) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const { error } = await supabase.from('products').delete().eq('product_id', productId);
+      if (error) throw error;
+      setProducts(products.filter(p => p.product_id !== productId));
+    } catch (e: any) {
+      setError('Failed to delete product: ' + e.message);
+    }
+  };
+
+  if (loading) return <LoadingSpinner fullScreen />;
+  if (error) return <div className="text-center text-red-500 py-12">{error}</div>;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">إدارة المنتجات</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
         <div className="flex gap-2">
-          <Button 
-            onClick={() => navigate('/admin/categories')} 
-            variant="outline" 
-            className="flex items-center gap-2"
-          >
+          <Button variant="outline" onClick={() => navigate('/admin/categories')}>
             إدارة التصنيفات
           </Button>
-          <Button 
-            onClick={exportProductsToCSV} 
-            variant="outline" 
-            className="flex items-center gap-2"
-            disabled={filtered.length === 0}
-          >
-            تصدير CSV
-          </Button>
-          <Button 
-            onClick={() => {
-              setShowAdd(true);
-              setEditingProduct(null);
-              setExpandedProductId(null);
-              setNewProduct({ is_featured: false, is_active: true });
-              setSelectedCategoryIds([]);
-            }}
-            className="flex items-center gap-2"
-            disabled={loading}
-          >
-            <Plus size={16} />
-            {loading ? 'جاري التحميل...' : 'إضافة منتج جديد'}
+          <Button onClick={openFormForNew}>
+            <Plus className="ml-2 h-4 w-4" />
+            إضافة منتج
           </Button>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-wrap gap-4 mb-6 items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-          <Input 
-            placeholder="بحث بالاسم أو الفئة..." 
-            value={search} 
-            onChange={e => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {/* تصفية حسب الفئة */}
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          placeholder="بحث بالاسم..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          className="max-w-sm"
+        />
         <select
-          className="border rounded px-2 py-1 text-sm"
-          value={filterCategory}
-          onChange={e => setFilterCategory(e.target.value)}
+          value={filters.category}
+          onChange={(e) => { setFilters(f => ({ ...f, category: e.target.value })); setCurrentPage(1); }}
+          className="border rounded px-2 py-2 text-sm bg-white"
         >
-          <option value="all">كل الفئات</option>
-          {categories.map(cat => (
-            <option key={cat.category_id} value={cat.category_id}>{cat.name_ar}</option>
-          ))}
+          <option value="all">كل التصنيفات</option>
+          {categories.map(cat => <option key={cat.category_id} value={cat.category_id}>{cat.name_ar}</option>)}
         </select>
-        {/* تصفية حسب الحالة */}
         <select
-          className="border rounded px-2 py-1 text-sm"
-          value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
+          value={filters.status}
+          onChange={(e) => { setFilters(f => ({ ...f, status: e.target.value })); setCurrentPage(1); }}
+          className="border rounded px-2 py-2 text-sm bg-white"
         >
           <option value="all">كل الحالات</option>
           <option value="active">نشط</option>
           <option value="inactive">غير نشط</option>
         </select>
-        {/* تصفية حسب المميز */}
-        <select
-          className="border rounded px-2 py-1 text-sm"
-          value={filterFeatured}
-          onChange={e => setFilterFeatured(e.target.value)}
-        >
-          <option value="all">الكل</option>
-          <option value="featured">مميز</option>
-          <option value="not_featured">غير مميز</option>
-        </select>
-        {/* فرز */}
-        <div className="flex items-center gap-1">
-          <span className="text-sm">فرز:</span>
-          <button type="button" className={`px-2 py-1 rounded border text-sm ${sortBy==='title_ar' ? 'bg-blue-50 border-blue-400' : 'border-gray-300'}`} onClick={() => setSortBy('title_ar')}>الاسم</button>
-          <button type="button" className={`px-2 py-1 rounded border text-sm ${sortBy==='price' ? 'bg-blue-50 border-blue-400' : 'border-gray-300'}`} onClick={() => setSortBy('price')}>السعر</button>
-          <button type="button" className={`px-2 py-1 rounded border text-sm ${sortBy==='stock' ? 'bg-blue-50 border-blue-400' : 'border-gray-300'}`} onClick={() => setSortBy('stock')}>المخزون</button>
-          <button type="button" className="px-1" onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}>{sortDir === 'asc' ? <ChevronDown size={16}/> : <ChevronUp size={16}/>}</button>
-        </div>
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <Filter size={14} />
-          {filtered.length} منتج
+        <Badge variant="secondary" className="items-center hidden sm:flex">
+          <Filter size={14} className="ml-1" />
+          {filteredProducts.length} منتج
         </Badge>
       </div>
 
-      {/* Add/Edit Product Form */}
-      {showAdd && !editingProduct && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>إضافة منتج جديد</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {renderProductForm()}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* لودر أو رسالة خطأ */}
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <div className="loading-spinner w-12 h-12"></div>
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-500 py-12">{error}</div>
-      ) : (
-        <div>
-          {/* جدول للمتوسط والكبير، بطاقات للموبايل */}
-          <div className="hidden sm:block overflow-x-auto px-2 md:px-8 lg:px-12">
-            <div className="max-w-screen-2xl mx-auto">
-              <table className=" w-full bg-white border rounded-lg">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-3 text-right">الصورة</th>
-                  <th className="p-3 text-right">الاسم</th>
-                  <th className="p-3 text-right">الفئة</th>
-                  <th className="p-3 text-right">السعر</th>
-                  <th className="p-3 text-right">المخزون</th>
-                  <th className="p-3 text-right">الحالة</th>
-                  <th className="p-3 text-right">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(product => (
-                  <React.Fragment key={product.product_id}>
-                    <tr className={`border-b hover:bg-gray-50 ${expandedProductId === product.product_id ? 'bg-blue-50' : ''}`}>
-                    <td className="p-3">
-                      <img 
-                        src={product.thumbnail_url || '/images/placeholder-product.png'} 
-                        alt={product.title_ar} 
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium">{product.title_ar}</div>
-                        {product.sku && <div className="text-sm text-gray-500">{product.sku}</div>}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="text-sm text-gray-500 flex flex-wrap gap-1">
-                        {product.categories && product.categories.length > 0 ? (
-                          product.categories.map(cat => (
-                            <span key={cat.category_id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {cat.name_ar}
-                            </span>
-                          ))
-                        ) : (
-                          'بدون تصنيف'
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div>
-                        <div className="font-medium">{product.price} ج.م</div>
-                        {product.original_price && (
-                          <div className="text-sm text-gray-500 line-through">
-                            {product.original_price} ج.م
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">{product.stock} قطعة</td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        {product.is_featured && <Badge variant="secondary">مميز</Badge>}
-                        {product.is_active ? (
-                          <Badge className="bg-green-100 text-green-800">نشط</Badge>
-                        ) : (
-                          <Badge variant="destructive">غير نشط</Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEdit(product)}
-                        >
-                          <Edit size={14} />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => handleDelete(product.product_id)}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </td>
-                    </tr>
-                    {expandedProductId === product.product_id && (
-                      <tr className="bg-blue-50">
-                        <td colSpan={7} className="p-4">
-                          <div className="bg-white p-6 rounded-lg shadow-sm border">
-                            <h3 className="text-lg font-semibold mb-4">تعديل المنتج: {product.title_ar}</h3>
-                            {renderProductForm()}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-          {/* بطاقات للموبايل */}
-          <div className="sm:hidden space-y-4">
-            {filtered.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                لا توجد منتجات تطابق البحث
-              </div>
-            )}
-            {filtered.map(product => (
-              <Card key={product.product_id} className="flex flex-col gap-2 p-4">
-                <div className="flex items-center gap-4 mb-2">
-                  <img
-                    src={product.thumbnail_url || '/images/placeholder-product.png'}
-                    alt={product.title_ar}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                  <div className="flex-1">
-                    <div className="font-bold text-lg">{product.title_ar}</div>
-                    <div className="text-sm text-gray-500 flex flex-wrap gap-1 mt-1">
-                      {product.categories && product.categories.length > 0 ? (
-                        product.categories.map(cat => (
-                          <span key={cat.category_id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {cat.name_ar}
-                          </span>
-                        ))
-                      ) : (
-                        'بدون تصنيف'
-                      )}
+      {/* Products Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">الصورة</TableHead>
+                <TableHead>الاسم</TableHead>
+                <TableHead>التصنيفات</TableHead>
+                <TableHead>السعر</TableHead>
+                <TableHead>المخزون</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedProducts.map(product => (
+                <TableRow key={product.product_id}>
+                  <TableCell>
+                    <img src={product.thumbnail_url || '/images/placeholder-product.png'} alt={product.title_ar} className="w-12 h-12 object-cover rounded-md" />
+                  </TableCell>
+                  <TableCell className="font-medium">{product.title_ar}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {(product.categories || []).map(c => <Badge key={c.category_id} variant="secondary">{c.name_ar}</Badge>)}
                     </div>
+                  </TableCell>
+                  <TableCell>{formatCurrencySync(product.price, settings.currency_symbol)}</TableCell>
+                  <TableCell>{product.stock}</TableCell>
+                  <TableCell>
+                    <Badge variant={product.is_active ? 'default' : 'destructive'} className={product.is_active ? 'bg-green-500' : ''}>
+                      {product.is_active ? 'نشط' : 'غير نشط'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openFormForEdit(product)}>
+                          <Edit className="ml-2 h-4 w-4" /> تعديل
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(product.product_id)} className="text-red-500">
+                          <Trash2 className="ml-2 h-4 w-4" /> حذف
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      <div className="flex justify-center items-center gap-4">
+        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+          <ChevronRight className="h-4 w-4" /> السابق
+        </Button>
+        <span className="text-sm">
+          صفحة {currentPage} من {totalPages}
+        </span>
+        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+          التالي <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Add/Edit Product Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="title_ar">اسم المنتج (العربية)</Label>
+              <Input id="title_ar" value={formData.title_ar || ''} onChange={handleFormChange} required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="price">السعر</Label>
+                <Input id="price" type="number" value={formData.price || ''} onChange={handleFormChange} required />
+              </div>
+              <div>
+                <Label htmlFor="stock">المخزون</Label>
+                <Input id="stock" type="number" value={formData.stock || ''} onChange={handleFormChange} required />
+              </div>
+            </div>
+            <div>
+              <Label>التصنيفات</Label>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 border p-2 rounded-md max-h-40 overflow-y-auto">
+                {categories.map(cat => (
+                  <div key={cat.category_id} className="flex items-center gap-2">
+                    <Switch
+                      id={`cat-${cat.category_id}`}
+                      checked={selectedCategoryIds.includes(cat.category_id)}
+                      onCheckedChange={() => handleCategoryToggle(cat.category_id)}
+                    />
+                    <Label htmlFor={`cat-${cat.category_id}`}>{cat.name_ar}</Label>
                   </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-sm mb-2">
-                  <Badge variant="outline">{product.price} ج.م</Badge>
-                  {product.original_price && (
-                    <Badge variant="secondary" className="line-through">{product.original_price} ج.م</Badge>
-                  )}
-                  <Badge>{product.stock} قطعة</Badge>
-                  {product.is_featured && <Badge variant="secondary">مميز</Badge>}
-                  {product.is_active ? (
-                    <Badge className="bg-green-100 text-green-800">نشط</Badge>
-                  ) : (
-                    <Badge variant="destructive">غير نشط</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setEditingProduct(product);
-                      setShowAdd(true);
-                      setNewProduct(product);
-                    }}
-                    className="flex-1"
-                  >
-                    <Edit size={14} /> تعديل
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => handleDelete(product.product_id)}
-                    className="flex-1"
-                  >
-                    <Trash2 size={14} /> حذف
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="flex items-center space-x-2">
+                <Switch id="is_active" checked={!!formData.is_active} onCheckedChange={(c) => handleSwitchChange('is_active', c)} />
+                <Label htmlFor="is_active">نشط</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="is_featured" checked={!!formData.is_featured} onCheckedChange={(c) => handleSwitchChange('is_featured', c)} />
+                <Label htmlFor="is_featured">مميز</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">إلغاء</Button>
+              </DialogClose>
+              <Button type="submit">حفظ</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

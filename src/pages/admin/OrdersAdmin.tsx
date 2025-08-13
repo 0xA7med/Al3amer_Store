@@ -1,25 +1,23 @@
-import React, { useState, useEffect, useCallback, useMemo, forwardRef } from 'react';
-import * as SelectPrimitive from '@radix-ui/react-select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Search, Filter as FilterIcon, X, Eye, RefreshCw, Check, X as XIcon, Truck, Package, CheckCircle, XCircle, Calendar, Download, MoreHorizontal, ArrowUpDown, CreditCard, Plus, Clock, Settings, PackageCheck } from 'lucide-react';
+import { Search, Eye, RefreshCw, Download, MoreHorizontal, ChevronLeft, ChevronRight, Package, User } from 'lucide-react';
 import { formatCurrencySync } from '@/lib/utils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { OrderWithDetails, OrderStatus, statusLabels, statusColors, paymentMethods } from '@/types/order';
+import { OrderWithDetails, OrderStatus, statusLabels, statusColors } from '@/types/order';
 import type { ExtendedOrderWithDetails } from '@/components/orders/OrderDetailsDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
-import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // أيقونات حالات الطلبات
 const statusIcons = {

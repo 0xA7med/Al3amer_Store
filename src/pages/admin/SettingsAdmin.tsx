@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSiteSettings, updateSiteSetting } from '@/lib/supabase';
+import { useSettings } from '@/contexts/SettingsContext';
 
 const settingsMap = {
   siteName: 'site_name_ar',
@@ -36,6 +37,7 @@ const languages = [
 
 const SettingsAdmin: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshSettings } = useSettings();
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +86,8 @@ const SettingsAdmin: React.FC = () => {
         }
         await updateSiteSetting(dbKey, value);
       }
+      await refreshSettings(); // Update the context
       setSuccess('تم حفظ الإعدادات بنجاح');
-      await fetchSettings(); // إعادة جلب الإعدادات بعد الحفظ
     } catch (e) {
       setError('فشل في حفظ الإعدادات');
     }
