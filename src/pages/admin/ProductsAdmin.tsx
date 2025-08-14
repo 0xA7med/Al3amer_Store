@@ -81,6 +81,7 @@ const ProductsAdmin: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ category: 'all', status: 'all' });
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
 
   // Fetch initial data (products and categories)
   useEffect(() => {
@@ -175,6 +176,12 @@ const ProductsAdmin: React.FC = () => {
     );
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        setUploadedImage(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title_ar || !formData.price || !selectedCategoryIds.length) {
@@ -190,10 +197,26 @@ const ProductsAdmin: React.FC = () => {
         price: Number(formData.price),
         stock: Number(formData.stock),
         original_price: formData.original_price ? Number(formData.original_price) : undefined,
+        video_review_links: typeof formData.video_review_links === 'string' ? formData.video_review_links.split(',') : [],
     };
 
     try {
       let savedProduct: Product;
+      let imageUrl = formData.thumbnail_url;
+
+      if (uploadedImage) {
+        const fileName = `${Date.now()}_${uploadedImage.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('products')
+          .upload(fileName, uploadedImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('products').getPublicUrl(uploadData.path);
+        imageUrl = urlData.publicUrl;
+      }
+
+      finalProductData.thumbnail_url = imageUrl;
 
       if (editingProduct) {
         // Update existing product
@@ -396,9 +419,29 @@ const ProductsAdmin: React.FC = () => {
                 <Input id="price" type="number" value={formData.price || ''} onChange={handleFormChange} required />
               </div>
               <div>
+                <Label htmlFor="original_price">السعر الأصلي (اختياري)</Label>
+                <Input id="original_price" type="number" value={formData.original_price || ''} onChange={handleFormChange} />
+              </div>
+              <div>
                 <Label htmlFor="stock">المخزون</Label>
                 <Input id="stock" type="number" value={formData.stock || ''} onChange={handleFormChange} required />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="full_desc_ar">الوصف الكامل</Label>
+              <Textarea id="full_desc_ar" value={formData.full_desc_ar || ''} onChange={handleFormChange} />
+            </div>
+            <div>
+              <Label htmlFor="thumbnail_url">رابط الصورة المصغرة</Label>
+              <Input id="thumbnail_url" value={formData.thumbnail_url || ''} onChange={handleFormChange} />
+            </div>
+            <div>
+              <Label htmlFor="image_upload">أو قم برفع صورة</Label>
+              <Input id="image_upload" type="file" onChange={handleImageUpload} />
+            </div>
+            <div>
+              <Label htmlFor="video_review_links">روابط مراجعات الفيديو (افصل بينها بفاصلة)</Label>
+              <Input id="video_review_links" value={formData.video_review_links?.join(',') || ''} onChange={handleFormChange} />
             </div>
             <div>
               <Label>التصنيفات</Label>

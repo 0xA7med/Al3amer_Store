@@ -325,7 +325,7 @@ export const createContactMessage = async (messageData: Partial<ContactMessage>)
 // API functions for customers
 export const getCustomers = async () => {
   const { data, error } = await supabase
-    .from('customers')
+    .from('customers', { schema: 'public' })
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -345,38 +345,3 @@ export const generateWhatsAppUrl = (phone: string, message: string) => {
   const encodedMessage = encodeURIComponent(message)
   return `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`
 }
-
-// جلب ملخص المبيعات لكل شهر
-export const getMonthlySalesSummary = async (from?: string, to?: string) => {
-  let query = supabase
-    .from('orders')
-    .select('total_amount, created_at')
-    .order('created_at', { ascending: true });
-  if (from) query = query.gte('created_at', from);
-  if (to) query = query.lte('created_at', to);
-  const { data, error } = await query;
-  if (error) throw error;
-  // تجميع حسب الشهر
-  const summary: { [month: string]: number } = {};
-  data?.forEach((order: any) => {
-    const date = new Date(order.created_at);
-    const month = date.toLocaleString('ar-EG', { month: 'long', year: 'numeric' });
-    summary[month] = (summary[month] || 0) + (order.total_amount || 0);
-  });
-  return Object.entries(summary).map(([month, sales]) => ({ month, sales }));
-};
-
-// جلب عدد المنتجات حسب الفئة
-export const getProductCountByCategory = async () => {
-  const { data, error } = await supabase
-    .from('products')
-    .select('category_name')
-    .eq('is_active', true);
-  if (error) throw error;
-  const summary: { [cat: string]: number } = {};
-  data?.forEach((p: any) => {
-    const cat = p.category_name || 'غير محدد';
-    summary[cat] = (summary[cat] || 0) + 1;
-  });
-  return Object.entries(summary).map(([name, value]) => ({ name, value }));
-};

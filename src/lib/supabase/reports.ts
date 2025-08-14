@@ -41,7 +41,7 @@ export const getMonthlySalesSummary = async (from?: string, to?: string): Promis
     let query = supabase
       .from('orders')
       .select('created_at, total_amount, status')
-      .eq('status', 'completed') // فقط الطلبات المكتملة
+      .eq('status', 'delivered') // فقط الطلبات المكتملة
       .order('created_at', { ascending: false });
 
     if (from && to) {
@@ -120,7 +120,7 @@ export const getTopSellingProducts = async (limit = 5, from?: string, to?: strin
     let query = supabase
       .from('order_items')
       .select(`
-        id,
+        order_item_id,
         quantity,
         price,
         product_id,
@@ -181,7 +181,7 @@ export const getDailySales = async (from?: string, to?: string): Promise<DailySa
     let query = supabase
       .from('orders')
       .select('created_at, total_amount, status')
-      .eq('status', 'completed') // فقط الطلبات المكتملة
+      .eq('status', 'delivered') // فقط الطلبات المكتملة
       .order('created_at', { ascending: false });
 
     if (from && to) {
