@@ -1,8 +1,24 @@
 import { clsx, ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getSiteSettings } from '@/lib/supabase';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * An async utility function to format a number as a currency string,
+ * fetching the currency symbol from site settings.
+ * @param amount The number to format.
+ * @param decimals The number of decimal places.
+ * @returns A promise that resolves to the formatted currency string.
+ */
+export async function formatCurrency(amount: number, decimals?: number): Promise<string> {
+  const settings = await getSiteSettings();
+  const currencySetting = settings.find(s => s.setting_key === 'currency');
+  const currencySymbol = currencySetting?.setting_value || 'ج.م';
+  
+  return formatCurrencySync(amount, currencySymbol, decimals);
 }
 
 /**

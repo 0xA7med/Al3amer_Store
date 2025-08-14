@@ -38,7 +38,7 @@ const CurrencyValue: React.FC<{ value: number; className?: string }> = ({ value,
     updateCurrency();
   }, [value]);
   
-  return <span className={className}>{formattedValue || formatCurrencySync(value)}</span>;
+  return <span className={className}>{formattedValue}</span>;
 };
 
 const ReportsAdmin: React.FC = () => {
