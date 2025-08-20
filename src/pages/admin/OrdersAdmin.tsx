@@ -1,25 +1,47 @@
 import React, { useState, useEffect, useCallback, useMemo, forwardRef } from 'react';
-import * as SelectPrimitive from '@radix-ui/react-select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { Search, Filter as FilterIcon, X, Eye, RefreshCw, Check, X as XIcon, Truck, Package, CheckCircle, XCircle, Calendar, Download, MoreHorizontal, ArrowUpDown, CreditCard, Plus, Clock, Settings, PackageCheck } from 'lucide-react';
+import { 
+  Search, 
+  Eye, 
+  RefreshCw, 
+  Download, 
+  MoreHorizontal, 
+  ChevronLeft, 
+  ChevronRight, 
+  Package, 
+  User,
+  Clock,
+  CheckCircle,
+  Settings,
+  Truck,
+  XCircle,
+  Filter,
+  BarChart3,
+  Calendar,
+  CreditCard,
+  TrendingUp,
+  AlertCircle,
+  CheckSquare,
+  Square
+} from 'lucide-react';
 import { formatCurrencySync } from '@/lib/utils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
-import { OrderWithDetails, OrderStatus, statusLabels, statusColors, paymentMethods } from '@/types/order';
+import { OrderWithDetails, OrderStatus, statusLabels, statusColors } from '@/types/order';
 import type { ExtendedOrderWithDetails } from '@/components/orders/OrderDetailsDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
-import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // أيقونات حالات الطلبات
 const statusIcons = {
@@ -66,11 +88,11 @@ const statusOptions: OrderStatus[] = [
 
 // خيارات التبويبات
 const tabOptions = [
-  { value: 'all', label: 'الكل' },
-  { value: 'pending', label: 'قيد المراجعة' },
-  { value: 'processing', label: 'قيد التنفيذ' },
-  { value: 'shipped', label: 'تم الشحن' },
-  { value: 'delivered', label: 'تم التوصيل' },
+  { value: 'all', label: 'الكل', count: 0 },
+  { value: 'pending', label: 'قيد المراجعة', count: 0 },
+  { value: 'processing', label: 'قيد التنفيذ', count: 0 },
+  { value: 'shipped', label: 'تم الشحن', count: 0 },
+  { value: 'delivered', label: 'تم التوصيل', count: 0 },
 ];
 
 // خيارات الفترة الزمنية
@@ -100,580 +122,451 @@ const paymentOptions = [
 ];
 
 const OrdersAdmin: React.FC = () => {
-  // حالة التحميل والأخطاء
+  const { language } = useSettings();
   const [orders, setOrders] = useState<OrderWithDetails[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // حالة الفلاتر والبحث
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
-  const [filterPayment, setFilterPayment] = useState<string>('all');
-  const [sortBy, setSortBy] = useState('created_at_desc');
-  
-  // حالات إضافية
-  const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<OrderWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<ExtendedOrderWithDetails | null>(null);
-  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
-  // نافذة طلبات العميل السابقة
-  const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
-  const [customerOrders, setCustomerOrders] = useState<Array<{
-    id: string;
-    order_number: string | number;
-    created_at: string;
-    status: OrderStatus | string;
-    total_amount: number;
-    payment_method?: string;
-  }>>([]);
-  const [customerMeta, setCustomerMeta] = useState<{ userId?: string; name?: string; email?: string; phone?: string } | null>(null);
-  const [isLoadingCustomerOrders, setIsLoadingCustomerOrders] = useState(false);
-  
-  // تحديث حالة الطلب
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    if (!orderId) return false;
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ordersPerPage] = useState(20);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all');
+  const [selectedSort, setSelectedSort] = useState<string>('created_at-desc');
+  const [selectedPayment, setSelectedPayment] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    processing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    returned: 0,
+    totalRevenue: 0,
+    averageOrderValue: 0,
+  });
+
+  // جلب الطلبات من قاعدة البيانات
+  const fetchOrders = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      toast.error('تغيير الحالة غير متاح حالياً بدون إعداد مفاتيح Supabase');
-      return false;
-    }
-    
-    try {
-      setIsUpdating(prev => ({ ...prev, [orderId]: true }));
-      
-      // تحديث حالة الطلب في قاعدة البيانات
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('order_id', orderId);  // تم التغيير من 'id' إلى 'order_id'
-      
-      if (error) {
-        console.error('خطأ في تحديث حالة الطلب:', error);
-        toast.error('حدث خطأ أثناء تحديث حالة الطلب');
-        return false;
-      }
-      
-      // تحديث حالة الطلب في الواجهة
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
-            ? { 
-                ...order, 
-                status: newStatus,
-                updated_at: new Date().toISOString()
-              } 
-            : order
-        )
-      );
-      
-      toast.success('تم تحديث حالة الطلب بنجاح');
-      return true;
-    } catch (error) {
-      console.error('حدث خطأ غير متوقع:', error);
-      toast.error('حدث خطأ غير متوقع');
-      return false;
-    } finally {
-      setIsUpdating(prev => ({ ...prev, [orderId]: false }));
-    }
-  };
-
-  // جلب الطلبات مع الفلاتر والترتيب
-  const fetchOrders = useCallback(async (sortByParam: string) => {
-    setLoading(true);
-    setError(null);
-    if (!isSupabaseConfigured) {
-      setOrders([]);
-      setError('لوحة الطلبات تعمل حالياً بدون اتصال بقاعدة البيانات. الرجاء تهيئة مفاتيح Supabase على Vercel');
-      setLoading(false);
-      return [];
-    }
-    
-    try {
-      console.log('جاري جلب الطلبات...');
-      console.log('معايير الفرز:', { sortByParam, filterStatus, filterPayment });
-      
-      // تقسيم معاملات الفرز بشكل صحيح
-      // استخراج قيم الترتيب
-      const lastUnderscoreIndex = sortByParam.lastIndexOf('_');
-      const sortField = sortByParam.substring(0, lastUnderscoreIndex) || 'created_at';
-      const sortOrder = sortByParam.substring(lastUnderscoreIndex + 1) || 'desc';
-
-      // استدعاء دالة RPC لجلب الطلبات
-      console.log('استدعاء دالة get_admin_orders مع المعلمات:', {
-        p_status: filterStatus || 'all',
-        p_sort_by: sortField,
-        p_sort_order: sortOrder,
-      });
-
-      const { data, error } = await supabase.rpc('get_admin_orders', {
-        p_status: filterStatus || 'all',
-        p_sort_by: sortField,
-        p_sort_order: sortOrder,
-      });
-
-      if (error) {
-        console.error('خطأ في جلب الطلبات:', error);
-        throw new Error(`فشل جلب الطلبات: ${error.message}`);
-      }
-
-      console.log('تم استلام البيانات بنجاح:', data);
-      
-      // تنسيق البيانات لتتوافق مع النوع المتوقع في الواجهة
-      const formattedData = (data || []).map((order: any) => {
-        try {
-          const formattedOrder = {
-            ...order,
-            // تعيين total_amount من total_price إذا كان غير محدد
-            total_amount: order.total_amount || order.total_price || 0,
-            // بناء user و order_items حسب هيكل الدالة
-            user: order.user || {
-              id: order.user_id || '',
-              full_name: order.customer_name || 'عميل غير معروف',
-              email: order.customer_email || '',
-              phone: order.customer_phone || '',
-            },
-            order_items: (order.order_items || []).map((item: any) => ({
-              ...item,
-              product: item.product || { 
-                id: '',
-                title_ar: 'منتج غير معروف', 
-                title_en: 'Unknown Product', 
-                image_urls: [] 
-              },
-            })),
-          };
-          
-          console.log('تم تنسيق الطلب:', formattedOrder.id);
-          return formattedOrder;
-        } catch (err) {
-          console.error('خطأ في تنسيق بيانات الطلب:', order, err);
-          return null;
-        }
-      }).filter(Boolean); // إزالة القيم الفارغة الناتجة عن الأخطاء
-
-      setOrders(formattedData as OrderWithDetails[]);
-      setError(null);
-    } catch (err: any) {
-      console.error('حدث خطأ في جلب الطلبات:', err);
-      const errorMessage = err?.message || 'حدث خطأ غير معروف';
-      console.error('تفاصيل الخطأ:', {
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-        error: err
-      });
-      
-      setError(`حدث خطأ أثناء جلب الطلبات: ${errorMessage}`);
-      toast.error(`خطأ: ${errorMessage}`);
-      
-      // إعادة تعيين حالة التحميل
-      setLoading(false);
-      return []; // إرجاع مصفوفة فارغة بدلاً من رمي الخطأ
-    } finally {
-      setLoading(false);
-    }
-  }, [search, filterStatus, filterPayment, sortBy]);
-
-  // جلب الطلبات عند تغيير معايير الفرز
-  useEffect(() => {
-    fetchOrders(sortBy);
-  }, [sortBy, filterStatus, filterPayment, fetchOrders]);
-
-  // تصفية الطلبات بناءً على معايير البحث والتصفية
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      // تصفية حسب حالة الطلب
-      if (filterStatus !== 'all' && order.status !== filterStatus) {
-        return false;
-      }
-      
-      // تصفية حسب طريقة الدفع
-      if (filterPayment && filterPayment !== 'all' && order.payment_method !== filterPayment) {
-        return false;
-      }
-      
-      // تصفية حسب نص البحث
-      if (search) {
-        const searchLower = search.toLowerCase();
-        const orderId = order.id || '';
-        const customerName = (order as any).customer_name || '';
-        const phoneNumber = (order as any).phone_number || '';
-        
-        const matchesSearch = 
-          orderId.toString().toLowerCase().includes(searchLower) ||
-          customerName.toLowerCase().includes(searchLower) ||
-          phoneNumber.includes(search);
-        
-        if (!matchesSearch) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  }, [orders, filterStatus, filterPayment, search]);
-
-  // إحصائيات سريعة
-  const stats = useMemo(() => {
-    const total = filteredOrders.length;
-    const sumAmount = filteredOrders.reduce((s, o) => s + (o.total_amount || 0), 0);
-    const byStatus: Record<string, number> = {};
-    filteredOrders.forEach(o => {
-      byStatus[o.status] = (byStatus[o.status] || 0) + 1;
-    });
-    return { total, sumAmount, byStatus };
-  }, [filteredOrders]);
-
-  // تصدير الطلبات الحالية إلى CSV
-  const exportOrdersToCSV = useCallback(() => {
-    const headers = [
-      'order_id',
-      'order_number',
-      'created_at',
-      'customer_name',
-      'customer_email',
-      'customer_phone',
-      'payment_method',
-      'status',
-      'total_amount',
-    ];
-    const rows = filteredOrders.map((o) => [
-      o.id,
-      String(o.order_number ?? ''),
-      o.created_at,
-      (o as any).customer_name || o.user?.full_name || '',
-      (o as any).customer_email || o.user?.email || '',
-      (o as any).customer_phone || o.user?.phone || '',
-      o.payment_method || '',
-      o.status,
-      String(o.total_amount ?? 0),
-    ]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `orders_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [filteredOrders]);
-  
-  // تحديث حالة الطلبات المحددة
-  const handleBulkUpdateStatus = useCallback(async (status: OrderStatus) => {
-    if (!isSupabaseConfigured) {
-      toast.error('التعديل الجماعي غير متاح بدون إعداد Supabase');
+      toast.error('قاعدة البيانات غير متاحة');
       return;
     }
-    const orderIds = orders
-      .filter(order => selectedOrders.includes(order.id))
-      .map(order => order.id);
-
-    if (orderIds.length === 0) return;
 
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status, updated_at: new Date().toISOString() })
-        .in('id', orderIds);
-
-      if (error) throw error;
-
-      // تحديث حالة الطلبات في القائمة
-      setOrders(prev => prev.map(order => 
-        orderIds.includes(order.id) ? { ...order, status } : order
-      ));
-
-      // مسح التحديد
-      setSelectedOrders([]);
-    } catch (err) {
-      console.error('فشل تحديث حالات الطلبات:', err);
-    }
-  }, [orders, selectedOrders]);
-
-  // فتح تفاصيل الطلب
-  const handleViewOrderDetails = (order: OrderWithDetails) => {
-    // Transform the order to match ExtendedOrderWithDetails
-    const extendedOrder: ExtendedOrderWithDetails = {
-      ...order,
-      // Ensure all required fields are present
-      customer_name: order.user?.full_name || order.customer_name,
-      customer_email: order.user?.email || order.customer_email,
-      customer_phone: order.user?.phone || order.customer_phone,
-      // Ensure order_items has the correct structure
-      order_items: order.order_items.map(item => ({
-        ...item,
-        // Map the product details to match the expected structure
-        product: {
-          title_ar: item.product?.title_ar || 'منتج غير معروف',
-          title_en: item.product?.title_en || 'Unknown Product',
-          image_url: item.product?.image_url || null
-        }
-      }))
-    };
-    setSelectedOrder(extendedOrder);
-    setIsOrderDetailsOpen(true);
-  };
-
-  // جلب جميع طلبات العميل لعرضها في نافذة مستقلة
-  const openCustomerOrders = useCallback(async (order: OrderWithDetails) => {
-    const userId = order.user?.id;
-    if (!userId) return;
-    setCustomerMeta({ userId, name: order.user?.full_name, email: order.user?.email, phone: order.user?.phone });
-    setIsCustomerOrdersOpen(true);
-    setIsLoadingCustomerOrders(true);
-    try {
-      if (!isSupabaseConfigured) {
-        setCustomerOrders([]);
+      setLoading(true);
+      
+      // استخدام الدالة المخصصة لجلب الطلبات
+      const { data, error } = await supabase.rpc('get_admin_orders');
+      
+      if (error) {
+        console.error('خطأ في جلب الطلبات:', error);
+        toast.error('فشل في جلب الطلبات');
         return;
       }
-      const { data, error } = await supabase
-        .from('orders')
-        .select('id, order_number, created_at, status, total_amount, payment_method')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setCustomerOrders((data || []) as any);
-    } catch (err) {
-      console.error('فشل جلب طلبات العميل:', err);
-      setCustomerOrders([]);
+
+      if (data) {
+        const processedOrders = data.map((order: any) => ({
+          ...order,
+          created_at: new Date(order.created_at),
+          updated_at: order.updated_at ? new Date(order.updated_at) : null,
+        }));
+        
+        setOrders(processedOrders);
+        updateStats(processedOrders);
+      }
+    } catch (error) {
+      console.error('خطأ في جلب الطلبات:', error);
+      toast.error('حدث خطأ أثناء جلب الطلبات');
     } finally {
-      setIsLoadingCustomerOrders(false);
+      setLoading(false);
     }
   }, []);
 
-  // إغلاق تفاصيل الطلب
-  const closeOrderDetails = () => {
-    setIsOrderDetailsOpen(false);
-    // إعادة تحميل الطلبات بعد التحديث
-    fetchOrders(sortBy);
-  };
-  
+  // تحديث الإحصائيات
+  const updateStats = useCallback((ordersList: OrderWithDetails[]) => {
+    const total = ordersList.length;
+    const pending = ordersList.filter(o => o.status === 'pending').length;
+    const processing = ordersList.filter(o => o.status === 'processing').length;
+    const shipped = ordersList.filter(o => o.status === 'shipped').length;
+    const delivered = ordersList.filter(o => o.status === 'delivered').length;
+    const cancelled = ordersList.filter(o => o.status === 'cancelled').length;
+    const returned = ordersList.filter(o => o.status === 'returned').length;
+    const totalRevenue = ordersList.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+    const averageOrderValue = total > 0 ? totalRevenue / total : 0;
+
+    setStats({
+      total,
+      pending,
+      processing,
+      shipped,
+      delivered,
+      cancelled,
+      returned,
+      totalRevenue,
+      averageOrderValue,
+    });
+  }, []);
+
   // تحديث حالة الطلب
-  const handleUpdateOrderStatus = useCallback(async (orderId: string, status: OrderStatus): Promise<boolean> => {
+  const updateOrderStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     if (!isSupabaseConfigured) {
-      toast.error('تحديث الحالة غير متاح بدون إعداد Supabase');
-      return false;
+      toast.error('قاعدة البيانات غير متاحة');
+      return;
     }
+
     try {
-      setIsUpdating(prev => ({ ...prev, [orderId]: true }));
+      setUpdatingStatus(orderId);
+      
       const { error } = await supabase
         .from('orders')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', orderId);
 
-      if (error) throw error;
-
-      // تحديث حالة الطلب في القائمة
-      setOrders(prev => prev.map(order => 
-        order.id === orderId ? { ...order, status } : order
-      ));
-      
-      return true;
-    } catch (err) {
-      console.error('فشل تحديث حالة الطلب:', err);
-      toast.error('فشل تحديث حالة الطلب');
-      return false;
-    } finally {
-      setIsUpdating(prev => ({ ...prev, [orderId]: false }));
-    }
-  }, []);
-
-  // تحديث الطلب المحدد
-  const refreshOrder = useCallback(async (orderId: string) => {
-    if (!isSupabaseConfigured) {
-      return null;
-    }
-    try {
-      // جلب أحدث بيانات الطلب
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select('*, order_items(*, product:products(*))')
-        .eq('id', orderId)
-        .single();
-
-      if (orderError) throw orderError;
-
-      // تحديث حالة الطلب في القائمة
-      setOrders(prev => 
-        prev.map(order => 
-          order.id === orderId ? { ...order, ...orderData } : order
-        )
-      );
-
-      // إذا كان الطلب المحدد مفتوحاً، قم بتحديثه
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder(prev => prev ? { ...prev, ...orderData } : null);
+      if (error) {
+        console.error('خطأ في تحديث الحالة:', error);
+        toast.error('فشل في تحديث حالة الطلب');
+        return;
       }
 
-      return orderData;
+      // تحديث الطلب محلياً
+      setOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus, updated_at: new Date() }
+          : order
+      ));
+
+      toast.success(`تم تحديث حالة الطلب إلى ${statusLabels[newStatus]}`);
+      
+      // إعادة جلب الطلبات لتحديث الإحصائيات
+      await fetchOrders();
     } catch (error) {
-      console.error('فشل تحديث بيانات الطلب:', error);
-      toast.error('فشل تحديث بيانات الطلب');
-      return null;
+      console.error('خطأ في تحديث الحالة:', error);
+      toast.error('حدث خطأ أثناء تحديث الحالة');
+    } finally {
+      setUpdatingStatus(null);
     }
-  }, [selectedOrder]);
+  }, [fetchOrders]);
+
+  // تصفية الطلبات
+  useEffect(() => {
+    let filtered = [...orders];
+
+    // تصفية حسب البحث
+    if (searchTerm) {
+      filtered = filtered.filter(order => 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_phone?.includes(searchTerm)
+      );
+    }
+
+    // تصفية حسب الحالة
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(order => order.status === selectedStatus);
+    }
+
+    // تصفية حسب الفترة الزمنية
+    if (selectedTimeRange !== 'all') {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      switch (selectedTimeRange) {
+        case 'today':
+          filtered = filtered.filter(order => order.created_at >= today);
+          break;
+        case 'yesterday':
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const dayBeforeYesterday = new Date(today);
+          dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+          filtered = filtered.filter(order => 
+            order.created_at >= dayBeforeYesterday && order.created_at < today
+          );
+          break;
+        case 'week':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          filtered = filtered.filter(order => order.created_at >= weekAgo);
+          break;
+        case 'month':
+          const monthAgo = new Date(today);
+          monthAgo.setDate(monthAgo.getDate() - 30);
+          filtered = filtered.filter(order => order.created_at >= monthAgo);
+          break;
+      }
+    }
+
+    // تصفية حسب طريقة الدفع
+    if (selectedPayment !== 'all') {
+      filtered = filtered.filter(order => order.payment_method === selectedPayment);
+    }
+
+    // ترتيب الطلبات
+    filtered.sort((a, b) => {
+      const [field, direction] = selectedSort.split('-');
+      
+      if (field === 'created_at') {
+        return direction === 'desc' 
+          ? b.created_at.getTime() - a.created_at.getTime()
+          : a.created_at.getTime() - b.created_at.getTime();
+      }
+      
+      if (field === 'total_amount') {
+        return direction === 'desc' 
+          ? (b.total_amount || 0) - (a.total_amount || 0)
+          : (a.total_amount || 0) - (b.total_amount || 0);
+      }
+      
+      return 0;
+    });
+
+    setFilteredOrders(filtered);
+    setCurrentPage(1);
+  }, [orders, searchTerm, selectedStatus, selectedTimeRange, selectedSort, selectedPayment]);
+
+  // جلب الطلبات عند تحميل المكون
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // حساب الطلبات المعروضة
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+  // تغيير الصفحة
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // تصدير البيانات
+  const exportData = useCallback(() => {
+    const csvContent = [
+      ['رقم الطلب', 'اسم العميل', 'البريد الإلكتروني', 'الهاتف', 'الحالة', 'المبلغ الإجمالي', 'تاريخ الإنشاء', 'طريقة الدفع'],
+      ...filteredOrders.map(order => [
+        order.id,
+        order.customer_name || '',
+        order.customer_email || '',
+        order.customer_phone || '',
+        statusLabels[order.status],
+        formatCurrencySync(order.total_amount || 0, language),
+        format(order.created_at, 'yyyy-MM-dd HH:mm', { locale: ar }),
+        order.payment_method || ''
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [filteredOrders, language]);
+
+  // تحديث عدد الطلبات في التبويبات
+  const updateTabCounts = useCallback(() => {
+    const counts = {
+      all: orders.length,
+      pending: orders.filter(o => o.status === 'pending').length,
+      processing: orders.filter(o => o.status === 'processing').length,
+      shipped: orders.filter(o => o.status === 'shipped').length,
+      delivered: orders.filter(o => o.status === 'delivered').length,
+    };
+
+    tabOptions.forEach(tab => {
+      tab.count = counts[tab.value as keyof typeof counts] || 0;
+    });
+  }, [orders]);
 
   useEffect(() => {
-    fetchOrders(sortBy);
-  }, [fetchOrders, sortBy]);
+    updateTabCounts();
+  }, [updateTabCounts]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <TooltipProvider>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">إدارة الطلبات</h1>
-          <p className="text-muted-foreground">عرض وإدارة طلبات المتجر</p>
+    <div className="space-y-6">
+      {/* العنوان والإحصائيات */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">إدارة الطلبات</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            إدارة جميع طلبات العملاء وتتبع حالاتها
+          </p>
         </div>
-        
-        {/* إحصائيات سريعة */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card className="bg-white dark:bg-gray-800/60">
-            <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-1">إجمالي الطلبات</div>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white dark:bg-gray-800/60">
-            <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-1">إجمالي المبيعات</div>
-              <div className="text-2xl font-bold">{formatCurrencySync(stats.sumAmount, 'ر.س', 2)}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white dark:bg-gray-800/60">
-            <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-1">قيد المراجعة</div>
-              <div className="text-2xl font-bold">{stats.byStatus['pending'] || 0}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white dark:bg-gray-800/60">
-            <CardContent className="p-4">
-              <div className="text-sm text-muted-foreground mb-1">مكتملة</div>
-              <div className="text-2xl font-bold">{stats.byStatus['delivered'] || 0}</div>
-            </CardContent>
-          </Card>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {showFilters ? 'إخفاء الفلاتر' : 'إظهار الفلاتر'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportData}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            تصدير البيانات
+          </Button>
+          <Button
+            onClick={fetchOrders}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            تحديث
+          </Button>
         </div>
+      </div>
 
-        {/* تبويبات حالة الطلبات */}
-        <Tabs 
-          defaultValue="all" 
-          onValueChange={(value) => setFilterStatus(value as OrderStatus | 'all')}
-          className="space-y-4"
-        >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <TabsList className="grid w-full md:w-auto grid-cols-5">
-            {tabOptions.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="py-1">
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          
-          <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => fetchOrders(sortBy)} 
-                  disabled={loading}
-                >
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  <span className="sr-only">تحديث</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>تحديث القائمة</TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={exportOrdersToCSV}>
-                  <Download className="h-4 w-4" />
-                  <span className="sr-only">تصدير</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>تصدير البيانات</TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* بطاقة الفلاتر والبحث */}
-        <Card className="bg-white dark:bg-gray-800/50 border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="ابحث برقم الطلب أو اسم العميل..."
-                  className="w-full bg-background pl-10 pr-4 h-10"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+      {/* الإحصائيات */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">إجمالي الطلبات</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
               </div>
-              
-              <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as OrderStatus | 'all')}>
-                <SelectTrigger className="w-full">
-                  <FilterIcon className="ml-2 h-4 w-4 opacity-50" />
-                  <SelectValue placeholder="حالة الطلب" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">كل الحالات</SelectItem>
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2 w-2 rounded-full ${
-                          status === 'pending' ? 'bg-yellow-500' :
-                          status === 'confirmed' ? 'bg-blue-500' :
-                          status === 'processing' ? 'bg-purple-500' :
-                          status === 'shipped' ? 'bg-indigo-500' :
-                          status === 'delivered' ? 'bg-green-500' :
-                          'bg-red-500'
-                        }`} />
-                        {statusLabels[status]}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterPayment} onValueChange={setFilterPayment}>
-                <SelectTrigger className="w-full">
-                  <CreditCard className="ml-2 h-4 w-4 opacity-50" />
-                  <SelectValue placeholder="طريقة الدفع" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full">
-                  <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />
-                  <SelectValue placeholder="ترتيب النتائج" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+                <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
-            
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="flex items-center">
-                <span className="hidden sm:inline ml-1">الفترة:</span>
-                <Select defaultValue="week">
-                  <SelectTrigger className="h-8 w-auto border-0 p-0 pl-1 text-sm font-medium text-foreground shadow-none hover:bg-accent hover:text-accent-foreground">
-                    <Calendar className="ml-1 h-4 w-4 opacity-50" />
-                    <SelectValue placeholder="اختر الفترة" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">إجمالي الإيرادات</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatCurrencySync(stats.totalRevenue, language)}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full">
+                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">متوسط قيمة الطلب</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {formatCurrencySync(stats.averageOrderValue, language)}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+                <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">الطلبات المعلقة</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.pending}</p>
+              </div>
+              <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
+                <Clock className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* التبويبات */}
+      <Card>
+        <CardContent className="p-0">
+          <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full">
+            <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+              {tabOptions.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex flex-col items-center gap-1 p-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <span className="text-sm font-medium">{tab.label}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {tab.count}
+                  </Badge>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* الفلاتر */}
+      {showFilters && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">البحث</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="البحث في الطلبات..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">الفترة الزمنية</label>
+                <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {timeRangeOptions.map((option) => (
@@ -683,329 +576,208 @@ const OrdersAdmin: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </span>
-              
-              <span className="mx-2 text-muted-foreground/50">|</span>
-              
-              <span className="flex items-center">
-                <span className="hidden sm:inline ml-1">إظهار:</span>
-                <Select defaultValue="10">
-                  <SelectTrigger className="h-8 w-16 border-0 p-0 pl-1 text-sm font-medium text-foreground shadow-none hover:bg-accent hover:text-accent-foreground">
-                    <SelectValue placeholder="10" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">الترتيب</label>
+                <Select value={selectedSort} onValueChange={setSelectedSort}>
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[10, 25, 50, 100].map((count) => (
-                      <SelectItem key={count} value={count.toString()}>
-                        {count}
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="mr-1">عنصر</span>
-              </span>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">طريقة الدفع</label>
+                <Select value={selectedPayment} onValueChange={setSelectedPayment}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
-      </Tabs>
-      
-      {/* قائمة الطلبات */}
-      {loading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg" />
-          ))}
-        </div>
-      ) : filteredOrders.length > 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
-        >
-          <div className="overflow-x-auto">
+      )}
+
+      {/* جدول الطلبات */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>الطلبات ({filteredOrders.length})</span>
+            <div className="text-sm text-gray-500">
+              عرض {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} من {filteredOrders.length}
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
             <Table>
-              <TableHeader className="bg-gray-50 dark:bg-gray-800/50">
+              <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px] text-right font-medium text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <span>رقم الطلب</span>
-                      <ArrowUpDown className="h-3.5 w-3.5 opacity-50" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-right font-medium text-gray-500 dark:text-gray-400">العميل</TableHead>
-                  <TableHead className="text-right font-medium text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <span>التاريخ</span>
-                      <Calendar className="h-3.5 w-3.5 opacity-50" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-right font-medium text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center justify-end gap-2">
-                      <span>المجموع</span>
-                      <span>ر.س</span>
-                    </div>
-                  </TableHead>
-                  <TableHead className="text-right font-medium text-gray-500 dark:text-gray-400">طريقة الدفع</TableHead>
-                  <TableHead className="text-right font-medium text-gray-500 dark:text-gray-400">الحالة</TableHead>
-                  <TableHead className="w-[150px] text-right font-medium text-gray-500 dark:text-gray-400">الإجراءات</TableHead>
+                  <TableHead>رقم الطلب</TableHead>
+                  <TableHead>العميل</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead>المبلغ</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>طريقة الدفع</TableHead>
+                  <TableHead className="text-right">الإجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.map((order, index) => (
-                  <motion.tr
-                    key={order.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                    className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span className="font-mono text-sm">#{order.id.substring(0, 8).toUpperCase()}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
-                        </span>
-                      </div>
+                {currentOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      لا توجد طلبات
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col items-end">
-                        <button
-                          type="button"
-                          className="font-medium text-alamer-blue hover:underline text-right"
-                          onClick={() => openCustomerOrders(order)}
-                          title="عرض جميع طلبات العميل"
-                        >
-                          {order.user?.full_name || (order as any).customer_name || 'عميل'}
-                        </button>
-                        <span className="text-xs text-muted-foreground">{(order as any).customer_email || ''}</span>
-                        <span className="text-xs text-muted-foreground">{(order as any).customer_phone || ''}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm">
-                          {format(new Date(order.created_at), 'dd MMM yyyy', { locale: ar })}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(order.created_at), 'hh:mm a', { locale: ar })}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrencySync(order.total_amount, 'ر.س', 2)}
-                      {(order as any).discount_amount > 0 && (
-                        <div className="text-xs text-green-600 dark:text-green-400">
-                          خصم {formatCurrencySync((order as any).discount_amount, 'ر.س', 2)}
+                  </TableRow>
+                ) : (
+                  currentOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-mono text-sm">
+                        {order.id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{order.customer_name || 'غير محدد'}</span>
+                          <span className="text-sm text-gray-500">{order.customer_email}</span>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div 
-                        className="capitalize border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 text-foreground rounded-md px-2 py-1 text-xs"
-                      >
-                        {paymentMethods[order.payment_method as keyof typeof paymentMethods] || order.payment_method || 'غير محدد'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <div 
-                          className={`${statusColors[order.status]} px-2.5 py-1 text-xs font-medium rounded-md`}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            {statusIcons[order.status]}
-                            {statusLabels[order.status]}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm">
+                            {format(order.created_at, 'dd/MM/yyyy', { locale: ar })}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {format(order.created_at, 'HH:mm', { locale: ar })}
                           </span>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 p-0"
-                              onClick={() => setSelectedOrder(order)}
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">عرض التفاصيل</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">عرض التفاصيل</TooltipContent>
-                        </Tooltip>
-                        
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <StatusSelect
-                              value={order.status}
-                              onValueChange={(value) => handleStatusChange(order.id, value as OrderStatus)}
-                              disabled={isUpdating[order.id]}
-                            >
-                              {statusOptions.map((status) => (
-                                <SelectItem 
-                                  key={status} 
-                                  value={status}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-sm"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className={`h-2 w-2 rounded-full ${
-                                      status === 'pending' ? 'bg-yellow-500' :
-                                      status === 'confirmed' ? 'bg-blue-500' :
-                                      status === 'processing' ? 'bg-purple-500' :
-                                      status === 'shipped' ? 'bg-indigo-500' :
-                                      status === 'delivered' ? 'bg-green-500' :
-                                      'bg-red-500'
-                                    }`} />
-                                    {statusLabels[status]}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </StatusSelect>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">تغيير الحالة</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </motion.tr>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {/* تذييل الجدول */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-            <div className="text-sm text-muted-foreground">
-              عرض <span className="font-medium">1</span> إلى <span className="font-medium">{filteredOrders.length}</span> من{' '}
-              <span className="font-medium">{filteredOrders.length}</span> طلب
-            </div>
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <Button variant="outline" size="sm" disabled>
-                السابق
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                التالي
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="text-center py-16 bg-white dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700"
-        >
-          <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-1">
-            {search || filterStatus !== 'all' || filterPayment !== 'all'
-              ? 'لا توجد نتائج للبحث'
-              : 'لا توجد طلبات حتى الآن'}
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-            {search || filterStatus !== 'all' || filterPayment !== 'all'
-              ? 'لم نتمكن من العثور على أي طلبات تطابق معايير البحث المحددة. حاول تغيير الفلاتر أو مسحها للعثور على ما تبحث عنه.'
-              : 'عندما يقوم العملاء بعمل طلبات، ستظهر هنا. تأكد من أن متجرك جاهز لاستقبال الطلبات.'}
-          </p>
-          
-          <div className="flex justify-center gap-3">
-            {(search || filterStatus !== 'all' || filterPayment !== 'all') ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearch('');
-                  setFilterStatus('all');
-                  setFilterPayment('all');
-                }}
-                className="gap-1.5"
-              >
-                <X className="h-4 w-4" />
-                مسح الفلاتر
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => fetchOrders(sortBy)} className="gap-1.5">
-                <RefreshCw className="h-4 w-4" />
-                تحديث القائمة
-              </Button>
-            )}
-            
-            {!search && filterStatus === 'all' && filterPayment === 'all' && (
-              <Button className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                إضافة طلب جديد
-              </Button>
-            )}
-          </div>
-        </motion.div>
-      )}
-      
-      {/* نافذة عرض تفاصيل الطلب */}
-      <OrderDetailsDialog
-        isOpen={isOrderDetailsOpen}
-        onOpenChange={setIsOrderDetailsOpen}
-        order={selectedOrder}
-        onStatusChange={handleUpdateOrderStatus}
-        isUpdating={isUpdating}
-      />
-
-      {/* نافذة طلبات العميل السابقة */}
-      <Dialog open={isCustomerOrdersOpen} onOpenChange={setIsCustomerOrdersOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>طلبات العميل</span>
-              {customerMeta?.name && (
-                <span className="text-sm text-muted-foreground">{customerMeta.name}</span>
-              )}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 mb-3">
-            <div className="text-sm text-muted-foreground">
-              {customerMeta?.email && <span className="ml-3">{customerMeta.email}</span>}
-              {customerMeta?.phone && <span>{customerMeta.phone}</span>}
-            </div>
-            {!isLoadingCustomerOrders && customerOrders.length > 0 && (
-              <div className="text-sm text-foreground">
-                إجمالي الطلبات: <span className="font-medium">{customerOrders.length}</span> — إجمالي المبالغ: <span className="font-medium">{formatCurrencySync(customerOrders.reduce((s, o) => s + (o.total_amount || 0), 0), 'ر.س', 2)}</span>
-              </div>
-            )}
-          </div>
-          <div className="max-h-[60vh] overflow-auto border rounded-md">
-            {isLoadingCustomerOrders ? (
-              <div className="p-6 text-center text-muted-foreground">جاري التحميل...</div>
-            ) : customerOrders.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">لا توجد طلبات سابقة لهذا العميل</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">رقم الطلب</TableHead>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customerOrders.map((co) => (
-                    <TableRow key={co.id} className="hover:bg-muted/50">
-                      <TableCell className="font-mono">#{String(co.order_number || co.id).toString().substring(0, 10)}</TableCell>
-                      <TableCell>{format(new Date(co.created_at), 'dd/MM/yyyy', { locale: ar })}</TableCell>
-                      <TableCell className="font-medium">{formatCurrencySync(co.total_amount || 0, 'ر.س', 2)}</TableCell>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatCurrencySync(order.total_amount || 0, language)}
+                      </TableCell>
                       <TableCell>
-                        <div className={`${statusColors[(co.status as OrderStatus) || 'pending'] || ''} px-2 py-1 text-xs rounded-md inline-block`}>
-                          {statusLabels[(co.status as OrderStatus) || 'pending'] || co.status}
+                        <Badge 
+                          variant="secondary" 
+                          className={`${statusColors[order.status]} flex items-center gap-1`}
+                        >
+                          {statusIcons[order.status]}
+                          {statusLabels[order.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {order.payment_method === 'credit_card' && <CreditCard className="h-4 w-4" />}
+                          {order.payment_method === 'mada' && <CreditCard className="h-4 w-4 text-green-600" />}
+                          {order.payment_method === 'apple_pay' && <CreditCard className="h-4 w-4 text-blue-600" />}
+                          {order.payment_method === 'cod' && <Package className="h-4 w-4 text-orange-600" />}
+                          <span className="text-sm">
+                            {paymentOptions.find(p => p.value === order.payment_method)?.label || order.payment_method}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedOrder(order as ExtendedOrderWithDetails);
+                                    setShowOrderDetails(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>عرض التفاصيل</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <StatusSelect
+                                  value={order.status}
+                                  onValueChange={(newStatus) => updateOrderStatus(order.id, newStatus as OrderStatus)}
+                                  disabled={updatingStatus === order.id}
+                                >
+                                  {statusOptions.map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                      <div className="flex items-center gap-2">
+                                        {statusIcons[status]}
+                                        {statusLabels[status]}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </StatusSelect>
+                              </TooltipTrigger>
+                              <TooltipContent>تغيير الحالة</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-        </DialogContent>
-      </Dialog>
-      </div>
-    </TooltipProvider>
+
+          {/* ترقيم الصفحات */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                صفحة {currentPage} من {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  السابق
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  التالي
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* نافذة تفاصيل الطلب */}
+      <OrderDetailsDialog
+        order={selectedOrder}
+        open={showOrderDetails}
+        onOpenChange={setShowOrderDetails}
+      />
+    </div>
   );
 };
 
