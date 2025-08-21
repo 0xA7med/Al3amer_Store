@@ -29,8 +29,10 @@ import {
   XCircle,
   AlertCircle,
   Settings,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles
 } from 'lucide-react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrencySync } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -121,6 +123,7 @@ const ProductsAdmin: React.FC = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showAllFields, setShowAllFields] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     title_ar: '',
@@ -164,6 +167,91 @@ const ProductsAdmin: React.FC = () => {
     featured: 0,
     totalValue: 0,
   });
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // TODO: Move API Key to environment variables
+  const API_KEY = "AIzaSyA3kNLnFwOGTbyyVFBF7zIPk6im6IfJoJk";
+  const genAI = new GoogleGenerativeAI(API_KEY);
+
+  const generateProductDetails = async () => {
+    if (!formData.name) {
+      toast.error("يرجى إدخال اسم المنتج أولاً");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const prompt = `
+        Based on the product name "${formData.name}", generate detailed product information for an e-commerce store in Egypt.
+        Provide the output in a clean JSON format. Do not include any text before or after the JSON object.
+        The JSON object should have the following keys:
+        - title_ar: (string) Arabic title for the product.
+        - title_en: (string) English title for the product.
+        - short_desc_ar: (string) A short, appealing description in Arabic (around 1-2 sentences).
+        - full_desc_ar: (string) A full, detailed description in Arabic (2-3 paragraphs).
+        - description: (string) A general, neutral description (can be in English or Arabic, 1-2 paragraphs).
+        - price: (number) A realistic market price in EGP.
+        - original_price: (number) A slightly higher price to show a discount, can be 0.
+        - stock_quantity: (number) A random stock quantity between 50 and 200.
+        - tags: (array of strings) Relevant keywords and tags in Arabic.
+        - seo_title: (string) An SEO-optimized title.
+        - seo_description: (string) An SEO-optimized meta description.
+        - technical_specs_ar: (string) Technical specifications, with each spec on a new line (e.g., "اللون: أسود\\nالمادة: بلاستيك").
+        - code: (string) A generated product code, like "PROD-XXXX".
+
+        Example for product "طابعة فواتير حرارية":
+        {
+          "title_ar": "طابعة فواتير حرارية عالية السرعة",
+          "title_en": "High-Speed Thermal Receipt Printer",
+          "short_desc_ar": "طابعة فواتير حرارية سريعة وموثوقة، مثالية لنقاط البيع والمطاعم. تدعم الطباعة باللغة العربية.",
+          "full_desc_ar": "تم تصميم طابعة الفواتير الحرارية هذه لتلبية احتياجات الأعمال التجارية المزدحمة. تتميز بسرعة طباعة تصل إلى 250 مم/ثانية، مما يضمن خدمة سريعة للعملاء.\\n\\nتتوافق الطابعة مع معظم أنظمة نقاط البيع وتدعم مجموعة واسعة من الرموز الشريطية. سهلة التركيب والاستخدام، وتأتي مع قاطع تلقائي لزيادة الكفاءة.",
+          "description": "A reliable and fast thermal printer for receipts and invoices.",
+          "price": 1850,
+          "original_price": 2100,
+          "stock_quantity": 120,
+          "tags": ["طابعة حرارية", "طابعة فواتير", "نقاط بيع", "كاشير"],
+          "seo_title": "شراء طابعة فواتير حرارية سريعة | أفضل سعر في مصر",
+          "seo_description": "احصل على أفضل طابعة فواتير حرارية لنشاطك التجاري. سرعة عالية، جودة ممتازة، ودعم فني. اطلب الآن!",
+          "technical_specs_ar": "تقنية الطباعة: حراري مباشر\\nسرعة الطباعة: 250 مم/ثانية\\nعرض الورق: 80 مم",
+          "code": "PROD-5678"
+        }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let text = response.text();
+
+      // Clean the response to get only the JSON
+      text = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+
+      const jsonData = JSON.parse(text);
+
+      setFormData(prev => ({
+        ...prev,
+        title_ar: jsonData.title_ar || prev.title_ar,
+        title_en: jsonData.title_en || prev.title_en,
+        short_desc_ar: jsonData.short_desc_ar || prev.short_desc_ar,
+        full_desc_ar: jsonData.full_desc_ar || prev.full_desc_ar,
+        description: jsonData.description || prev.description,
+        price: jsonData.price || prev.price,
+        original_price: jsonData.original_price || prev.original_price,
+        stock_quantity: jsonData.stock_quantity || prev.stock_quantity,
+        tags: jsonData.tags || prev.tags,
+        seo_title: jsonData.seo_title || prev.seo_title,
+        seo_description: jsonData.seo_description || prev.seo_description,
+        technical_specs_ar: jsonData.technical_specs_ar || prev.technical_specs_ar,
+        code: jsonData.code || prev.code,
+      }));
+
+      toast.success("تم ملء البيانات بنجاح باستخدام الذكاء الاصطناعي!");
+
+    } catch (error) {
+      console.error("خطأ في الملء التلقائي:", error);
+      toast.error("فشل الملء التلقائي. يرجى المحاولة مرة أخرى.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // جلب المنتجات
   const fetchProducts = useCallback(async () => {
@@ -962,9 +1050,14 @@ const ProductsAdmin: React.FC = () => {
                       >
                         {product.is_active ? 'نشط' : 'غير نشط'}
                       </Button>
-                      {product.is_featured && (
-                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">مميز</Badge>
-                      )}
+                      <Button
+                        size="sm"
+                        variant={product.is_featured ? 'default' : 'secondary'}
+                        className={product.is_featured ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}
+                        onClick={() => toggleFeatured(product.id, !product.is_featured)}
+                      >
+                        {product.is_featured ? 'مميز' : 'غير مميز'}
+                      </Button>
                     </div>
                   </TableCell>
                       <TableCell className="text-right">
@@ -981,25 +1074,6 @@ const ProductsAdmin: React.FC = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>تعديل</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant={product.is_featured ? 'secondary' : 'outline'}
-                                  size="sm"
-                                  onClick={() => toggleFeatured(product.id, !product.is_featured)}
-                                  className="gap-1"
-                                >
-                                  <Tag className="h-4 w-4" />
-                                  {product.is_featured ? 'إزالة التميز' : 'تمييز'}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {product.is_featured ? 'إزالة التميز' : 'إضافة التميز'}
-                              </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -1031,17 +1105,43 @@ const ProductsAdmin: React.FC = () => {
 
       {/* نافذة إضافة منتج جديد */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>إضافة منتج جديد</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div className="flex items-center justify-between my-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-all-fields-add"
+                checked={showAllFields}
+                onCheckedChange={setShowAllFields}
+              />
+              <Label htmlFor="show-all-fields-add">عرض كل الحقول</Label>
+            </div>
+            <Button
+              onClick={generateProductDetails}
+              disabled={aiLoading}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              {aiLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              ملء تلقائي بالذكاء الاصطناعي
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>اسم المنتج *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="اسم المنتج"
+                placeholder="اسم المنتج الأساسي"
               />
             </div>
 
@@ -1050,7 +1150,7 @@ const ProductsAdmin: React.FC = () => {
               <Input
                 value={formData.sku}
                 onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                placeholder="رمز المنتج"
+                placeholder="رمز التخزين التعريفي"
               />
             </div>
 
@@ -1083,7 +1183,7 @@ const ProductsAdmin: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>السعر الأصلي</Label>
+              <Label>السعر الأصلي (قبل الخصم)</Label>
               <Input
                 type="number"
                 value={formData.original_price}
@@ -1105,77 +1205,190 @@ const ProductsAdmin: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>الوزن (كجم)</Label>
-              <Input
-                type="number"
-                value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
-      </div>
+            {showAllFields && (
+              <>
+                <div className="space-y-2">
+                  <Label>الوزن (كجم)</Label>
+                  <Input
+                    type="number"
+                    value={formData.weight}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label>الأبعاد</Label>
-              <Input
-                value={formData.dimensions}
-                onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                placeholder="الطول × العرض × الارتفاع"
+                <div className="space-y-2">
+                  <Label>الأبعاد (سم)</Label>
+                  <Input
+                    value={formData.dimensions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
+                    placeholder="الطول×العرض×الارتفاع"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>العنوان (عربي)</Label>
+                  <Input
+                    value={formData.title_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
+                    placeholder="عنوان المنتج بالعربية (للتوضيح)"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>العنوان (انجليزي)</Label>
+                  <Input
+                    value={formData.title_en}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title_en: e.target.value }))}
+                    placeholder="عنوان المنتج بالإنجليزية (اختياري)"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>كود المنتج (Code/Eslam)</Label>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                    placeholder="كود المنتج الإضافي"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>الوصف الرئيسي *</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="وصف المنتج الرئيسي الذي يظهر في كل مكان"
+                rows={3}
               />
             </div>
 
-                         <div className="space-y-2">
-               <Label>روابط الصور (مفصولة بفواصل)</Label>
-               <Input
-                 value={formData.image_urls.join(', ')}
-                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
-                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
-               />
-              </div>
+            {showAllFields && (
+              <>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>وصف قصير (عربي)</Label>
+                  <Textarea
+                    value={formData.short_desc_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, short_desc_ar: e.target.value }))}
+                    placeholder="وصف قصير للمنتج (للملخصات)"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>وصف كامل (عربي)</Label>
+                  <Textarea
+                    value={formData.full_desc_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, full_desc_ar: e.target.value }))}
+                    placeholder="وصف كامل وتفصيلي للمنتج (لصفحة المنتج)"
+                    rows={5}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>المواصفات الفنية (عربي)</Label>
+                  <Textarea
+                    value={formData.technical_specs_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, technical_specs_ar: e.target.value }))}
+                    placeholder="كل مواصفة في سطر، مثال: اللون: أزرق"
+                    rows={4}
+                  />
+                </div>
+              </>
+            )}
 
-            <div className="space-y-2">
-              <Label>رفع صورة</Label>
+            <div className="space-y-2 md:col-span-2">
+              <Label>روابط الصور (كل رابط في سطر)</Label>
+              <Textarea
+                value={formData.image_urls.join('\n')}
+                onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split('\n').map(url => url.trim()).filter(url => url) }))}
+                placeholder="رابط الصورة 1&#10;رابط الصورة 2&#10;..."
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>أو رفع صور جديدة</Label>
               <Input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadImage(file);
+                  if (e.target.files) {
+                    Array.from(e.target.files).forEach(file => uploadImage(file));
+                  }
                 }}
                 disabled={uploadingImage}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
               />
+            </div>
+
+            {showAllFields && (
+              <>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>روابط فيديو المراجعة (كل رابط في سطر)</Label>
+                  <Textarea
+                    value={formData.video_review_links.join('\n')}
+                    onChange={(e) => setFormData(prev => ({ ...prev, video_review_links: e.target.value.split('\n').map(url => url.trim()).filter(url => url) }))}
+                    placeholder="رابط يوتيوب 1&#10;رابط يوتيوب 2&#10;..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>الكلمات المفتاحية (Tags)</Label>
+                  <Input
+                    value={formData.tags.join(', ')}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag) }))}
+                    placeholder="اكتب الكلمة ثم اضغط فاصلة"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>عنوان SEO</Label>
+                  <Input
+                    value={formData.seo_title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
+                    placeholder="عنوان محسن لمحركات البحث"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>وصف SEO</Label>
+                  <Textarea
+                    value={formData.seo_description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
+                    placeholder="وصف محسن لمحركات البحث"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>رسالة واتساب مخصصة</Label>
+                  <Input
+                    value={formData.whatsapp_message_text}
+                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_message_text: e.target.value }))}
+                    placeholder="نص رسالة واتساب عند طلب هذا المنتج"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="md:col-span-2 flex items-center space-x-4 pt-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="featured-add"
+                  checked={formData.is_featured}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
+                />
+                <Label htmlFor="featured-add">منتج مميز</Label>
               </div>
-            </div>
 
-          <div className="space-y-2">
-            <Label>الوصف *</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف المنتج"
-              rows={4}
-            />
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
-              />
-              <Label htmlFor="featured">منتج مميز</Label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-                    <Switch
-                id="active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-              />
-              <Label htmlFor="active">نشط</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="active-add"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                />
+                <Label htmlFor="active-add">نشط</Label>
+              </div>
             </div>
           </div>
 
@@ -1192,17 +1405,29 @@ const ProductsAdmin: React.FC = () => {
 
       {/* نافذة تعديل المنتج */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل المنتج</DialogTitle>
+            <DialogTitle>تعديل المنتج: {formData.name}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div className="flex items-center justify-between my-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-all-fields-edit"
+                checked={showAllFields}
+                onCheckedChange={setShowAllFields}
+              />
+              <Label htmlFor="show-all-fields-edit">عرض كل الحقول</Label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>اسم المنتج *</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="اسم المنتج"
+                placeholder="اسم المنتج الأساسي"
               />
             </div>
 
@@ -1211,9 +1436,9 @@ const ProductsAdmin: React.FC = () => {
               <Input
                 value={formData.sku}
                 onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                placeholder="رمز المنتج"
+                placeholder="رمز التخزين التعريفي"
               />
-                  </div>
+            </div>
 
             <div className="space-y-2">
               <Label>التصنيف *</Label>
@@ -1244,7 +1469,7 @@ const ProductsAdmin: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>السعر الأصلي</Label>
+              <Label>السعر الأصلي (قبل الخصم)</Label>
               <Input
                 type="number"
                 value={formData.original_price}
@@ -1266,88 +1491,201 @@ const ProductsAdmin: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>الوزن (كجم)</Label>
-              <Input
-                type="number"
-                value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
+            {showAllFields && (
+              <>
+                <div className="space-y-2">
+                  <Label>الوزن (كجم)</Label>
+                  <Input
+                    type="number"
+                    value={formData.weight}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>الأبعاد (سم)</Label>
+                  <Input
+                    value={formData.dimensions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
+                    placeholder="الطول×العرض×الارتفاع"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>العنوان (عربي)</Label>
+                  <Input
+                    value={formData.title_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
+                    placeholder="عنوان المنتج بالعربية (للتوضيح)"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>العنوان (انجليزي)</Label>
+                  <Input
+                    value={formData.title_en}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title_en: e.target.value }))}
+                    placeholder="عنوان المنتج بالإنجليزية (اختياري)"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>كود المنتج (Code/Eslam)</Label>
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                    placeholder="كود المنتج الإضافي"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>الوصف الرئيسي *</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="وصف المنتج الرئيسي الذي يظهر في كل مكان"
+                rows={3}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>الأبعاد</Label>
-              <Input
-                value={formData.dimensions}
-                onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                placeholder="الطول × العرض × الارتفاع"
+            {showAllFields && (
+              <>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>وصف قصير (عربي)</Label>
+                  <Textarea
+                    value={formData.short_desc_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, short_desc_ar: e.target.value }))}
+                    placeholder="وصف قصير للمنتج (للملخصات)"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>وصف كامل (عربي)</Label>
+                  <Textarea
+                    value={formData.full_desc_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, full_desc_ar: e.target.value }))}
+                    placeholder="وصف كامل وتفصيلي للمنتج (لصفحة المنتج)"
+                    rows={5}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>المواصفات الفنية (عربي)</Label>
+                  <Textarea
+                    value={formData.technical_specs_ar}
+                    onChange={(e) => setFormData(prev => ({ ...prev, technical_specs_ar: e.target.value }))}
+                    placeholder="كل مواصفة في سطر، مثال: اللون: أزرق"
+                    rows={4}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>روابط الصور (كل رابط في سطر)</Label>
+              <Textarea
+                value={formData.image_urls.join('\n')}
+                onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split('\n').map(url => url.trim()).filter(url => url) }))}
+                placeholder="رابط الصورة 1&#10;رابط الصورة 2&#10;..."
+                rows={4}
               />
             </div>
 
-                         <div className="space-y-2">
-               <Label>روابط الصور (مفصولة بفواصل)</Label>
-               <Input
-                 value={formData.image_urls.join(', ')}
-                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
-                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
-               />
-             </div>
-
-            <div className="space-y-2">
-              <Label>رفع صورة</Label>
+            <div className="space-y-2 md:col-span-2">
+              <Label>أو رفع صور جديدة</Label>
               <Input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadImage(file);
+                  if (e.target.files) {
+                    Array.from(e.target.files).forEach(file => uploadImage(file));
+                  }
                 }}
                 disabled={uploadingImage}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
               />
-              </div>
             </div>
 
-          <div className="space-y-2">
-            <Label>الوصف *</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف المنتج"
-              rows={4}
-            />
-          </div>
+            {showAllFields && (
+              <>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>روابط فيديو المراجعة (كل رابط في سطر)</Label>
+                  <Textarea
+                    value={formData.video_review_links.join('\n')}
+                    onChange={(e) => setFormData(prev => ({ ...prev, video_review_links: e.target.value.split('\n').map(url => url.trim()).filter(url => url) }))}
+                    placeholder="رابط يوتيوب 1&#10;رابط يوتيوب 2&#10;..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>الكلمات المفتاحية (Tags)</Label>
+                  <Input
+                    value={formData.tags.join(', ')}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag) }))}
+                    placeholder="اكتب الكلمة ثم اضغط فاصلة"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>عنوان SEO</Label>
+                  <Input
+                    value={formData.seo_title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
+                    placeholder="عنوان محسن لمحركات البحث"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>وصف SEO</Label>
+                  <Textarea
+                    value={formData.seo_description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
+                    placeholder="وصف محسن لمحركات البحث"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>رسالة واتساب مخصصة</Label>
+                  <Input
+                    value={formData.whatsapp_message_text}
+                    onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_message_text: e.target.value }))}
+                    placeholder="نص رسالة واتساب عند طلب هذا المنتج"
+                  />
+                </div>
+              </>
+            )}
 
-          <div className="flex items-center space-x-4">
-               <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
-              />
-              <Label htmlFor="edit-featured">منتج مميز</Label>
+            <div className="md:col-span-2 flex items-center space-x-4 pt-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-featured"
+                  checked={formData.is_featured}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
+                />
+                <Label htmlFor="edit-featured">منتج مميز</Label>
               </div>
 
               <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-              />
-              <Label htmlFor="edit-active">نشط</Label>
+                <Switch
+                  id="edit-active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                />
+                <Label htmlFor="edit-active">نشط</Label>
               </div>
             </div>
+          </div>
 
-            <DialogFooter>
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               إلغاء
             </Button>
             <Button onClick={updateProduct} disabled={!formData.name || !formData.category || formData.price <= 0}>
               تحديث المنتج
             </Button>
-            </DialogFooter>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
