@@ -96,7 +96,7 @@ const CategoriesAdmin: React.FC = () => {
     }
 
     try {
-      setLoading(true);
+    setLoading(true);
       
       // جلب التصنيفات مع عدد المنتجات
       const { data, error } = await supabase
@@ -107,12 +107,12 @@ const CategoriesAdmin: React.FC = () => {
         `)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
-
+      
       if (error) throw error;
 
       if (data) {
         const processedCategories = data.map(category => ({
-          ...category,
+        ...category,
           product_count: category.products?.[0]?.count || 0,
         }));
         
@@ -152,7 +152,7 @@ const CategoriesAdmin: React.FC = () => {
       toast.error('قاعدة البيانات غير متاحة');
       return;
     }
-
+    
     try {
       const { error } = await supabase
         .from('product_categories')
@@ -178,15 +178,15 @@ const CategoriesAdmin: React.FC = () => {
     if (!editingCategory || !isSupabaseConfigured) return;
 
     try {
-      const { error } = await supabase
+        const { error } = await supabase
         .from('product_categories')
-        .update({
-          ...formData,
-          updated_at: new Date().toISOString(),
-        })
+          .update({
+            ...formData,
+            updated_at: new Date().toISOString(),
+          })
         .eq('id', editingCategory.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
       toast.success('تم تحديث التصنيف بنجاح');
       setShowEditDialog(false);
@@ -215,9 +215,9 @@ const CategoriesAdmin: React.FC = () => {
 
       if (products && products.length > 0) {
         toast.error('لا يمكن حذف التصنيف لوجود منتجات مرتبطة به');
-        return;
-      }
-
+      return;
+    }
+    
       const { error } = await supabase
         .from('product_categories')
         .delete()
@@ -445,19 +445,19 @@ const CategoriesAdmin: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
+          <Button 
+            variant="outline" 
             onClick={exportData}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
             تصدير
           </Button>
-          <Button
+          <Button 
             onClick={() => setShowAddDialog(true)}
             className="flex items-center gap-2"
           >
-            <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" />
             إضافة تصنيف
           </Button>
         </div>
@@ -520,14 +520,14 @@ const CategoriesAdmin: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+                </div>
 
       {/* الفلاتر والبحث */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex flex-col lg:flex-row gap-4 flex-1">
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <label className="text-sm font-medium">البحث</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -553,7 +553,7 @@ const CategoriesAdmin: React.FC = () => {
                 </select>
               </div>
 
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <label className="text-sm font-medium">الترتيب</label>
                 <select
                   value={sortBy}
@@ -567,8 +567,8 @@ const CategoriesAdmin: React.FC = () => {
                   <option value="sort-asc">ترتيب (1-9)</option>
                   <option value="created-desc">الأحدث</option>
                 </select>
+                </div>
               </div>
-            </div>
 
             <div className="flex items-center gap-2">
               <Button
@@ -577,18 +577,18 @@ const CategoriesAdmin: React.FC = () => {
                 onClick={() => setViewMode('grid')}
               >
                 <Grid3X3 className="h-4 w-4" />
-              </Button>
+                </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
               >
                 <List className="h-4 w-4" />
-              </Button>
-            </div>
+                </Button>
+              </div>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
       {/* عرض التصنيفات */}
       {viewMode === 'grid' ? (
@@ -621,8 +621,8 @@ const CategoriesAdmin: React.FC = () => {
                     <Badge variant={category.is_active ? 'default' : 'secondary'}>
                       {category.is_active ? 'نشط' : 'غير نشط'}
                     </Badge>
-                  </div>
-                </div>
+        </div>
+      </div>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -676,8 +676,8 @@ const CategoriesAdmin: React.FC = () => {
                           <TooltipContent>حذف</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                    </div>
-                  </div>
+            </div>
+          </div>
                   
                   {category.description && (
                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
@@ -688,7 +688,7 @@ const CategoriesAdmin: React.FC = () => {
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>{category.product_count || 0} منتج</span>
                     <span>ترتيب: {category.sort_order || 0}</span>
-                  </div>
+        </div>
                 </CardContent>
               </Card>
             ))
@@ -737,16 +737,16 @@ const CategoriesAdmin: React.FC = () => {
                         <TableCell>
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
                             {category.image_url ? (
-                              <img
-                                src={category.image_url}
+                  <img
+                    src={category.image_url}
                                 alt={category.name}
-                                className="w-full h-full object-cover"
-                              />
+                    className="w-full h-full object-cover"
+                  />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <ImageIcon className="h-6 w-6 text-gray-400" />
-                              </div>
-                            )}
+                </div>
+              )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -768,20 +768,20 @@ const CategoriesAdmin: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                             <Switch
                               checked={category.is_active}
                               onCheckedChange={(checked) => toggleCategoryStatus(category.id, checked)}
                             />
                             <Badge variant={category.is_active ? 'default' : 'secondary'}>
-                              {category.is_active ? 'نشط' : 'غير نشط'}
-                            </Badge>
+                      {category.is_active ? 'نشط' : 'غير نشط'}
+                    </Badge>
                             {category.is_featured && (
                               <Badge variant="outline" className="text-yellow-600 border-yellow-600">
                                 مميز
-                              </Badge>
+                    </Badge>
                             )}
-                          </div>
+                </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -803,13 +803,13 @@ const CategoriesAdmin: React.FC = () => {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
+                  <Button
                                     variant="ghost"
-                                    size="sm"
+                    size="sm"
                                     onClick={() => toggleFeatured(category.id, !category.is_featured)}
-                                  >
+                  >
                                     <Tag className="h-4 w-4" />
-                                  </Button>
+                  </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   {category.is_featured ? 'إزالة التميز' : 'إضافة التميز'}
@@ -820,14 +820,14 @@ const CategoriesAdmin: React.FC = () => {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button
+                  <Button
                                     variant="ghost"
-                                    size="sm"
+                    size="sm"
                                     onClick={() => deleteCategory(category.id)}
                                     className="text-red-600 hover:text-red-700"
-                                  >
+                  >
                                     <Trash2 className="h-4 w-4" />
-                                  </Button>
+                  </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>حذف</TooltipContent>
                               </Tooltip>
@@ -839,9 +839,9 @@ const CategoriesAdmin: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
-            </div>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
       )}
 
       {/* نافذة إضافة تصنيف جديد */}
@@ -1013,7 +1013,7 @@ const CategoriesAdmin: React.FC = () => {
               />
               <Label htmlFor="edit-active">نشط</Label>
             </div>
-          </div>
+        </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>

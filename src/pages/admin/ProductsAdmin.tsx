@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,44 +40,73 @@ import { Label } from '@/components/ui/label';
 
 interface Product {
   id: string;
+  product_id?: string;
   name: string;
+  title_ar?: string;
+  title_en?: string;
+  short_desc_ar?: string;
+  full_desc_ar?: string;
   description: string;
   price: number;
   original_price?: number;
   category: string;
+  category_name?: string;
+  category_id?: string;
   stock_quantity: number;
   image_url?: string;
+  image_urls?: string[];
+  video_review_links?: string[];
   is_featured: boolean;
   is_active: boolean;
   created_at: string;
   updated_at?: string;
   sku?: string;
+  code?: string;
   weight?: number;
   dimensions?: string;
   specifications?: Record<string, any>;
+  seo_title?: string;
+  seo_description?: string;
+  whatsapp_message_text?: string;
+  tags?: string[];
+  technical_specs_ar?: string;
 }
 
 interface Category {
   id: string;
   name: string;
+  name_ar?: string;
+  name_en?: string;
   description?: string;
   image_url?: string;
 }
 
 interface ProductFormData {
   name: string;
+  title_ar: string;
+  title_en: string;
+  short_desc_ar: string;
+  full_desc_ar: string;
   description: string;
   price: number;
   original_price?: number;
   category: string;
+  category_name: string;
   stock_quantity: number;
-  image_url?: string;
+  image_urls: string[];
+  video_review_links: string[];
   is_featured: boolean;
   is_active: boolean;
   sku?: string;
+  code?: string;
   weight?: number;
   dimensions?: string;
   specifications?: Record<string, any>;
+  seo_title?: string;
+  seo_description?: string;
+  whatsapp_message_text?: string;
+  tags?: string[];
+  technical_specs_ar?: string;
 }
 
 const ProductsAdmin: React.FC = () => {
@@ -94,20 +123,39 @@ const ProductsAdmin: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
+    title_ar: '',
+    title_en: '',
+    short_desc_ar: '',
+    full_desc_ar: '',
     description: '',
     price: 0,
     original_price: 0,
     category: '',
+    category_name: '',
     stock_quantity: 0,
-    image_url: '',
+    image_urls: [],
+    video_review_links: [],
     is_featured: false,
     is_active: true,
     sku: '',
+    code: '',
     weight: 0,
     dimensions: '',
     specifications: {},
+    seo_title: '',
+    seo_description: '',
+    whatsapp_message_text: '',
+    tags: [],
+    technical_specs_ar: '',
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [editingRow, setEditingRow] = useState<Record<string, { price?: number; stock?: number }>>({});
+  const pendingBulk = useMemo(() => {
+    const ids = Object.keys(editingRow).filter(id =>
+      (editingRow[id]?.price !== undefined) || (editingRow[id]?.stock !== undefined)
+    );
+    return ids;
+  }, [editingRow]);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -119,10 +167,10 @@ const ProductsAdmin: React.FC = () => {
 
   // جلب المنتجات
   const fetchProducts = useCallback(async () => {
-    if (!isSupabaseConfigured) {
+      if (!isSupabaseConfigured) {
       toast.error('قاعدة البيانات غير متاحة');
-      return;
-    }
+        return;
+      }
 
     try {
       setLoading(true);
@@ -135,15 +183,50 @@ const ProductsAdmin: React.FC = () => {
       if (error) throw error;
 
       if (data) {
-        setProducts(data);
-        updateStats(data);
+        const base = data.map((p: any) => {
+          const firstImage = Array.isArray(p.image_urls) && p.image_urls.length > 0 ? p.image_urls[0] : p.thumbnail_url;
+          return {
+            ...p,
+            id: p.product_id || p.id || p.sku || String(Math.random()),
+            name: p.title_ar || p.title_en || p.name || '',
+            image_url: firstImage,
+            stock_quantity: typeof p.stock === 'number' ? p.stock : (p.stock_quantity ?? 0),
+          } as Product & { stock?: number };
+        });
+
+        // Load categories for these products from junction table
+        const productIds = base.map(p => p.product_id || p.id).filter(Boolean);
+        let withCats = base;
+        if (productIds.length) {
+          const { data: catLinks } = await supabase
+            .from('product_categories')
+            .select('product_id, categories:category_id (category_id, name_ar, name_en)')
+            .in('product_id', productIds as string[]);
+          const firstCatByProduct: Record<string, { id: string; name: string }> = {};
+          catLinks?.forEach((row: any) => {
+            if (!firstCatByProduct[row.product_id] && row.categories) {
+              firstCatByProduct[row.product_id] = {
+                id: row.categories.category_id,
+                name: row.categories.name_ar || row.categories.name_en || 'غير مصنف'
+              };
+            }
+          });
+          withCats = base.map(p => ({
+            ...p,
+            category_id: firstCatByProduct[p.product_id || p.id]?.id,
+            category: firstCatByProduct[p.product_id || p.id]?.name || '',
+          }));
+        }
+
+        setProducts(withCats as Product[]);
+        updateStats(withCats as Product[]);
       }
     } catch (error) {
       console.error('خطأ في جلب المنتجات:', error);
       toast.error('فشل في جلب المنتجات');
-    } finally {
-      setLoading(false);
-    }
+      } finally {
+        setLoading(false);
+      }
   }, []);
 
   // جلب التصنيفات
@@ -152,14 +235,20 @@ const ProductsAdmin: React.FC = () => {
 
     try {
       const { data, error } = await supabase
-        .from('product_categories')
-        .select('*')
-        .order('name');
+        .from('categories')
+        .select('category_id, name_ar, name_en, display_order')
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
 
       if (data) {
-        setCategories(data);
+        const mapped = data.map((c: any) => ({
+          id: c.category_id,
+          name: c.name_ar || c.name_en || 'غير مصنف',
+          name_ar: c.name_ar,
+          name_en: c.name_en,
+        }));
+        setCategories(mapped);
       }
     } catch (error) {
       console.error('خطأ في جلب التصنيفات:', error);
@@ -193,14 +282,33 @@ const ProductsAdmin: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('products')
-        .insert([{
-          ...formData,
+        .insert([{ 
+          title_ar: formData.title_ar || formData.name,
+          title_en: formData.title_en || formData.name,
+          short_desc_ar: formData.short_desc_ar,
+          full_desc_ar: formData.full_desc_ar,
+          price: formData.price,
+          original_price: formData.original_price || null,
+          stock: formData.stock_quantity,
+          image_urls: formData.image_urls,
+          is_featured: formData.is_featured,
+          is_active: formData.is_active,
+          sku: formData.sku,
           created_at: new Date().toISOString(),
-        }]);
+        }])
+        .select('product_id')
+        .single();
 
       if (error) throw error;
+
+      // Link category via junction table if selected
+      if (inserted?.product_id && formData.category) {
+        await supabase
+          .from('product_categories')
+          .insert([{ product_id: inserted.product_id, category_id: formData.category }]);
+      }
 
       toast.success('تم إضافة المنتج بنجاح');
       setShowAddDialog(false);
@@ -220,12 +328,31 @@ const ProductsAdmin: React.FC = () => {
       const { error } = await supabase
         .from('products')
         .update({
-          ...formData,
+          title_ar: formData.title_ar || formData.name,
+          title_en: formData.title_en || formData.name,
+          short_desc_ar: formData.short_desc_ar,
+          full_desc_ar: formData.full_desc_ar,
+          price: formData.price,
+          original_price: formData.original_price || null,
+          stock: formData.stock_quantity,
+          image_urls: formData.image_urls,
+          is_featured: formData.is_featured,
+          is_active: formData.is_active,
+          sku: formData.sku,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', editingProduct.id);
+        .eq('product_id', editingProduct.id || editingProduct.product_id);
 
       if (error) throw error;
+
+      // Update junction mapping
+      const pid = editingProduct.id || editingProduct.product_id as string;
+      if (pid) {
+        await supabase.from('product_categories').delete().eq('product_id', pid);
+        if (formData.category) {
+          await supabase.from('product_categories').insert([{ product_id: pid, category_id: formData.category }]);
+        }
+      }
 
       toast.success('تم تحديث المنتج بنجاح');
       setShowEditDialog(false);
@@ -244,13 +371,27 @@ const ProductsAdmin: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('products')
+          .from('products')
         .delete()
-        .eq('id', productId);
+        .eq('product_id', productId);
 
-      if (error) throw error;
+        if (error) {
+          // If FK violation, fallback to soft-disable
+          if ((error as any).code === '23503') {
+            const { error: softErr } = await supabase
+              .from('products')
+              .update({ is_active: false, updated_at: new Date().toISOString() })
+              .eq('product_id', productId);
+            if (softErr) throw error;
+            toast.info('لا يمكن حذف المنتج لوجود طلبات مرتبطة. تم إلغاء تفعيله بدلاً من الحذف.');
+          } else {
+            throw error;
+          }
+        }
 
-      toast.success('تم حذف المنتج بنجاح');
+      if (!(error as any)) {
+        toast.success('تم حذف المنتج بنجاح');
+      }
       fetchProducts();
     } catch (error) {
       console.error('خطأ في حذف المنتج:', error);
@@ -264,14 +405,14 @@ const ProductsAdmin: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('products')
+          .from('products')
         .update({ 
           is_active: isActive,
           updated_at: new Date().toISOString()
         })
-        .eq('id', productId);
+        .eq('product_id', productId);
 
-      if (error) throw error;
+        if (error) throw error;
 
       toast.success(`تم ${isActive ? 'تفعيل' : 'إلغاء تفعيل'} المنتج`);
       fetchProducts();
@@ -292,7 +433,7 @@ const ProductsAdmin: React.FC = () => {
           is_featured: isFeatured,
           updated_at: new Date().toISOString()
         })
-        .eq('id', productId);
+        .eq('product_id', productId);
 
       if (error) throw error;
 
@@ -301,6 +442,26 @@ const ProductsAdmin: React.FC = () => {
     } catch (error) {
       console.error('خطأ في تغيير حالة التميز:', error);
       toast.error('فشل في تغيير حالة التميز');
+    }
+  };
+
+  // تعديل سريع من الجدول (سعر/كمية)
+  const quickUpdateProduct = async (productId: string, fields: Partial<Product>) => {
+    if (!isSupabaseConfigured) return;
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          ...(fields.price !== undefined ? { price: fields.price } : {}),
+          ...(fields.stock_quantity !== undefined ? { stock: fields.stock_quantity } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('product_id', productId);
+      if (error) throw error;
+      fetchProducts();
+    } catch (error) {
+      console.error('خطأ في التعديل السريع:', error);
+      toast.error('فشل في التعديل السريع');
     }
   };
 
@@ -325,7 +486,7 @@ const ProductsAdmin: React.FC = () => {
         .from('images')
         .getPublicUrl(filePath);
 
-      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+             setFormData(prev => ({ ...prev, image_urls: [...prev.image_urls, publicUrl] }));
       toast.success('تم رفع الصورة بنجاح');
     } catch (error) {
       console.error('خطأ في رفع الصورة:', error);
@@ -339,18 +500,30 @@ const ProductsAdmin: React.FC = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      title_ar: '',
+      title_en: '',
+      short_desc_ar: '',
+      full_desc_ar: '',
       description: '',
       price: 0,
       original_price: 0,
       category: '',
+      category_name: '',
       stock_quantity: 0,
-      image_url: '',
+      image_urls: [],
+      video_review_links: [],
       is_featured: false,
       is_active: true,
       sku: '',
+      code: '',
       weight: 0,
       dimensions: '',
       specifications: {},
+      seo_title: '',
+      seo_description: '',
+      whatsapp_message_text: '',
+      tags: [],
+      technical_specs_ar: '',
     });
   };
 
@@ -359,18 +532,30 @@ const ProductsAdmin: React.FC = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      title_ar: product.title_ar || '',
+      title_en: product.title_en || '',
+      short_desc_ar: product.short_desc_ar || '',
+      full_desc_ar: product.full_desc_ar || '',
       description: product.description,
       price: product.price,
       original_price: product.original_price || 0,
       category: product.category,
+      category_name: product.category_name || '',
       stock_quantity: product.stock_quantity,
-      image_url: product.image_url || '',
+      image_urls: product.image_urls || [],
+      video_review_links: product.video_review_links || [],
       is_featured: product.is_featured,
       is_active: product.is_active,
       sku: product.sku || '',
+      code: product.code || '',
       weight: product.weight || 0,
       dimensions: product.dimensions || '',
       specifications: product.specifications || {},
+      seo_title: product.seo_title || '',
+      seo_description: product.seo_description || '',
+      whatsapp_message_text: product.whatsapp_message_text || '',
+      tags: product.tags || [],
+      technical_specs_ar: product.technical_specs_ar || '',
     });
     setShowEditDialog(true);
   };
@@ -404,14 +589,23 @@ const ProductsAdmin: React.FC = () => {
 
   // تصفية المنتجات
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || 
-                         (selectedStatus === 'active' && product.is_active) ||
-                         (selectedStatus === 'inactive' && !product.is_active);
+    const name = product.name || '';
+    const description = product.description || '';
+    const sku = product.sku || '';
+    const search = searchTerm.toLowerCase();
+
+    const matchesSearch =
+      name.toLowerCase().includes(search) ||
+      description.toLowerCase().includes(search) ||
+      sku.toLowerCase().includes(search);
+
+    const matchesCategory =
+      selectedCategory === 'all' ||
+      product.category_id === selectedCategory ||
+      product.category === selectedCategory;
+    const matchesStatus = selectedStatus === 'all' ||
+      (selectedStatus === 'active' && product.is_active) ||
+      (selectedStatus === 'inactive' && !product.is_active);
 
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -421,6 +615,7 @@ const ProductsAdmin: React.FC = () => {
     const [field, direction] = sortBy.split('-');
     
     if (field === 'name') {
+      if (!a.name || !b.name) return 0;
       return direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
     }
     if (field === 'price') {
@@ -550,7 +745,7 @@ const ProductsAdmin: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">قيمة المخزون</p>
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {formatCurrencySync(stats.totalValue, i18n.language)}
+                                     {formatCurrencySync(stats.totalValue, 'ج.م')}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
@@ -569,7 +764,7 @@ const ProductsAdmin: React.FC = () => {
               <label className="text-sm font-medium">البحث</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
+        <Input
                   placeholder="البحث في المنتجات..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -587,8 +782,8 @@ const ProductsAdmin: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">كل التصنيفات</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name_ar || category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -607,7 +802,7 @@ const ProductsAdmin: React.FC = () => {
                   <SelectItem value="inactive">غير نشط</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+      </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">الترتيب</label>
@@ -634,32 +829,50 @@ const ProductsAdmin: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>المنتجات ({sortedProducts.length})</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchProducts}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              تحديث
-            </Button>
+            <div className="flex items-center gap-2">
+              {pendingBulk.length > 0 && (
+                <>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={async () => {
+                    // حفظ مجمّع لكل الصفوف التي بها تغييرات
+                    for (const id of pendingBulk) {
+                      const changes = editingRow[id] || {};
+                      await quickUpdateProduct(id, {
+                        ...(changes.price !== undefined ? { price: changes.price } : {}),
+                        ...(changes.stock !== undefined ? { stock_quantity: changes.stock } : {}),
+                      });
+                    }
+                    setEditingRow({});
+                  }}>حفظ كل التغييرات</Button>
+                  <Button size="sm" variant="secondary" onClick={() => setEditingRow({})}>تراجع عن الكل</Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchProducts}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                تحديث
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
+          <Table>
+            <TableHeader>
+              <TableRow>
                   <TableHead>الصورة</TableHead>
                   <TableHead>اسم المنتج</TableHead>
                   <TableHead>التصنيف</TableHead>
-                  <TableHead>السعر</TableHead>
-                  <TableHead>المخزون</TableHead>
-                  <TableHead>الحالة</TableHead>
+                <TableHead>السعر</TableHead>
+                <TableHead>المخزون</TableHead>
+                <TableHead>الحالة</TableHead>
                   <TableHead className="text-right">الإجراءات</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
                 {sortedProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-gray-500">
@@ -695,44 +908,65 @@ const ProductsAdmin: React.FC = () => {
                       <TableCell>
                         <Badge variant="outline">{product.category}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {formatCurrencySync(product.price, i18n.language)}
-                          </span>
-                          {product.original_price && product.original_price > product.price && (
-                            <span className="text-sm text-gray-500 line-through">
-                              {formatCurrencySync(product.original_price, i18n.language)}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className={product.stock_quantity < 10 ? 'text-red-600 font-medium' : ''}>
-                            {product.stock_quantity}
-                          </span>
-                          {product.stock_quantity < 10 && (
-                            <Badge variant="destructive" className="text-xs">منخفض</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={product.is_active}
-                            onCheckedChange={(checked) => toggleProductStatus(product.id, checked)}
-                          />
-                          <Badge variant={product.is_active ? 'default' : 'secondary'}>
-                            {product.is_active ? 'نشط' : 'غير نشط'}
-                          </Badge>
-                          {product.is_featured && (
-                            <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-                              مميز
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          className="w-24 h-8"
+                          value={(editingRow[product.id]?.price ?? product.price)}
+                          onChange={(e) => setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], price: parseFloat(e.target.value) || 0 } }))}
+                        />
+                        {(editingRow[product.id]?.price !== undefined && editingRow[product.id]?.price !== product.price) && (
+                          <div className="flex flex-col gap-1">
+                            <Button size="sm" variant="outline" onClick={() => { quickUpdateProduct(product.id, { price: editingRow[product.id]!.price! }); setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], price: undefined } })); }}>حفظ</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], price: undefined } }))}>تراجع</Button>
+                          </div>
+                        )}
+                      </div>
+                      {product.original_price && product.original_price > product.price && (
+                        <span className="text-sm text-gray-500 line-through">
+                          {formatCurrencySync(product.original_price, 'ج.م')}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          className="w-24 h-8"
+                          value={(editingRow[product.id]?.stock ?? product.stock_quantity)}
+                          onChange={(e) => setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], stock: parseInt(e.target.value) || 0 } }))}
+                        />
+                        {(editingRow[product.id]?.stock !== undefined && editingRow[product.id]?.stock !== product.stock_quantity) && (
+                          <div className="flex flex-col gap-1">
+                            <Button size="sm" variant="outline" onClick={() => { quickUpdateProduct(product.id, { stock_quantity: editingRow[product.id]!.stock! }); setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], stock: undefined } })); }}>حفظ</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingRow(prev => ({ ...prev, [product.id]: { ...prev[product.id], stock: undefined } }))}>تراجع</Button>
+                          </div>
+                        )}
+                      </div>
+                      {product.stock_quantity < 10 && (
+                        <Badge variant="destructive" className="text-xs">منخفض</Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant={product.is_active ? 'default' : 'secondary'}
+                        className={product.is_active ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}
+                        onClick={() => toggleProductStatus(product.id, !product.is_active)}
+                      >
+                        {product.is_active ? 'نشط' : 'غير نشط'}
+                      </Button>
+                      {product.is_featured && (
+                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">مميز</Badge>
+                      )}
+                    </div>
+                  </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <TooltipProvider>
@@ -754,11 +988,13 @@ const ProductsAdmin: React.FC = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  variant="ghost"
+                                  variant={product.is_featured ? 'secondary' : 'outline'}
                                   size="sm"
                                   onClick={() => toggleFeatured(product.id, !product.is_featured)}
+                                  className="gap-1"
                                 >
                                   <Tag className="h-4 w-4" />
+                                  {product.is_featured ? 'إزالة التميز' : 'تمييز'}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -777,18 +1013,18 @@ const ProductsAdmin: React.FC = () => {
                                   className="text-red-600 hover:text-red-700"
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                </Button>
+                        </Button>
                               </TooltipTrigger>
                               <TooltipContent>حذف</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                  </TableCell>
+                </TableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
+            </TableBody>
+          </Table>
           </div>
         </CardContent>
       </Card>
@@ -826,8 +1062,8 @@ const ProductsAdmin: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name_ar || category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -879,7 +1115,7 @@ const ProductsAdmin: React.FC = () => {
                 min="0"
                 step="0.01"
               />
-            </div>
+      </div>
 
             <div className="space-y-2">
               <Label>الأبعاد</Label>
@@ -890,14 +1126,14 @@ const ProductsAdmin: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>رابط الصورة</Label>
-              <Input
-                value={formData.image_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                placeholder="رابط الصورة"
-              />
-            </div>
+                         <div className="space-y-2">
+               <Label>روابط الصور (مفصولة بفواصل)</Label>
+               <Input
+                 value={formData.image_urls.join(', ')}
+                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
+                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
+               />
+              </div>
 
             <div className="space-y-2">
               <Label>رفع صورة</Label>
@@ -910,8 +1146,8 @@ const ProductsAdmin: React.FC = () => {
                 }}
                 disabled={uploadingImage}
               />
+              </div>
             </div>
-          </div>
 
           <div className="space-y-2">
             <Label>الوصف *</Label>
@@ -934,7 +1170,7 @@ const ProductsAdmin: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <Switch
+                    <Switch
                 id="active"
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
@@ -977,7 +1213,7 @@ const ProductsAdmin: React.FC = () => {
                 onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
                 placeholder="رمز المنتج"
               />
-            </div>
+                  </div>
 
             <div className="space-y-2">
               <Label>التصنيف *</Label>
@@ -987,8 +1223,8 @@ const ProductsAdmin: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.name}>
-                      {category.name}
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name_ar || category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1051,14 +1287,14 @@ const ProductsAdmin: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>رابط الصورة</Label>
-              <Input
-                value={formData.image_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                placeholder="رابط الصورة"
-              />
-            </div>
+                         <div className="space-y-2">
+               <Label>روابط الصور (مفصولة بفواصل)</Label>
+               <Input
+                 value={formData.image_urls.join(', ')}
+                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
+                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
+               />
+             </div>
 
             <div className="space-y-2">
               <Label>رفع صورة</Label>
@@ -1071,8 +1307,8 @@ const ProductsAdmin: React.FC = () => {
                 }}
                 disabled={uploadingImage}
               />
+              </div>
             </div>
-          </div>
 
           <div className="space-y-2">
             <Label>الوصف *</Label>
@@ -1085,33 +1321,33 @@ const ProductsAdmin: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+               <div className="flex items-center space-x-2">
               <Switch
                 id="edit-featured"
                 checked={formData.is_featured}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
               />
               <Label htmlFor="edit-featured">منتج مميز</Label>
-            </div>
+              </div>
 
-            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
               <Switch
                 id="edit-active"
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
               />
               <Label htmlFor="edit-active">نشط</Label>
+              </div>
             </div>
-          </div>
 
-          <DialogFooter>
+            <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               إلغاء
             </Button>
             <Button onClick={updateProduct} disabled={!formData.name || !formData.category || formData.price <= 0}>
               تحديث المنتج
             </Button>
-          </DialogFooter>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

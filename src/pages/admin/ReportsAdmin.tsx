@@ -148,12 +148,12 @@ const ReportsAdmin: React.FC = () => {
 
       if (ordersError) throw ordersError;
 
-      // جلب العملاء
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*');
+             // جلب العملاء
+       const { data: customersData, error: customersError } = await supabase
+         .from('users')
+         .select('*');
 
-      if (customersError) throw customersError;
+       if (customersError) throw customersError;
 
       // جلب المنتجات
       const { data: productsData, error: productsError } = await supabase
@@ -403,7 +403,7 @@ const ReportsAdmin: React.FC = () => {
       </div>
 
       {/* الفلاتر */}
-      <Card>
+        <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
@@ -485,7 +485,7 @@ const ReportsAdmin: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">إجمالي المبيعات</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatCurrencySync(reportData.totalSales, i18n.language)}
+                      {formatCurrencySync(reportData.totalSales, 'ج.م')}
                     </p>
                     <div className="flex items-center gap-1 mt-1">
                       {reportData.salesGrowth >= 0 ? (
@@ -502,10 +502,10 @@ const ReportsAdmin: React.FC = () => {
                     <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -526,24 +526,24 @@ const ReportsAdmin: React.FC = () => {
                     <ShoppingCart className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">متوسط قيمة الطلب</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatCurrencySync(reportData.averageOrderValue, i18n.language)}
+                      {formatCurrencySync(reportData.averageOrderValue, 'ج.م')}
                     </p>
                   </div>
                   <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
                     <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
+          </CardContent>
+        </Card>
 
             <Card>
               <CardContent className="p-6">
@@ -561,24 +561,24 @@ const ReportsAdmin: React.FC = () => {
                         {Math.abs(reportData.customerGrowth).toFixed(1)}%
                       </span>
                     </div>
-                  </div>
+      </div>
                   <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
                     <Users className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                  </div>
-                </div>
+      </div>
+    </div>
               </CardContent>
             </Card>
           </div>
 
           {/* الرسوم البيانية */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
+              <Card>
+                <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5" />
                   تطور المبيعات والطلبات
                 </CardTitle>
-              </CardHeader>
+                </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={reportData.salesChartData}>
@@ -590,17 +590,17 @@ const ReportsAdmin: React.FC = () => {
                     <Area yAxisId="left" type="monotone" dataKey="sales" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
                     <Area yAxisId="right" type="monotone" dataKey="orders" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
                   </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
+              <Card>
+                <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
                   أفضل المدن
                 </CardTitle>
-              </CardHeader>
+                </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsBarChart data={reportData.topCities}>
@@ -610,10 +610,10 @@ const ReportsAdmin: React.FC = () => {
                     <Tooltip />
                     <Bar dataKey="orders" fill="#8b5cf6" />
                   </RechartsBarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
         </TabsContent>
 
         {/* تبويب المنتجات */}
@@ -626,7 +626,7 @@ const ReportsAdmin: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+            <div className="space-y-4">
                 {reportData.topProducts.map((product, index) => (
                   <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
@@ -643,20 +643,20 @@ const ReportsAdmin: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        {formatCurrencySync(product.revenue, i18n.language)}
-                      </div>
+                                                 {formatCurrencySync(product.revenue, 'ج.م')}
+                              </div>
                       <Badge variant="secondary">{product.sales} وحدة</Badge>
-                    </div>
-                  </div>
+                              </div>
+                            </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
         </TabsContent>
 
         {/* تبويب العملاء */}
         <TabsContent value="customers" className="space-y-6">
-          <Card>
+                <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -676,20 +676,20 @@ const ReportsAdmin: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        {formatCurrencySync(customer.totalSpent, i18n.language)}
+                                                 {formatCurrencySync(customer.totalSpent, 'ج.م')}
                       </div>
                       <Badge variant="secondary">{customer.ordersCount} طلب</Badge>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
         </TabsContent>
 
         {/* تبويب المخزون */}
         <TabsContent value="inventory" className="space-y-6">
-          <Card>
+                <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -720,7 +720,7 @@ const ReportsAdmin: React.FC = () => {
                         {product.currentStock <= product.minStock ? 'منخفض جداً' : 'منخفض'}
                       </Badge>
                     </div>
-                  </div>
+              </div>
                 ))}
               </div>
             </CardContent>

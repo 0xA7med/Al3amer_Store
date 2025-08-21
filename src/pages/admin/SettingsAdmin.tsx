@@ -293,68 +293,71 @@ const SettingsAdmin: React.FC = () => {
     <div className="space-y-6">
       {/* العنوان والأزرار */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
+    <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">إعدادات الموقع</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             إدارة إعدادات الموقع والمتجر
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={exportSettings}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            تصدير
-          </Button>
-          <Button
-            variant="outline"
-            onClick={resetSettings}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            إعادة تعيين
-          </Button>
-          <Button
-            onClick={saveSettings}
-            disabled={saving}
-            className="flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-          </Button>
-        </div>
+                 <div className="flex gap-2">
+           <Button
+             variant="outline"
+             onClick={exportSettings}
+             className="flex items-center gap-2"
+           >
+             <Download className="h-4 w-4" />
+             تصدير
+           </Button>
+           <Button
+             variant="outline"
+             onClick={resetSettings}
+             className="flex items-center gap-2"
+           >
+             <RefreshCw className="h-4 w-4" />
+             إعادة تعيين
+           </Button>
+
+           <Button
+             onClick={saveSettings}
+             disabled={saving}
+             className="flex items-center gap-2"
+           >
+             <Save className="h-4 w-4" />
+             {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+           </Button>
+         </div>
       </div>
 
-      {/* التبويبات */}
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            عام
-          </TabsTrigger>
-          <TabsTrigger value="company" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            الشركة
-          </TabsTrigger>
-          <TabsTrigger value="store" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            المتجر
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            الدفع
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            البريد
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            الأمان
-          </TabsTrigger>
-        </TabsList>
+               {/* التبويبات */}
+         <Tabs defaultValue="general" className="w-full">
+           <TabsList className="grid w-full grid-cols-6">
+             <TabsTrigger value="general" className="flex items-center gap-2">
+               <Globe className="h-4 w-4" />
+               عام
+             </TabsTrigger>
+             <TabsTrigger value="company" className="flex items-center gap-2">
+               <MapPin className="h-4 w-4" />
+               الشركة
+             </TabsTrigger>
+             <TabsTrigger value="store" className="flex items-center gap-2">
+               <Settings className="h-4 w-4" />
+               المتجر
+             </TabsTrigger>
+             <TabsTrigger value="payment" className="flex items-center gap-2">
+               <DollarSign className="h-4 w-4" />
+               الدفع
+             </TabsTrigger>
+             <TabsTrigger value="email" className="flex items-center gap-2">
+               <Mail className="h-4 w-4" />
+               البريد
+             </TabsTrigger>
+             <TabsTrigger value="security" className="flex items-center gap-2">
+               <Shield className="h-4 w-4" />
+               الأمان
+             </TabsTrigger>
+           </TabsList>
+           
+           
 
         {/* التبويب العام */}
         <TabsContent value="general" className="space-y-6">
@@ -444,14 +447,14 @@ const SettingsAdmin: React.FC = () => {
 
         {/* تبويب معلومات الشركة */}
         <TabsContent value="company" className="space-y-6">
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 معلومات الشركة
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>اسم الشركة</Label>
@@ -606,30 +609,30 @@ const SettingsAdmin: React.FC = () => {
                     step="0.01"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         </TabsContent>
 
         {/* تبويب إعدادات البريد */}
         <TabsContent value="email" className="space-y-6">
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
                 إعدادات البريد الإلكتروني
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>خادم SMTP</Label>
-                  <Input
+                    <Input
                     value={settings.smtp_host}
                     onChange={(e) => updateSetting('smtp_host', e.target.value)}
                     placeholder="smtp.gmail.com"
                   />
-                </div>
+                  </div>
                 <div className="space-y-2">
                   <Label>منفذ SMTP</Label>
                   <Input
@@ -638,8 +641,8 @@ const SettingsAdmin: React.FC = () => {
                     onChange={(e) => updateSetting('smtp_port', parseInt(e.target.value))}
                     placeholder="587"
                   />
-                </div>
-              </div>
+                        </div>
+                    </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>اسم المستخدم</Label>
@@ -651,14 +654,14 @@ const SettingsAdmin: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>كلمة المرور</Label>
-                  <Input
+                    <Input
                     value={settings.smtp_password}
                     onChange={(e) => updateSetting('smtp_password', e.target.value)}
                     placeholder="كلمة المرور"
                     type="password"
                   />
-                </div>
-              </div>
+                  </div>
+                        </div>
               <div className="space-y-2">
                 <Label>نوع التشفير</Label>
                 <Select value={settings.smtp_encryption} onValueChange={(value: 'tls' | 'ssl' | 'none') => updateSetting('smtp_encryption', value)}>
@@ -671,7 +674,7 @@ const SettingsAdmin: React.FC = () => {
                     <SelectItem value="none">بدون تشفير</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                    </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -696,14 +699,14 @@ const SettingsAdmin: React.FC = () => {
                   <Label htmlFor="enable_registration">تفعيل التسجيل</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch
+                    <Switch
                     id="require_email_verification"
                     checked={settings.require_email_verification}
                     onCheckedChange={(checked) => updateSetting('require_email_verification', checked)}
                   />
                   <Label htmlFor="require_email_verification">التحقق من البريد</Label>
                 </div>
-              </div>
+                  </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>مهلة الجلسة (ساعات)</Label>
@@ -725,70 +728,83 @@ const SettingsAdmin: React.FC = () => {
                     max="10"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
 
-      {/* قسم النسخ الاحتياطي */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-                         <Database className="h-5 w-5" />
-            النسخ الاحتياطي والاستيراد
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>استيراد الإعدادات</Label>
-              <Input
-                type="file"
-                accept=".json"
-                onChange={importSettings}
-                className="cursor-pointer"
-              />
-              <p className="text-sm text-gray-500">
-                اختر ملف JSON يحتوي على الإعدادات
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>النسخ الاحتياطي التلقائي</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="auto_backup"
-                  checked={settings.auto_backup}
-                  onCheckedChange={(checked) => updateSetting('auto_backup', checked)}
-                />
-                <Label htmlFor="auto_backup">تفعيل النسخ الاحتياطي التلقائي</Label>
-              </div>
-              {settings.auto_backup && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                  <Select value={settings.backup_frequency} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateSetting('backup_frequency', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">يومياً</SelectItem>
-                      <SelectItem value="weekly">أسبوعياً</SelectItem>
-                      <SelectItem value="monthly">شهرياً</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={settings.backup_retention}
-                    onChange={(e) => updateSetting('backup_retention', parseInt(e.target.value))}
-                    placeholder="عدد النسخ المحتفظ بها"
-                    min="1"
-                    max="365"
-                  />
-                </div>
-              )}
-            </div>
+             {/* قسم النسخ الاحتياطي */}
+       <Card>
+         <CardHeader>
+           <CardTitle className="flex items-center gap-2">
+             <Database className="h-5 w-5" />
+             النسخ الاحتياطي والاستيراد
+           </CardTitle>
+         </CardHeader>
+         <CardContent className="space-y-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-2">
+               <Label>استيراد الإعدادات</Label>
+               <Input
+                 type="file"
+                 accept=".json"
+                 onChange={importSettings}
+                 className="cursor-pointer"
+               />
+               <p className="text-sm text-gray-500">
+                 اختر ملف JSON يحتوي على الإعدادات
+               </p>
+             </div>
+             <div className="space-y-2">
+               <Label>النسخ الاحتياطي التلقائي</Label>
+               <div className="flex items-center space-x-2">
+                 <Switch
+                   id="auto_backup"
+                   checked={settings.auto_backup}
+                   onCheckedChange={(checked) => updateSetting('auto_backup', checked)}
+                 />
+                 <Label htmlFor="auto_backup">تفعيل النسخ الاحتياطي التلقائي</Label>
+               </div>
+               {settings.auto_backup && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                   <Select value={settings.backup_frequency} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateSetting('backup_frequency', value)}>
+                     <SelectTrigger className="w-full">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="daily">يومياً</SelectItem>
+                       <SelectItem value="weekly">أسبوعياً</SelectItem>
+                       <SelectItem value="monthly">شهرياً</SelectItem>
+                     </SelectContent>
+                   </Select>
+                   <Input
+                     type="number"
+                     value={settings.backup_retention}
+                     onChange={(e) => updateSetting('backup_retention', parseInt(e.target.value))}
+                     placeholder="عدد النسخ المحتفظ بها"
+                     min="1"
+                     max="365"
+                     className="w-full"
+                   />
+                 </div>
+               )}
+             </div>
           </div>
-        </CardContent>
-      </Card>
+           
+           {/* زر النسخ الاحتياطي اليدوي */}
+           <div className="pt-4 border-t">
+             <Button
+               variant="outline"
+               onClick={exportSettings}
+               className="flex items-center gap-2"
+             >
+               <Download className="h-4 w-4" />
+               نسخ احتياطي يدوي
+            </Button>
+          </div>
+         </CardContent>
+       </Card>
     </div>
   );
 };
