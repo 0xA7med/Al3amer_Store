@@ -31,6 +31,7 @@ import {
   Settings,
   MoreHorizontal
 } from 'lucide-react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { formatCurrencySync } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -164,6 +165,60 @@ const ProductsAdmin: React.FC = () => {
     featured: 0,
     totalValue: 0,
   });
+  const [showAllFields, setShowAllFields] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateProductDetailsAI = async () => {
+    if (!formData.title_ar) {
+        toast.error("يرجى إدخال اسم المنتج أولاً.");
+        return;
+    }
+
+    setIsGenerating(true);
+    try {
+        const genAI = new GoogleGenerativeAI("AIzaSyA3kNLnFwOGTbyyVFBF7zIPk6im6IfJoJk");
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+        const prompt = `
+            Based on the product name "${formData.title_ar}", generate plausible product details for an e-commerce store. I need a JSON object with the following structure. Please provide the response ONLY in JSON format, with Arabic content where appropriate. The content should be realistic for a product listing.
+            {
+                "title_en": "English name for the product",
+                "short_desc_ar": "A short, catchy Arabic description (1-2 sentences)",
+                "full_desc_ar": "A full, detailed Arabic description (2-3 paragraphs, can include features as bullet points)",
+                "tags": ["relevant", "searchable", "tags"],
+                "seo_title": "A good SEO Title in Arabic",
+                "seo_description": "A compelling SEO Meta Description in Arabic (around 155 characters)",
+                "technical_specs_ar": "A string containing key-value technical specifications, with each spec on a new line. For example: 'اللون: أسود\\nالمادة: بلاستيك مقوى\\nالضمان: سنة'"
+            }
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const generatedData = JSON.parse(jsonString);
+
+        setFormData(prev => ({
+            ...prev,
+            title_en: generatedData.title_en || prev.title_en,
+            short_desc_ar: generatedData.short_desc_ar || prev.short_desc_ar,
+            full_desc_ar: generatedData.full_desc_ar || prev.full_desc_ar,
+            tags: Array.isArray(generatedData.tags) ? generatedData.tags : prev.tags,
+            seo_title: generatedData.seo_title || prev.seo_title,
+            seo_description: generatedData.seo_description || prev.seo_description,
+            technical_specs_ar: generatedData.technical_specs_ar || prev.technical_specs_ar,
+        }));
+
+        toast.success("تم ملء البيانات بالذكاء الاصطناعي! يرجى مراجعتها قبل الحفظ.");
+
+    } catch (error) {
+        console.error("Error generating AI product details:", error);
+        toast.error("حدث خطأ أثناء إنشاء بيانات المنتج. قد تكون واجهة برمجة التطبيقات غير متاحة.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
 
   // جلب المنتجات
   const fetchProducts = useCallback(async () => {
@@ -282,22 +337,21 @@ const ProductsAdmin: React.FC = () => {
     }
 
     try {
+      const { category_name, stock_quantity, ...restOfForm } = formData;
+      const payload: Omit<typeof formData, 'category_name' | 'stock_quantity'> & { stock: number, name: string, description: string, tags: string[] } = {
+        ...restOfForm,
+        name: formData.title_ar || formData.name,
+        description: formData.full_desc_ar || formData.short_desc_ar || '',
+        stock: stock_quantity,
+        image_urls: formData.image_urls.map(url => url.trim()).filter(url => url),
+        video_review_links: formData.video_review_links.map(url => url.trim()).filter(url => url),
+        tags: Array.isArray(formData.tags) ? formData.tags : formData.tags?.split(',').map(t => t.trim()).filter(Boolean) ?? [],
+        original_price: formData.original_price || null,
+      };
+
       const { data: inserted, error } = await supabase
         .from('products')
-        .insert([{ 
-          title_ar: formData.title_ar || formData.name,
-          title_en: formData.title_en || formData.name,
-          short_desc_ar: formData.short_desc_ar,
-          full_desc_ar: formData.full_desc_ar,
-          price: formData.price,
-          original_price: formData.original_price || null,
-          stock: formData.stock_quantity,
-          image_urls: formData.image_urls,
-          is_featured: formData.is_featured,
-          is_active: formData.is_active,
-          sku: formData.sku,
-          created_at: new Date().toISOString(),
-        }])
+        .insert([payload])
         .select('product_id')
         .single();
 
@@ -316,7 +370,7 @@ const ProductsAdmin: React.FC = () => {
       fetchProducts();
     } catch (error) {
       console.error('خطأ في إضافة المنتج:', error);
-      toast.error('فشل في إضافة المنتج');
+      toast.error(`فشل في إضافة المنتج: ${(error as Error).message}`);
     }
   };
 
@@ -325,22 +379,22 @@ const ProductsAdmin: React.FC = () => {
     if (!editingProduct || !isSupabaseConfigured) return;
 
     try {
+      const { category_name, stock_quantity, ...restOfForm } = formData;
+      const payload = {
+        ...restOfForm,
+        name: formData.title_ar || formData.name,
+        description: formData.full_desc_ar || formData.short_desc_ar || '',
+        stock: stock_quantity,
+        image_urls: formData.image_urls.map(url => url.trim()).filter(url => url),
+        video_review_links: formData.video_review_links.map(url => url.trim()).filter(url => url),
+        tags: Array.isArray(formData.tags) ? formData.tags : formData.tags?.split(',').map(t => t.trim()).filter(Boolean) ?? [],
+        original_price: formData.original_price || null,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error } = await supabase
         .from('products')
-        .update({
-          title_ar: formData.title_ar || formData.name,
-          title_en: formData.title_en || formData.name,
-          short_desc_ar: formData.short_desc_ar,
-          full_desc_ar: formData.full_desc_ar,
-          price: formData.price,
-          original_price: formData.original_price || null,
-          stock: formData.stock_quantity,
-          image_urls: formData.image_urls,
-          is_featured: formData.is_featured,
-          is_active: formData.is_active,
-          sku: formData.sku,
-          updated_at: new Date().toISOString(),
-        })
+        .update(payload)
         .eq('product_id', editingProduct.id || editingProduct.product_id);
 
       if (error) throw error;
@@ -361,7 +415,7 @@ const ProductsAdmin: React.FC = () => {
       fetchProducts();
     } catch (error) {
       console.error('خطأ في تحديث المنتج:', error);
-      toast.error('فشل في تحديث المنتج');
+      toast.error(`فشل في تحديث المنتج: ${(error as Error).message}`);
     }
   };
 
@@ -953,18 +1007,23 @@ const ProductsAdmin: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant={product.is_active ? 'default' : 'secondary'}
-                        className={product.is_active ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}
-                        onClick={() => toggleProductStatus(product.id, !product.is_active)}
-                      >
-                        {product.is_active ? 'نشط' : 'غير نشط'}
-                      </Button>
-                      {product.is_featured && (
-                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">مميز</Badge>
-                      )}
+                    <div className="flex flex-col items-start gap-2">
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                          <Switch
+                            id={`active-${product.id}`}
+                            checked={product.is_active}
+                            onCheckedChange={(checked) => toggleProductStatus(product.id, checked)}
+                          />
+                          <Label htmlFor={`active-${product.id}`}>{product.is_active ? 'نشط' : 'غير نشط'}</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                          <Switch
+                            id={`featured-${product.id}`}
+                            checked={product.is_featured}
+                            onCheckedChange={(checked) => toggleFeatured(product.id, checked)}
+                          />
+                          <Label htmlFor={`featured-${product.id}`}>{product.is_featured ? 'مميز' : 'غير مميز'}</Label>
+                        </div>
                     </div>
                   </TableCell>
                       <TableCell className="text-right">
@@ -981,25 +1040,6 @@ const ProductsAdmin: React.FC = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>تعديل</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant={product.is_featured ? 'secondary' : 'outline'}
-                                  size="sm"
-                                  onClick={() => toggleFeatured(product.id, !product.is_featured)}
-                                  className="gap-1"
-                                >
-                                  <Tag className="h-4 w-4" />
-                                  {product.is_featured ? 'إزالة التميز' : 'تمييز'}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {product.is_featured ? 'إزالة التميز' : 'إضافة التميز'}
-                              </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
 
@@ -1030,324 +1070,305 @@ const ProductsAdmin: React.FC = () => {
       </Card>
 
       {/* نافذة إضافة منتج جديد */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showAddDialog} onOpenChange={(isOpen) => {
+        setShowAddDialog(isOpen);
+        if (!isOpen) setShowAllFields(false); // Reset on close
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>إضافة منتج جديد</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>اسم المنتج *</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="اسم المنتج"
-              />
+
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4">
+            {/* Core Fields */}
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="title_ar">اسم المنتج (العربية) *</Label>
+              <div className="flex items-center gap-2">
+                <Input id="title_ar" value={formData.title_ar} onChange={(e) => setFormData(p => ({ ...p, title_ar: e.target.value, name: e.target.value }))} placeholder="مثال: طابعة فواتير حرارية" />
+                <Button onClick={generateProductDetailsAI} disabled={isGenerating} variant="outline" type="button">
+                  {isGenerating ? (
+                    <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> جاري الإنشاء...</>
+                  ) : (
+                    '✨ ملء تلقائي'
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label>SKU</Label>
-              <Input
-                value={formData.sku}
-                onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                placeholder="رمز المنتج"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>التصنيف *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر التصنيف" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name_ar || category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Label htmlFor="category">التصنيف *</Label>
+              <Select value={formData.category} onValueChange={(v) => setFormData(p => ({ ...p, category: v }))}>
+                <SelectTrigger id="category"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger>
+                <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name_ar || c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>السعر *</Label>
-              <Input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+              <Label htmlFor="price">السعر *</Label>
+              <Input id="price" type="number" value={formData.price} onChange={(e) => setFormData(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
             </div>
 
             <div className="space-y-2">
-              <Label>السعر الأصلي</Label>
-              <Input
-                type="number"
-                value={formData.original_price}
-                onChange={(e) => setFormData(prev => ({ ...prev, original_price: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+              <Label htmlFor="stock_quantity">الكمية المتوفرة *</Label>
+              <Input id="stock_quantity" type="number" value={formData.stock_quantity} onChange={(e) => setFormData(p => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))} placeholder="0" />
             </div>
 
-            <div className="space-y-2">
-              <Label>الكمية المتوفرة *</Label>
-              <Input
-                type="number"
-                value={formData.stock_quantity}
-                onChange={(e) => setFormData(prev => ({ ...prev, stock_quantity: parseInt(e.target.value) || 0 }))}
-                placeholder="0"
-                min="0"
-              />
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="short_desc_ar">وصف قصير (العربية)</Label>
+              <Textarea id="short_desc_ar" value={formData.short_desc_ar} onChange={(e) => setFormData(p => ({...p, short_desc_ar: e.target.value}))} placeholder="وصف موجز للمنتج يظهر في بطاقات المنتج." rows={2} />
             </div>
 
-            <div className="space-y-2">
-              <Label>الوزن (كجم)</Label>
-              <Input
-                type="number"
-                value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
-      </div>
-
-            <div className="space-y-2">
-              <Label>الأبعاد</Label>
-              <Input
-                value={formData.dimensions}
-                onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                placeholder="الطول × العرض × الارتفاع"
-              />
+            {/* Toggle for Advanced Fields */}
+            <div className="col-span-2 mt-4">
+                <Button variant="outline" onClick={() => setShowAllFields(p => !p)} className="w-full">
+                    {showAllFields ? 'إخفاء الحقول المتقدمة' : 'عرض المزيد من الخيارات'}
+                </Button>
             </div>
 
-                         <div className="space-y-2">
-               <Label>روابط الصور (مفصولة بفواصل)</Label>
-               <Input
-                 value={formData.image_urls.join(', ')}
-                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
-                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
-               />
-              </div>
-
-            <div className="space-y-2">
-              <Label>رفع صورة</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadImage(file);
-                }}
-                disabled={uploadingImage}
-              />
-              </div>
-            </div>
-
-          <div className="space-y-2">
-            <Label>الوصف *</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف المنتج"
-              rows={4}
-            />
+            {/* Advanced Fields */}
+            {showAllFields && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="title_en">اسم المنتج (الإنجليزية)</Label>
+                  <Input id="title_en" value={formData.title_en} onChange={(e) => setFormData(p => ({ ...p, title_en: e.target.value }))} placeholder="Example: Thermal Receipt Printer" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="original_price">السعر الأصلي (قبل الخصم)</Label>
+                  <Input id="original_price" type="number" value={formData.original_price} onChange={(e) => setFormData(p => ({ ...p, original_price: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="full_desc_ar">وصف كامل (العربية)</Label>
+                  <Textarea id="full_desc_ar" value={formData.full_desc_ar} onChange={(e) => setFormData(p => ({...p, full_desc_ar: e.target.value}))} placeholder="وصف تفصيلي للمنتج يظهر في صفحة المنتج." rows={5} />
+                </div>
+                <hr className="col-span-2"/>
+                <div className="space-y-2">
+                  <Label htmlFor="code">كود المنتج (Eslam)</Label>
+                  <Input id="code" value={formData.code} onChange={(e) => setFormData(p => ({ ...p, code: e.target.value }))} placeholder="الكود الداخلي للمنتج" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sku">SKU</Label>
+                  <Input id="sku" value={formData.sku} onChange={(e) => setFormData(p => ({ ...p, sku: e.target.value }))} placeholder="رمز التخزين التعريفي" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">الوزن (كجم)</Label>
+                  <Input id="weight" type="number" value={formData.weight} onChange={(e) => setFormData(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} placeholder="0.0" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dimensions">الأبعاد (سم)</Label>
+                  <Input id="dimensions" value={formData.dimensions} onChange={(e) => setFormData(p => ({ ...p, dimensions: e.target.value }))} placeholder="الطولxالعرضxالارتفاع" />
+                </div>
+                <hr className="col-span-2"/>
+                <div className="space-y-2 col-span-2">
+                  <Label>روابط الصور</Label>
+                  {formData.image_urls.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input value={url} onChange={(e) => { const newUrls = [...formData.image_urls]; newUrls[index] = e.target.value; setFormData(p => ({ ...p, image_urls: newUrls })); }} placeholder={`رابط الصورة ${index + 1}`} />
+                      <Button variant="destructive" size="sm" onClick={() => { const newUrls = formData.image_urls.filter((_, i) => i !== index); setFormData(p => ({ ...p, image_urls: newUrls })); }}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => setFormData(p => ({ ...p, image_urls: [...p.image_urls, ''] }))}>إضافة رابط صورة</Button>
+                  <Label>أو رفع صورة مباشرة</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) uploadImage(e.target.files[0]); }} disabled={uploadingImage} />
+                </div>
+                 <hr className="col-span-2"/>
+                <div className="space-y-2 col-span-2">
+                  <Label>روابط فيديو المراجعة</Label>
+                  {formData.video_review_links.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input value={url} onChange={(e) => { const newLinks = [...formData.video_review_links]; newLinks[index] = e.target.value; setFormData(p => ({ ...p, video_review_links: newLinks })); }} placeholder={`رابط الفيديو ${index + 1}`} />
+                      <Button variant="destructive" size="sm" onClick={() => { const newLinks = formData.video_review_links.filter((_, i) => i !== index); setFormData(p => ({ ...p, video_review_links: newLinks })); }}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => setFormData(p => ({ ...p, video_review_links: [...p.video_review_links, ''] }))}>إضافة رابط فيديو</Button>
+                </div>
+                 <hr className="col-span-2"/>
+                <div className="space-y-2">
+                  <Label htmlFor="seo_title">عنوان SEO</Label>
+                  <Input id="seo_title" value={formData.seo_title} onChange={(e) => setFormData(p => ({ ...p, seo_title: e.target.value }))} placeholder="عنوان يظهر في محركات البحث" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seo_description">وصف SEO</Label>
+                  <Input id="seo_description" value={formData.seo_description} onChange={(e) => setFormData(p => ({ ...p, seo_description: e.target.value }))} placeholder="وصف يظهر في محركات البحث" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="tags">علامات (Tags)</Label>
+                  <Input id="tags" value={Array.isArray(formData.tags) ? formData.tags.join(', ') : formData.tags} onChange={(e) => setFormData(p => ({ ...p, tags: e.target.value.split(',').map(t => t.trim()) }))} placeholder="طابعة, فواتير, حرارية" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="whatsapp_message_text">رسالة واتساب</Label>
+                  <Textarea id="whatsapp_message_text" value={formData.whatsapp_message_text} onChange={(e) => setFormData(p => ({...p, whatsapp_message_text: e.target.value}))} placeholder="نص رسالة واتساب عند الطلب السريع" rows={2} />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="technical_specs_ar">المواصفات الفنية (العربية)</Label>
+                  <Textarea id="technical_specs_ar" value={formData.technical_specs_ar} onChange={(e) => setFormData(p => ({...p, technical_specs_ar: e.target.value}))} placeholder="كل مواصفة في سطر، مثال: اللون: أسود" rows={4} />
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
-              />
+          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Switch id="featured" checked={formData.is_featured} onCheckedChange={(c) => setFormData(p => ({ ...p, is_featured: c }))} />
               <Label htmlFor="featured">منتج مميز</Label>
             </div>
-
-            <div className="flex items-center space-x-2">
-                    <Switch
-                id="active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-              />
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Switch id="active" checked={formData.is_active} onCheckedChange={(c) => setFormData(p => ({ ...p, is_active: c }))} />
               <Label htmlFor="active">نشط</Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={addProduct} disabled={!formData.name || !formData.category || formData.price <= 0}>
-              إضافة المنتج
-            </Button>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>إلغاء</Button>
+            <Button onClick={addProduct} disabled={!formData.title_ar || !formData.category || formData.price <= 0}>إضافة المنتج</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* نافذة تعديل المنتج */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showEditDialog} onOpenChange={(isOpen) => {
+        setShowEditDialog(isOpen);
+        if (!isOpen) setShowAllFields(false); // Reset on close
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل المنتج</DialogTitle>
+            <DialogTitle>تعديل المنتج: {formData.name}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Form Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4">
+            {/* Core Fields */}
             <div className="space-y-2">
-              <Label>اسم المنتج *</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="اسم المنتج"
-              />
+              <Label htmlFor="edit_title_ar">اسم المنتج (العربية) *</Label>
+              <Input id="edit_title_ar" value={formData.title_ar} onChange={(e) => setFormData(p => ({ ...p, title_ar: e.target.value, name: e.target.value }))} placeholder="مثال: طابعة فواتير حرارية" />
             </div>
 
             <div className="space-y-2">
-              <Label>SKU</Label>
-              <Input
-                value={formData.sku}
-                onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                placeholder="رمز المنتج"
-              />
-                  </div>
-
-            <div className="space-y-2">
-              <Label>التصنيف *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر التصنيف" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name_ar || category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Label htmlFor="edit_category">التصنيف *</Label>
+              <Select value={formData.category} onValueChange={(v) => setFormData(p => ({ ...p, category: v }))}>
+                <SelectTrigger id="edit_category"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger>
+                <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name_ar || c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>السعر *</Label>
-              <Input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+              <Label htmlFor="edit_price">السعر *</Label>
+              <Input id="edit_price" type="number" value={formData.price} onChange={(e) => setFormData(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
             </div>
 
             <div className="space-y-2">
-              <Label>السعر الأصلي</Label>
-              <Input
-                type="number"
-                value={formData.original_price}
-                onChange={(e) => setFormData(prev => ({ ...prev, original_price: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+              <Label htmlFor="edit_stock_quantity">الكمية المتوفرة *</Label>
+              <Input id="edit_stock_quantity" type="number" value={formData.stock_quantity} onChange={(e) => setFormData(p => ({ ...p, stock_quantity: parseInt(e.target.value) || 0 }))} placeholder="0" />
             </div>
 
-            <div className="space-y-2">
-              <Label>الكمية المتوفرة *</Label>
-              <Input
-                type="number"
-                value={formData.stock_quantity}
-                onChange={(e) => setFormData(prev => ({ ...prev, stock_quantity: parseInt(e.target.value) || 0 }))}
-                placeholder="0"
-                min="0"
-              />
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="edit_short_desc_ar">وصف قصير (العربية)</Label>
+              <Textarea id="edit_short_desc_ar" value={formData.short_desc_ar} onChange={(e) => setFormData(p => ({...p, short_desc_ar: e.target.value}))} placeholder="وصف موجز للمنتج يظهر في بطاقات المنتج." rows={2} />
             </div>
 
-            <div className="space-y-2">
-              <Label>الوزن (كجم)</Label>
-              <Input
-                type="number"
-                value={formData.weight}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-              />
+            {/* Toggle for Advanced Fields */}
+            <div className="col-span-2 mt-4">
+                <Button variant="outline" onClick={() => setShowAllFields(p => !p)} className="w-full">
+                    {showAllFields ? 'إخفاء الحقول المتقدمة' : 'عرض المزيد من الخيارات'}
+                </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label>الأبعاد</Label>
-              <Input
-                value={formData.dimensions}
-                onChange={(e) => setFormData(prev => ({ ...prev, dimensions: e.target.value }))}
-                placeholder="الطول × العرض × الارتفاع"
-              />
-            </div>
-
-                         <div className="space-y-2">
-               <Label>روابط الصور (مفصولة بفواصل)</Label>
-               <Input
-                 value={formData.image_urls.join(', ')}
-                 onChange={(e) => setFormData(prev => ({ ...prev, image_urls: e.target.value.split(',').map(url => url.trim()).filter(url => url) }))}
-                 placeholder="رابط الصورة 1, رابط الصورة 2, ..."
-               />
-             </div>
-
-            <div className="space-y-2">
-              <Label>رفع صورة</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadImage(file);
-                }}
-                disabled={uploadingImage}
-              />
-              </div>
-            </div>
-
-          <div className="space-y-2">
-            <Label>الوصف *</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="وصف المنتج"
-              rows={4}
-            />
+            {/* Advanced Fields */}
+            {showAllFields && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_title_en">اسم المنتج (الإنجليزية)</Label>
+                  <Input id="edit_title_en" value={formData.title_en} onChange={(e) => setFormData(p => ({ ...p, title_en: e.target.value }))} placeholder="Example: Thermal Receipt Printer" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_original_price">السعر الأصلي (قبل الخصم)</Label>
+                  <Input id="edit_original_price" type="number" value={formData.original_price} onChange={(e) => setFormData(p => ({ ...p, original_price: parseFloat(e.target.value) || 0 }))} placeholder="0.00" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="edit_full_desc_ar">وصف كامل (العربية)</Label>
+                  <Textarea id="edit_full_desc_ar" value={formData.full_desc_ar} onChange={(e) => setFormData(p => ({...p, full_desc_ar: e.target.value}))} placeholder="وصف تفصيلي للمنتج يظهر في صفحة المنتج." rows={5} />
+                </div>
+                <hr className="col-span-2"/>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_code">كود المنتج (Eslam)</Label>
+                  <Input id="edit_code" value={formData.code} onChange={(e) => setFormData(p => ({ ...p, code: e.target.value }))} placeholder="الكود الداخلي للمنتج" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_sku">SKU</Label>
+                  <Input id="edit_sku" value={formData.sku} onChange={(e) => setFormData(p => ({ ...p, sku: e.target.value }))} placeholder="رمز التخزين التعريفي" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_weight">الوزن (كجم)</Label>
+                  <Input id="edit_weight" type="number" value={formData.weight} onChange={(e) => setFormData(p => ({ ...p, weight: parseFloat(e.target.value) || 0 }))} placeholder="0.0" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_dimensions">الأبعاد (سم)</Label>
+                  <Input id="edit_dimensions" value={formData.dimensions} onChange={(e) => setFormData(p => ({ ...p, dimensions: e.target.value }))} placeholder="الطولxالعرضxالارتفاع" />
+                </div>
+                <hr className="col-span-2"/>
+                <div className="space-y-2 col-span-2">
+                  <Label>روابط الصور</Label>
+                  {formData.image_urls.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input value={url} onChange={(e) => { const newUrls = [...formData.image_urls]; newUrls[index] = e.target.value; setFormData(p => ({ ...p, image_urls: newUrls })); }} placeholder={`رابط الصورة ${index + 1}`} />
+                      <Button variant="destructive" size="sm" onClick={() => { const newUrls = formData.image_urls.filter((_, i) => i !== index); setFormData(p => ({ ...p, image_urls: newUrls })); }}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => setFormData(p => ({ ...p, image_urls: [...p.image_urls, ''] }))}>إضافة رابط صورة</Button>
+                  <Label>أو رفع صورة مباشرة</Label>
+                  <Input type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) uploadImage(e.target.files[0]); }} disabled={uploadingImage} />
+                </div>
+                 <hr className="col-span-2"/>
+                <div className="space-y-2 col-span-2">
+                  <Label>روابط فيديو المراجعة</Label>
+                  {formData.video_review_links.map((url, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input value={url} onChange={(e) => { const newLinks = [...formData.video_review_links]; newLinks[index] = e.target.value; setFormData(p => ({ ...p, video_review_links: newLinks })); }} placeholder={`رابط الفيديو ${index + 1}`} />
+                      <Button variant="destructive" size="sm" onClick={() => { const newLinks = formData.video_review_links.filter((_, i) => i !== index); setFormData(p => ({ ...p, video_review_links: newLinks })); }}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={() => setFormData(p => ({ ...p, video_review_links: [...p.video_review_links, ''] }))}>إضافة رابط فيديو</Button>
+                </div>
+                 <hr className="col-span-2"/>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_seo_title">عنوان SEO</Label>
+                  <Input id="edit_seo_title" value={formData.seo_title} onChange={(e) => setFormData(p => ({ ...p, seo_title: e.target.value }))} placeholder="عنوان يظهر في محركات البحث" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_seo_description">وصف SEO</Label>
+                  <Input id="edit_seo_description" value={formData.seo_description} onChange={(e) => setFormData(p => ({ ...p, seo_description: e.target.value }))} placeholder="وصف يظهر في محركات البحث" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="edit_tags">علامات (Tags)</Label>
+                  <Input id="edit_tags" value={Array.isArray(formData.tags) ? formData.tags.join(', ') : formData.tags} onChange={(e) => setFormData(p => ({ ...p, tags: e.target.value.split(',').map(t => t.trim()) }))} placeholder="طابعة, فواتير, حرارية" />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="edit_whatsapp_message_text">رسالة واتساب</Label>
+                  <Textarea id="edit_whatsapp_message_text" value={formData.whatsapp_message_text} onChange={(e) => setFormData(p => ({...p, whatsapp_message_text: e.target.value}))} placeholder="نص رسالة واتساب عند الطلب السريع" rows={2} />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="edit_technical_specs_ar">المواصفات الفنية (العربية)</Label>
+                  <Textarea id="edit_technical_specs_ar" value={formData.technical_specs_ar} onChange={(e) => setFormData(p => ({...p, technical_specs_ar: e.target.value}))} placeholder="كل مواصفة في سطر، مثال: اللون: أسود" rows={4} />
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center space-x-4">
-               <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_featured: checked }))}
-              />
+          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Switch id="edit-featured" checked={formData.is_featured} onCheckedChange={(c) => setFormData(p => ({ ...p, is_featured: c }))} />
               <Label htmlFor="edit-featured">منتج مميز</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-              <Switch
-                id="edit-active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-              />
-              <Label htmlFor="edit-active">نشط</Label>
-              </div>
             </div>
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Switch id="edit-active" checked={formData.is_active} onCheckedChange={(c) => setFormData(p => ({ ...p, is_active: c }))} />
+              <Label htmlFor="edit-active">نشط</Label>
+            </div>
+          </div>
 
-            <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={updateProduct} disabled={!formData.name || !formData.category || formData.price <= 0}>
-              تحديث المنتج
-            </Button>
-            </DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>إلغاء</Button>
+            <Button onClick={updateProduct} disabled={!formData.title_ar || !formData.category || formData.price <= 0}>تحديث المنتج</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
