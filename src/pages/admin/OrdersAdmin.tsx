@@ -155,7 +155,7 @@ const OrdersAdmin: React.FC = () => {
       toast.error('قاعدة البيانات غير متاحة');
       return;
     }
-
+    
     try {
       setLoading(true);
       
@@ -170,7 +170,7 @@ const OrdersAdmin: React.FC = () => {
 
       if (data) {
         const processedOrders = data.map((order: any) => ({
-          ...order,
+                ...order, 
           // التأكد من وجود id
           id: order.id || order.order_id,
           // التأكد من وجود customer_name
@@ -258,9 +258,9 @@ const OrdersAdmin: React.FC = () => {
       console.error('خطأ في تحديث الحالة:', error);
       toast.error('حدث خطأ أثناء تحديث الحالة');
       return false;
-          } finally {
+    } finally {
         setUpdatingStatus(prev => ({ ...prev, [orderId]: false }));
-      }
+    }
   }, [fetchOrders]);
 
   // تصفية الطلبات
@@ -467,8 +467,8 @@ const OrdersAdmin: React.FC = () => {
             تحديث
           </Button>
         </div>
-      </div>
-
+        </div>
+        
       {/* الإحصائيات */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -482,8 +482,8 @@ const OrdersAdmin: React.FC = () => {
                 <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardContent className="p-6">
@@ -498,8 +498,8 @@ const OrdersAdmin: React.FC = () => {
                 <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardContent className="p-6">
@@ -514,8 +514,8 @@ const OrdersAdmin: React.FC = () => {
                 <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardContent className="p-6">
@@ -528,16 +528,16 @@ const OrdersAdmin: React.FC = () => {
                 <Clock className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* التبويبات */}
       <Card>
         <CardContent className="p-0">
           <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full">
             <TabsList className="grid w-full grid-cols-5 h-auto p-1">
-              {tabOptions.map((tab) => (
+            {tabOptions.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
@@ -547,9 +547,9 @@ const OrdersAdmin: React.FC = () => {
                   <Badge variant="secondary" className="text-xs">
                     {tab.count}
                   </Badge>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+              </TabsTrigger>
+            ))}
+          </TabsList>
           </Tabs>
         </CardContent>
       </Card>
@@ -561,31 +561,31 @@ const OrdersAdmin: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">البحث</label>
-                <div className="relative">
+              <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
+                <Input
                     placeholder="البحث في الطلبات..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
-                  />
-                </div>
+                />
               </div>
+                      </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">الفترة الزمنية</label>
                 <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
                   <SelectTrigger>
                     <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                </SelectTrigger>
+                <SelectContent>
                     {timeRangeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               </div>
 
               <div className="space-y-2">
@@ -593,17 +593,17 @@ const OrdersAdmin: React.FC = () => {
                 <Select value={selectedSort} onValueChange={setSelectedSort}>
                   <SelectTrigger>
                     <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
               <div className="space-y-2">
                 <label className="text-sm font-medium">طريقة الدفع</label>
                 <Select value={selectedPayment} onValueChange={setSelectedPayment}>
@@ -631,7 +631,7 @@ const OrdersAdmin: React.FC = () => {
             <span>الطلبات ({filteredOrders.length})</span>
             <div className="text-sm text-gray-500">
               عرض {indexOfFirstOrder + 1}-{Math.min(indexOfLastOrder, filteredOrders.length)} من {filteredOrders.length}
-            </div>
+        </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -660,42 +660,54 @@ const OrdersAdmin: React.FC = () => {
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-sm">
                         {order.id.slice(0, 8)}...
-                      </TableCell>
-                                             <TableCell>
+                    </TableCell>
+                    <TableCell>
                          <div className="flex flex-col">
                            <Button
                              variant="link"
                              className="h-auto p-0 text-left font-medium hover:underline"
                              onClick={() => {
-                               // هنا يمكن إضافة منطق لعرض طلبات العميل السابقة
-                               toast.info(`سيتم إضافة صفحة طلبات العميل ${order.customer_name} قريباً`);
+                               // عرض معلومات العميل وطلباته السابقة
+                               const customerOrders = orders.filter(o => 
+                                 o.customer_email === order.customer_email || 
+                                 o.customer_phone === order.customer_phone
+                               );
+                               
+                               const totalSpent = customerOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                               
+                               toast.success(
+                                 `معلومات العميل ${order.customer_name}:\n` +
+                                 `إجمالي الطلبات: ${customerOrders.length}\n` +
+                                 `إجمالي الإنفاق: ${formatCurrencySync(totalSpent, 'ج.م')}`,
+                                 { duration: 5000 }
+                               );
                              }}
                            >
                              {order.customer_name || 'غير محدد'}
                            </Button>
                            <span className="text-sm text-gray-500">{order.customer_email}</span>
-                         </div>
-                       </TableCell>
+                      </div>
+                    </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="text-sm">
+                        <span className="text-sm">
                             {format(order.created_at, 'dd/MM/yyyy', { locale: ar })}
-                          </span>
+                        </span>
                           <span className="text-xs text-gray-500">
                             {format(order.created_at, 'HH:mm', { locale: ar })}
-                          </span>
-                        </div>
-                      </TableCell>
+                        </span>
+                      </div>
+                    </TableCell>
                       <TableCell className="font-medium">
                         {formatCurrencySync(order.total_amount || 0, 'ج.م')}
-                      </TableCell>
-                      <TableCell>
+                    </TableCell>
+                    <TableCell>
                         <Badge 
                           variant="secondary" 
                           className={`${statusColors[order.status]} flex items-center gap-1`}
                         >
-                          {statusIcons[order.status]}
-                          {statusLabels[order.status]}
+                            {statusIcons[order.status]}
+                            {statusLabels[order.status]}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -707,64 +719,64 @@ const OrdersAdmin: React.FC = () => {
                           <span className="text-sm">
                             {paymentOptions.find(p => p.value === order.payment_method)?.label || order.payment_method}
                           </span>
-                        </div>
-                      </TableCell>
+                      </div>
+                    </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
                                   size="sm"
                                   onClick={() => {
                                     setSelectedOrder(order as ExtendedOrderWithDetails);
                                     setShowOrderDetails(true);
                                   }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
                               <TooltipContent>عرض التفاصيل</TooltipContent>
-                            </Tooltip>
+                        </Tooltip>
                           </TooltipProvider>
-
+                        
                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <StatusSelect
-                                  value={order.status}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <StatusSelect
+                              value={order.status}
                                   onValueChange={(newStatus) => updateOrderStatus(order.id, newStatus as OrderStatus)}
                                   disabled={updatingStatus[order.id]}
-                                >
-                                  {statusOptions.map((status) => (
+                            >
+                              {statusOptions.map((status) => (
                                     <SelectItem key={status} value={status}>
-                                      <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2">
                                         {statusIcons[status]}
-                                        {statusLabels[status]}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </StatusSelect>
-                              </TooltipTrigger>
+                                    {statusLabels[status]}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </StatusSelect>
+                          </TooltipTrigger>
                               <TooltipContent>تغيير الحالة</TooltipContent>
-                            </Tooltip>
+                        </Tooltip>
                           </TooltipProvider>
-                        </div>
-                      </TableCell>
+                      </div>
+                    </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
-
+          
           {/* ترقيم الصفحات */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-700 dark:text-gray-300">
                 صفحة {currentPage} من {totalPages}
-              </div>
+            </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -773,32 +785,32 @@ const OrdersAdmin: React.FC = () => {
                   disabled={currentPage === 1}
                 >
                   <ChevronRight className="h-4 w-4" />
-                  السابق
-                </Button>
-                <Button
-                  variant="outline"
+                السابق
+              </Button>
+              <Button
+                variant="outline"
                   size="sm"
                   onClick={() => goToPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
                   التالي
                   <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </div>
+              </Button>
+          </div>
             </div>
-          )}
+      )}
         </CardContent>
       </Card>
-
+      
       {/* نافذة تفاصيل الطلب */}
-              <OrderDetailsDialog
-          order={selectedOrder}
+      <OrderDetailsDialog
+        order={selectedOrder}
           isOpen={showOrderDetails}
           onOpenChange={setShowOrderDetails}
           onStatusChange={updateOrderStatus}
           isUpdating={updatingStatus}
         />
-    </div>
+            </div>
   );
 };
 

@@ -293,7 +293,7 @@ const SettingsAdmin: React.FC = () => {
     <div className="space-y-6">
       {/* العنوان والأزرار */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
+    <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">إعدادات الموقع</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             إدارة إعدادات الموقع والمتجر
@@ -447,14 +447,14 @@ const SettingsAdmin: React.FC = () => {
 
         {/* تبويب معلومات الشركة */}
         <TabsContent value="company" className="space-y-6">
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 معلومات الشركة
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>اسم الشركة</Label>
@@ -609,30 +609,30 @@ const SettingsAdmin: React.FC = () => {
                     step="0.01"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         </TabsContent>
 
         {/* تبويب إعدادات البريد */}
         <TabsContent value="email" className="space-y-6">
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
                 إعدادات البريد الإلكتروني
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </CardHeader>
+              <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>خادم SMTP</Label>
-                  <Input
+                    <Input
                     value={settings.smtp_host}
                     onChange={(e) => updateSetting('smtp_host', e.target.value)}
                     placeholder="smtp.gmail.com"
                   />
-                </div>
+                  </div>
                 <div className="space-y-2">
                   <Label>منفذ SMTP</Label>
                   <Input
@@ -641,8 +641,8 @@ const SettingsAdmin: React.FC = () => {
                     onChange={(e) => updateSetting('smtp_port', parseInt(e.target.value))}
                     placeholder="587"
                   />
-                </div>
-              </div>
+                        </div>
+                    </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>اسم المستخدم</Label>
@@ -654,14 +654,14 @@ const SettingsAdmin: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>كلمة المرور</Label>
-                  <Input
+                    <Input
                     value={settings.smtp_password}
                     onChange={(e) => updateSetting('smtp_password', e.target.value)}
                     placeholder="كلمة المرور"
                     type="password"
                   />
-                </div>
-              </div>
+                  </div>
+                        </div>
               <div className="space-y-2">
                 <Label>نوع التشفير</Label>
                 <Select value={settings.smtp_encryption} onValueChange={(value: 'tls' | 'ssl' | 'none') => updateSetting('smtp_encryption', value)}>
@@ -674,7 +674,7 @@ const SettingsAdmin: React.FC = () => {
                     <SelectItem value="none">بدون تشفير</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+                    </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -699,14 +699,14 @@ const SettingsAdmin: React.FC = () => {
                   <Label htmlFor="enable_registration">تفعيل التسجيل</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch
+                    <Switch
                     id="require_email_verification"
                     checked={settings.require_email_verification}
                     onCheckedChange={(checked) => updateSetting('require_email_verification', checked)}
                   />
                   <Label htmlFor="require_email_verification">التحقق من البريد</Label>
                 </div>
-              </div>
+                  </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>مهلة الجلسة (ساعات)</Label>
@@ -728,9 +728,9 @@ const SettingsAdmin: React.FC = () => {
                     max="10"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
 
@@ -790,7 +790,7 @@ const SettingsAdmin: React.FC = () => {
                  </div>
                )}
              </div>
-           </div>
+          </div>
            
            {/* زر النسخ الاحتياطي اليدوي */}
            <div className="pt-4 border-t">
@@ -801,8 +801,8 @@ const SettingsAdmin: React.FC = () => {
              >
                <Download className="h-4 w-4" />
                نسخ احتياطي يدوي
-             </Button>
-           </div>
+            </Button>
+          </div>
          </CardContent>
        </Card>
     </div>

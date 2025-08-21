@@ -493,10 +493,10 @@ const AdminDashboard: React.FC = () => {
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">الطلبات الحديثة</h3>
-              <Badge variant="outline">آخر 5</Badge>
-            </div>
+                         <div className="flex items-center justify-between mb-4">
+               <h3 className="text-lg font-semibold">الطلبات الحديثة</h3>
+               <Badge variant="outline">آخر 5 طلبات</Badge>
+             </div>
             <div className="space-y-3">
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between">
@@ -510,9 +510,15 @@ const AdminDashboard: React.FC = () => {
                     <div className="text-sm font-medium">
                                              {formatCurrencySync(order.total_amount, 'ج.م')}
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {order.status}
-                    </Badge>
+                                         <Badge variant="secondary" className="text-xs">
+                       {order.status === 'delivered' ? 'تم التوصيل' : 
+                        order.status === 'processing' ? 'قيد التنفيذ' : 
+                        order.status === 'confirmed' ? 'مؤكد' : 
+                        order.status === 'pending' ? 'قيد المراجعة' : 
+                        order.status === 'shipped' ? 'تم الشحن' : 
+                        order.status === 'cancelled' ? 'ملغي' : 
+                        order.status === 'returned' ? 'مرتجع' : order.status}
+                     </Badge>
                   </div>
                 </div>
               ))}
