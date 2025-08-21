@@ -404,6 +404,8 @@ const ProductsAdmin: React.FC = () => {
 
   // تصفية المنتجات
   const filteredProducts = products.filter(product => {
+    if (!product.name || !product.description) return false;
+    
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -421,6 +423,7 @@ const ProductsAdmin: React.FC = () => {
     const [field, direction] = sortBy.split('-');
     
     if (field === 'name') {
+      if (!a.name || !b.name) return 0;
       return direction === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
     }
     if (field === 'price') {
@@ -550,7 +553,7 @@ const ProductsAdmin: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">قيمة المخزون</p>
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {formatCurrencySync(stats.totalValue, i18n.language)}
+                                     {formatCurrencySync(stats.totalValue, 'ج.م')}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
@@ -698,11 +701,11 @@ const ProductsAdmin: React.FC = () => {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">
-                            {formatCurrencySync(product.price, i18n.language)}
+                                                         {formatCurrencySync(product.price, 'ج.م')}
                           </span>
                           {product.original_price && product.original_price > product.price && (
                             <span className="text-sm text-gray-500 line-through">
-                              {formatCurrencySync(product.original_price, i18n.language)}
+                              {formatCurrencySync(product.original_price, 'ج.م')}
                             </span>
                           )}
                         </div>

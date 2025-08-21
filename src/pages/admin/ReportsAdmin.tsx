@@ -148,12 +148,12 @@ const ReportsAdmin: React.FC = () => {
 
       if (ordersError) throw ordersError;
 
-      // جلب العملاء
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*');
+             // جلب العملاء
+       const { data: customersData, error: customersError } = await supabase
+         .from('users')
+         .select('*');
 
-      if (customersError) throw customersError;
+       if (customersError) throw customersError;
 
       // جلب المنتجات
       const { data: productsData, error: productsError } = await supabase
@@ -485,7 +485,7 @@ const ReportsAdmin: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">إجمالي المبيعات</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatCurrencySync(reportData.totalSales, i18n.language)}
+                      {formatCurrencySync(reportData.totalSales, 'ج.م')}
                     </p>
                     <div className="flex items-center gap-1 mt-1">
                       {reportData.salesGrowth >= 0 ? (
@@ -535,7 +535,7 @@ const ReportsAdmin: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">متوسط قيمة الطلب</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatCurrencySync(reportData.averageOrderValue, i18n.language)}
+                      {formatCurrencySync(reportData.averageOrderValue, 'ج.م')}
                     </p>
                   </div>
                   <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
@@ -643,7 +643,7 @@ const ReportsAdmin: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        {formatCurrencySync(product.revenue, i18n.language)}
+                                                 {formatCurrencySync(product.revenue, 'ج.م')}
                       </div>
                       <Badge variant="secondary">{product.sales} وحدة</Badge>
                     </div>
@@ -676,7 +676,7 @@ const ReportsAdmin: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">
-                        {formatCurrencySync(customer.totalSpent, i18n.language)}
+                                                 {formatCurrencySync(customer.totalSpent, 'ج.م')}
                       </div>
                       <Badge variant="secondary">{customer.ordersCount} طلب</Badge>
                     </div>

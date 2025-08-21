@@ -117,12 +117,12 @@ const AdminDashboard: React.FC = () => {
 
       if (ordersError) throw ordersError;
 
-      // جلب العملاء
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('*');
+             // جلب العملاء
+       const { data: customersData, error: customersError } = await supabase
+         .from('users')
+         .select('*');
 
-      if (customersError) throw customersError;
+       if (customersError) throw customersError;
 
       // جلب المنتجات
       const { data: productsData, error: productsError } = await supabase
@@ -358,7 +358,7 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">إجمالي الإيرادات</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatCurrencySync(stats.totalRevenue, i18n.language)}
+                                     {formatCurrencySync(stats.totalRevenue, 'ج.م')}
                 </p>
                 <div className="flex items-center gap-1 mt-1">
                   {stats.revenueGrowth >= 0 ? (
@@ -402,7 +402,7 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">المنتجات</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalProducts.toLocaleString()}</p>
                 <p className="text-sm text-gray-500 mt-1">
-                                     متوسط قيمة الطلب: {formatCurrencySync(stats.averageOrderValue, i18n.language)}
+                                     متوسط قيمة الطلب: {formatCurrencySync(stats.averageOrderValue, 'ج.م')}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 dark:bg-orange-900 rounded-full">
@@ -429,7 +429,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{stats.pendingOrders}</span>
-                  <Progress value={(stats.pendingOrders / stats.totalOrders) * 100} className="w-16" />
+                                     <Progress value={stats.totalOrders > 0 ? (stats.pendingOrders / stats.totalOrders) * 100 : 0} className="w-16" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -439,7 +439,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{stats.processingOrders}</span>
-                  <Progress value={(stats.processingOrders / stats.totalOrders) * 100} className="w-16" />
+                                     <Progress value={stats.totalOrders > 0 ? (stats.processingOrders / stats.totalOrders) * 100 : 0} className="w-16" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -449,7 +449,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{stats.shippedOrders}</span>
-                  <Progress value={(stats.shippedOrders / stats.totalOrders) * 100} className="w-16" />
+                                     <Progress value={stats.totalOrders > 0 ? (stats.shippedOrders / stats.totalOrders) * 100 : 0} className="w-16" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -459,7 +459,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{stats.deliveredOrders}</span>
-                  <Progress value={(stats.deliveredOrders / stats.totalOrders) * 100} className="w-16" />
+                                     <Progress value={stats.totalOrders > 0 ? (stats.deliveredOrders / stats.totalOrders) * 100 : 0} className="w-16" />
                 </div>
               </div>
             </div>
@@ -482,7 +482,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="text-right">
                     <div className="text-sm font-medium">{product.sales}</div>
                     <div className="text-xs text-gray-500">
-                                             {formatCurrencySync(product.revenue, i18n.language)}
+                                             {formatCurrencySync(product.revenue, 'ج.م')}
                     </div>
                   </div>
                 </div>
@@ -508,7 +508,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium">
-                                             {formatCurrencySync(order.total_amount, i18n.language)}
+                                             {formatCurrencySync(order.total_amount, 'ج.م')}
                     </div>
                     <Badge variant="secondary" className="text-xs">
                       {order.status}
@@ -585,13 +585,13 @@ const AdminDashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {((stats.deliveredOrders / stats.totalOrders) * 100).toFixed(1)}%
+                                 {stats.totalOrders > 0 ? ((stats.deliveredOrders / stats.totalOrders) * 100).toFixed(1) : '0'}%
               </div>
               <div className="text-sm text-gray-600">معدل نجاح الطلبات</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600 mb-2">
-                                 {stats.averageOrderValue > 0 ? formatCurrencySync(stats.averageOrderValue, i18n.language) : '0'}
+                                 {stats.averageOrderValue > 0 ? formatCurrencySync(stats.averageOrderValue, 'ج.م') : '0'}
               </div>
               <div className="text-sm text-gray-600">متوسط قيمة الطلب</div>
             </div>

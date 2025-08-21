@@ -299,62 +299,65 @@ const SettingsAdmin: React.FC = () => {
             إدارة إعدادات الموقع والمتجر
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={exportSettings}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            تصدير
-          </Button>
-          <Button
-            variant="outline"
-            onClick={resetSettings}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            إعادة تعيين
-          </Button>
-          <Button
-            onClick={saveSettings}
-            disabled={saving}
-            className="flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-          </Button>
-        </div>
+                 <div className="flex gap-2">
+           <Button
+             variant="outline"
+             onClick={exportSettings}
+             className="flex items-center gap-2"
+           >
+             <Download className="h-4 w-4" />
+             تصدير
+           </Button>
+           <Button
+             variant="outline"
+             onClick={resetSettings}
+             className="flex items-center gap-2"
+           >
+             <RefreshCw className="h-4 w-4" />
+             إعادة تعيين
+           </Button>
+
+           <Button
+             onClick={saveSettings}
+             disabled={saving}
+             className="flex items-center gap-2"
+           >
+             <Save className="h-4 w-4" />
+             {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+           </Button>
+         </div>
       </div>
 
-      {/* التبويبات */}
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            عام
-          </TabsTrigger>
-          <TabsTrigger value="company" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            الشركة
-          </TabsTrigger>
-          <TabsTrigger value="store" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            المتجر
-          </TabsTrigger>
-          <TabsTrigger value="payment" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            الدفع
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            البريد
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            الأمان
-          </TabsTrigger>
-        </TabsList>
+               {/* التبويبات */}
+         <Tabs defaultValue="general" className="w-full">
+           <TabsList className="grid w-full grid-cols-6">
+             <TabsTrigger value="general" className="flex items-center gap-2">
+               <Globe className="h-4 w-4" />
+               عام
+             </TabsTrigger>
+             <TabsTrigger value="company" className="flex items-center gap-2">
+               <MapPin className="h-4 w-4" />
+               الشركة
+             </TabsTrigger>
+             <TabsTrigger value="store" className="flex items-center gap-2">
+               <Settings className="h-4 w-4" />
+               المتجر
+             </TabsTrigger>
+             <TabsTrigger value="payment" className="flex items-center gap-2">
+               <DollarSign className="h-4 w-4" />
+               الدفع
+             </TabsTrigger>
+             <TabsTrigger value="email" className="flex items-center gap-2">
+               <Mail className="h-4 w-4" />
+               البريد
+             </TabsTrigger>
+             <TabsTrigger value="security" className="flex items-center gap-2">
+               <Shield className="h-4 w-4" />
+               الأمان
+             </TabsTrigger>
+           </TabsList>
+           
+           
 
         {/* التبويب العام */}
         <TabsContent value="general" className="space-y-6">
@@ -731,64 +734,77 @@ const SettingsAdmin: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* قسم النسخ الاحتياطي */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-                         <Database className="h-5 w-5" />
-            النسخ الاحتياطي والاستيراد
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>استيراد الإعدادات</Label>
-              <Input
-                type="file"
-                accept=".json"
-                onChange={importSettings}
-                className="cursor-pointer"
-              />
-              <p className="text-sm text-gray-500">
-                اختر ملف JSON يحتوي على الإعدادات
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>النسخ الاحتياطي التلقائي</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="auto_backup"
-                  checked={settings.auto_backup}
-                  onCheckedChange={(checked) => updateSetting('auto_backup', checked)}
-                />
-                <Label htmlFor="auto_backup">تفعيل النسخ الاحتياطي التلقائي</Label>
-              </div>
-              {settings.auto_backup && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                  <Select value={settings.backup_frequency} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateSetting('backup_frequency', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">يومياً</SelectItem>
-                      <SelectItem value="weekly">أسبوعياً</SelectItem>
-                      <SelectItem value="monthly">شهرياً</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    value={settings.backup_retention}
-                    onChange={(e) => updateSetting('backup_retention', parseInt(e.target.value))}
-                    placeholder="عدد النسخ المحتفظ بها"
-                    min="1"
-                    max="365"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+             {/* قسم النسخ الاحتياطي */}
+       <Card>
+         <CardHeader>
+           <CardTitle className="flex items-center gap-2">
+             <Database className="h-5 w-5" />
+             النسخ الاحتياطي والاستيراد
+           </CardTitle>
+         </CardHeader>
+         <CardContent className="space-y-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-2">
+               <Label>استيراد الإعدادات</Label>
+               <Input
+                 type="file"
+                 accept=".json"
+                 onChange={importSettings}
+                 className="cursor-pointer"
+               />
+               <p className="text-sm text-gray-500">
+                 اختر ملف JSON يحتوي على الإعدادات
+               </p>
+             </div>
+             <div className="space-y-2">
+               <Label>النسخ الاحتياطي التلقائي</Label>
+               <div className="flex items-center space-x-2">
+                 <Switch
+                   id="auto_backup"
+                   checked={settings.auto_backup}
+                   onCheckedChange={(checked) => updateSetting('auto_backup', checked)}
+                 />
+                 <Label htmlFor="auto_backup">تفعيل النسخ الاحتياطي التلقائي</Label>
+               </div>
+               {settings.auto_backup && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                   <Select value={settings.backup_frequency} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => updateSetting('backup_frequency', value)}>
+                     <SelectTrigger className="w-full">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="daily">يومياً</SelectItem>
+                       <SelectItem value="weekly">أسبوعياً</SelectItem>
+                       <SelectItem value="monthly">شهرياً</SelectItem>
+                     </SelectContent>
+                   </Select>
+                   <Input
+                     type="number"
+                     value={settings.backup_retention}
+                     onChange={(e) => updateSetting('backup_retention', parseInt(e.target.value))}
+                     placeholder="عدد النسخ المحتفظ بها"
+                     min="1"
+                     max="365"
+                     className="w-full"
+                   />
+                 </div>
+               )}
+             </div>
+           </div>
+           
+           {/* زر النسخ الاحتياطي اليدوي */}
+           <div className="pt-4 border-t">
+             <Button
+               variant="outline"
+               onClick={exportSettings}
+               className="flex items-center gap-2"
+             >
+               <Download className="h-4 w-4" />
+               نسخ احتياطي يدوي
+             </Button>
+           </div>
+         </CardContent>
+       </Card>
     </div>
   );
 };
