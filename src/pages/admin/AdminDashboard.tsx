@@ -498,8 +498,8 @@ const AdminDashboard: React.FC = () => {
                <Badge variant="outline">آخر 5 طلبات</Badge>
              </div>
             <div className="space-y-3">
-              {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between">
+              {recentOrders.map((order, idx) => (
+                <div key={order.id || idx} className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{order.customer_name}</span>
                     <span className="text-xs text-gray-500">
