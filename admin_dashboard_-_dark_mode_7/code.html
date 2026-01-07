@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إضافة منتج جديد - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "surface-light": "#1e2330",
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        "ai-gradient-start": "#4f46e5",
+                        "ai-gradient-end": "#9333ea",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+    width: 8px;
+    height: 8px
+    }
+::-webkit-scrollbar-track {
+    background: #0f1115
+    }
+::-webkit-scrollbar-thumb {
+    background: #2d3748;
+    border-radius: 4px
+    }
+.glass-panel {
+    background: rgba(22, 27, 38, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1)
+    }
+.glass-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s ease;
+    color: white
+    }
+.glass-input:focus {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #135bec;
+    box-shadow: 0 0 0 2px rgba(19, 91, 236, 0.2)
+    }
+.glass-input::placeholder {
+    color: #64748b
+    }
+select {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAWGvW26cTUi4pRhd19AAWpn4ySZqolRnE74y1LAlbJH9o3jRKYsQVec9Vjt3rtcjBu4rjLoBxHG92wlLGaPplJ1XWhf1fwsDeuoPrhUjJqbqdFEJ5leZDr4R4DILNFOhtr4DnELgSBBj29qftcEKX88sS4GT5U60-7n7JxUxW03eI5AhLpw1zUQQb-IHHw4pKx1EEYCEGPBw7yVutLhTBVPkOCBW52f7zhnYq5RGVrcWuJJn__L6pWssAvlcn6SvtP682vj45PFYI);
+    background-position: left 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-left: 2.5rem;
+    padding-right: 1rem;
+    -webkit-appearance: none;
+    appearance: none
+    }.mode-toggle {
+    position: relative;
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 9999px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1)
+    }
+.ai-border {
+    position: relative
+    }
+.ai-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    padding: 1px;
+    background: linear-gradient(45deg, #4f46e5, #ec4899, #135bec);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none
+    }</style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                        تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                    </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<div class="absolute top-20 right-0 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-3xl translate-x-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-30">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="size-9 flex items-center justify-center rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors border border-transparent hover:border-white/5">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<div>
+<h2 class="text-white text-lg font-bold tracking-tight">إضافة منتج جديد</h2>
+<p class="text-slate-500 text-xs">إدارة المنتجات / إضافة</p>
+</div>
+</div>
+<div class="hidden md:flex items-center bg-black/20 p-1 rounded-full border border-white/5" role="tablist">
+<button aria-selected="false" class="px-5 py-1.5 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-all" role="tab">
+                        وضع بسيط
+                    </button>
+<button aria-selected="true" class="px-5 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg shadow-primary/25 transition-all border border-white/10" role="tab">
+                        وضع متقدم (Pro)
+                    </button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-bold transition-all border border-white/10 group relative overflow-hidden">
+<span class="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+<span class="material-symbols-outlined text-[20px] text-indigo-400 group-hover:text-indigo-300">auto_fix_high</span>
+<span>تعبئة تلقائية (AI)</span>
+</button>
+<div class="h-6 w-px bg-white/10"></div>
+<button class="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>حفظ</span>
+</button>
+<div class="flex items-center gap-3 pr-2">
+<div class="size-9 rounded-full bg-slate-700 bg-cover bg-center border border-white/10 ring-2 ring-transparent hover:ring-primary/50 transition-all cursor-pointer" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-4 lg:p-8 scroll-smooth">
+<form class="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+<div class="xl:col-span-2 flex flex-col gap-6">
+<div class="glass-panel rounded-xl p-1 ai-border">
+<div class="bg-surface-dark/90 backdrop-blur-sm rounded-lg p-4 flex items-center gap-4">
+<div class="size-10 rounded-full bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-indigo-400">psychology</span>
+</div>
+<div class="flex-1">
+<input class="w-full bg-transparent border-none text-sm text-white placeholder-slate-500 focus:ring-0" placeholder="الصق رابط منتج أو اكتب اسمه هنا لإنشاء التفاصيل تلقائياً..." type="text"/>
+</div>
+<button class="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md transition-colors" type="button">
+                                توليد
+                            </button>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">feed</span>
+                                البيانات الأساسية
+                            </h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">وضع بسيط</span>
+</div>
+<div class="grid gap-6">
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">اسم المنتج <span class="text-secondary">*</span></label>
+<div class="relative">
+<input class="w-full h-11 px-4 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="مثال: جهاز كاشير لمس 15 بوصة Sunmi T2" type="text"/>
+<button class="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/10 rounded-md text-indigo-400 hover:text-indigo-300 transition-colors" title="تحسين العنوان باستخدام AI" type="button">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2 flex justify-between">
+<span>وصف المنتج</span>
+<span class="text-xs text-indigo-400 cursor-pointer hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_fix_normal</span> كتابة الوصف تلقائياً
+                                    </span>
+</label>
+<div class="rounded-lg glass-input overflow-hidden border border-white/10 focus-within:border-primary/50 transition-colors">
+<div class="flex items-center gap-1 p-2 border-b border-white/5 bg-white/5">
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">format_bold</span></button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">format_italic</span></button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">format_list_bulleted</span></button>
+<div class="w-px h-4 bg-white/10 mx-1"></div>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">link</span></button>
+<button class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">image</span></button>
+</div>
+<textarea class="w-full h-40 px-4 py-3 bg-transparent text-white text-sm border-none focus:ring-0 placeholder-slate-600 resize-none leading-relaxed" placeholder="اكتب وصفاً تفصيلياً ومميزاً للمنتج يشمل المميزات والاستخدامات..."></textarea>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute inset-0 border-2 border-dashed border-primary/0 group-hover:border-primary/20 transition-all rounded-xl pointer-events-none z-0"></div>
+<div class="flex items-center justify-between mb-6 relative z-10">
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">perm_media</span>
+                                الوسائط والصور
+                            </h3>
+<div class="flex gap-2">
+<button class="text-xs font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded transition-colors border border-white/5" type="button">استيراد من رابط</button>
+<button class="text-xs font-bold bg-primary/20 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">upload</span> رفع صور
+                                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+<div class="col-span-1">
+<label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">الصورة الرئيسية (Main)</label>
+<div class="aspect-square rounded-xl border-2 border-dashed border-white/20 hover:border-primary/50 bg-white/5 flex flex-col items-center justify-center cursor-pointer transition-all relative group/main">
+<img alt="Main Product Image" class="absolute inset-0 w-full h-full object-cover rounded-xl opacity-80 group-hover/main:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+<div class="absolute inset-0 bg-black/60 opacity-0 group-hover/main:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 rounded-xl backdrop-blur-sm">
+<button class="px-3 py-1.5 bg-white text-black text-xs font-bold rounded shadow hover:bg-slate-200" type="button">تغيير الصورة</button>
+<button class="text-red-400 text-xs font-bold hover:text-red-300" type="button">حذف</button>
+</div>
+<span class="absolute top-2 right-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg">الرئيسية</span>
+</div>
+</div>
+<div class="col-span-1 md:col-span-2">
+<label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">معرض الصور (Gallery)</label>
+<div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+<div class="aspect-square rounded-lg border border-white/10 relative group overflow-hidden bg-surface-dark">
+<img alt="Gallery 1" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+<button class="p-1 bg-white/10 hover:bg-primary text-white rounded" title="تعيين كرئيسية" type="button"><span class="material-symbols-outlined text-[16px]">star</span></button>
+<button class="p-1 bg-white/10 hover:bg-red-500 text-white rounded" title="حذف" type="button"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+</div>
+</div>
+<div class="aspect-square rounded-lg border border-dashed border-white/10 hover:border-white/30 bg-white/5 flex items-center justify-center cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-slate-500 text-[24px]">add_photo_alternate</span>
+</div>
+<div class="aspect-square rounded-lg border border-dashed border-white/10 hover:border-white/30 bg-white/5 flex items-center justify-center cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-slate-500 text-[24px]">add</span>
+</div>
+<div class="aspect-square rounded-lg border border-dashed border-white/10 hover:border-white/30 bg-white/5 flex items-center justify-center cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-slate-500 text-[24px]">add</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-white/5">
+<label class="block text-sm font-medium text-slate-300 mb-2">رابط فيديو (YouTube)</label>
+<div class="relative">
+<span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500">
+<span class="material-symbols-outlined text-[20px]">play_circle</span>
+</span>
+<input class="w-full h-10 pr-10 pl-4 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="https://youtube.com/watch?v=..." type="url"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="glass-panel rounded-xl p-6 border-t-2 border-t-primary/20">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-base font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">memory</span>
+                                    المواصفات الفنية
+                                </h3>
+<button class="text-xs font-bold text-primary hover:text-white transition-colors" type="button">+ إضافة</button>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2 group">
+<div class="p-1 text-slate-500 cursor-move"><span class="material-symbols-outlined text-[16px]">drag_indicator</span></div>
+<input class="w-1/3 h-9 px-3 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0" type="text" value="المعالج"/>
+<input class="flex-1 h-9 px-3 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0" type="text" value="Intel Core i5 11th Gen"/>
+<button class="p-1.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+<div class="flex items-center gap-2 group">
+<div class="p-1 text-slate-500 cursor-move"><span class="material-symbols-outlined text-[16px]">drag_indicator</span></div>
+<input class="w-1/3 h-9 px-3 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0" type="text" value="الذاكرة"/>
+<input class="flex-1 h-9 px-3 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0" type="text" value="8GB DDR4"/>
+<button class="p-1.5 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6 border-t-2 border-t-purple-500/20">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-base font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                                    تحسين البحث (SEO)
+                                </h3>
+<button class="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> تحسين
+                                </button>
+</div>
+<div class="space-y-3">
+<div>
+<input class="w-full h-9 px-3 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0" placeholder="عنوان الميتا (Meta Title)" type="text"/>
+</div>
+<div>
+<textarea class="w-full h-20 px-3 py-2 rounded glass-input text-white text-xs placeholder-slate-500 focus:ring-0 resize-none" placeholder="وصف الميتا (Meta Description)"></textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="xl:col-span-1 flex flex-col gap-6">
+<div class="glass-panel rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">النشر والظهور</h3>
+<div class="size-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">حالة المنتج</label>
+<select class="w-full h-10 rounded-lg glass-input text-white text-sm focus:ring-0">
+<option value="active">نشط (ظاهر في المتجر)</option>
+<option value="draft">مسودة</option>
+<option value="archived">مؤرشف</option>
+</select>
+</div>
+<div class="flex items-center justify-between py-2 border-t border-white/5">
+<span class="text-sm text-slate-300">عرض في الصفحة الرئيسية</span>
+<label class="inline-flex relative items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6">
+<h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[18px]">payments</span>
+                            السعر
+                        </h3>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">سعر البيع (EGP)</label>
+<div class="relative group">
+<input class="w-full h-11 px-4 rounded-lg glass-input text-white font-bold text-xl placeholder-slate-600 focus:ring-0 group-hover:border-emerald-500/50 transition-colors" placeholder="0.00" type="number"/>
+<span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500 font-bold text-xs">ج.م</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">سعر الخصم</label>
+<input class="w-full h-9 px-3 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="0.00" type="number"/>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">التكلفة (Pro)</label>
+<input class="w-full h-9 px-3 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="0.00" type="number"/>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs px-3 py-2 bg-white/5 rounded-lg border border-white/5">
+<span class="text-slate-400">هامش الربح المتوقع:</span>
+<span class="text-emerald-400 font-bold">-- %</span>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6">
+<h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-400 text-[18px]">inventory</span>
+                            المخزون
+                        </h3>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">رقم التخزين (SKU)</label>
+<div class="flex gap-2">
+<input class="w-full h-9 px-3 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="SKU-12345" type="text"/>
+<button class="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-2 text-slate-400 hover:text-white transition-colors" title="توليد تلقائي">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">الكمية المتوفرة</label>
+<input class="w-full h-10 px-4 rounded-lg glass-input text-white font-bold text-base placeholder-slate-600 focus:ring-0" placeholder="0" type="number"/>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">الباركود (ISBN/UPC)</label>
+<div class="relative">
+<input class="w-full h-9 px-3 rounded-lg glass-input text-white text-sm placeholder-slate-600 focus:ring-0" placeholder="" type="text"/>
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
+<span class="material-symbols-outlined text-[16px]">qr_code_scanner</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6">
+<h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-400 text-[18px]">category</span>
+                            التصنيف
+                        </h3>
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">القسم <span class="text-secondary">*</span></label>
+<select class="w-full h-10 rounded-lg glass-input text-white text-sm focus:ring-0">
+<option value="">اختر القسم...</option>
+<option value="pos">أجهزة الكاشير</option>
+<option value="scales">الموازين</option>
+<option value="scanners">قارئ الباركود</option>
+<option value="printers">الطابعات</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">العلامة التجارية</label>
+<select class="w-full h-10 rounded-lg glass-input text-white text-sm focus:ring-0">
+<option value="">Samsung</option>
+<option value="">Epson</option>
+<option value="">Sunmi</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-medium text-slate-500 mb-1.5">الوسوم (Tags)</label>
+<div class="p-2 rounded-lg glass-input min-h-[80px] flex flex-wrap content-start gap-2">
+<span class="px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/20 text-xs font-bold flex items-center gap-1">
+                                        جديد <button class="hover:text-white" type="button">×</button>
+</span>
+<input class="bg-transparent border-none text-white text-xs p-0 focus:ring-0 w-full placeholder-slate-600 mt-1" placeholder="اكتب واضغط Enter..." type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</form>
+<div class="h-10"></div> 
+</div>
+</main>
+</div>
+
+</body></html>

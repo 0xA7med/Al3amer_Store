@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cashier Store - Home</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&amp;family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-dark": "#0f4bc4",
+                        "accent-red": "#ef4444",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-glass": "rgba(30, 41, 59, 0.7)",
+                    },
+                    fontFamily: {
+                        "display": ["Cairo", "Manrope", "sans-serif"],
+                        "body": ["Cairo", "Manrope", "sans-serif"],
+                        "numbers": ["Manrope", "sans-serif"],
+                    },
+                    backgroundImage: {
+                        'glass-gradient': 'linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
+                    },
+                    boxShadow: {
+                        'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Cairo', 'Manrope', sans-serif;
+            background-color: #101622;
+            color: white;background-image: 
+                radial-gradient(at 0% 0%, rgba(19, 91, 236, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(19, 91, 236, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(16, 22, 34, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(19, 91, 236, 0.5);
+            background: rgba(30, 41, 59, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px rgba(19, 91, 236, 0.2);
+        }
+        .symbol-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101622;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232f48;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #324467;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col overflow-x-hidden">
+<nav class="sticky top-0 z-50 w-full glass-panel border-b-0 border-b-white/5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-20 gap-4">
+<div class="flex items-center gap-8 flex-1">
+<a class="flex items-center gap-2 group" href="#">
+<div class="relative flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-gray-700 shadow-lg">
+<span class="text-accent-red font-bold text-2xl relative top-[-2px]">ع</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-white text-xl font-bold leading-none tracking-tight group-hover:text-primary transition-colors">كاشير ستور</h2>
+<span class="text-[10px] text-gray-400 font-medium tracking-wider">أنظمة الباركود والكاشير</span>
+</div>
+</a>
+<div class="hidden md:flex flex-1 max-w-md">
+<div class="relative w-full group/search">
+<div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 group-focus-within/search:text-primary transition-colors">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full h-11 pr-10 pl-4 bg-[#1e293b]/50 border border-gray-700 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm" placeholder="ابحث عن منتج، ماركة، أو فئة..." type="text"/>
+</div>
+</div>
+</div>
+<div class="hidden lg:flex items-center gap-6 text-sm font-medium">
+<a class="text-primary hover:text-primary-dark transition-colors" href="#">الرئيسية</a>
+<a class="text-gray-300 hover:text-white transition-colors" href="#">المنتجات</a>
+<a class="text-gray-300 hover:text-white transition-colors relative group" href="#">
+<span>مصمم حلول الكاشير الذكية</span>
+<span class="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-right"></span>
+</a>
+<a class="text-gray-300 hover:text-white transition-colors" href="#">العروض</a>
+<a class="text-gray-300 hover:text-white transition-colors" href="#">من نحن</a>
+</div>
+<div class="flex items-center gap-3">
+<button class="md:hidden p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="relative p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg group">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-1 right-1 flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+</button>
+<button class="hidden sm:flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(19,91,236,0.3)]">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span>دخول</span>
+</button>
+<button class="lg:hidden p-2 text-gray-300 hover:text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</div>
+</nav>
+<main class="flex-grow">
+<section class="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 bg-gradient-to-r from-[#101622] via-[#101622]/90 to-transparent z-10"></div>
+<div class="w-full h-full bg-cover bg-center" data-alt="Dark moody gradient background with abstract tech patterns representing point of sale systems" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSRA-08o641TnVWbQXvSqvffZMwpJspKh9TIjyteXogtTwZ4Z_TxkFR9r9nI7wFeUus9g0dw2wwDlGGH4-ZmZcccGEgchvQZvYF-2webfVkptarfsMczLYJFQ3pBM_2rI5Bp6BG66mcUctH4009pE3N0_ASO5g3lmdMVh_4yiBvdMTV0TE2_TjPvG4g_tPcMTkobIG2m_ugakztSkRu1gw6lrqBC52vrjEoAbsm7sSfMFGz2DeepbdRbwsSDHfFAGd3JE4szqrbX0');"></div>
+</div>
+<div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20">
+<div class="grid lg:grid-cols-2 gap-12 items-center">
+<div class="flex flex-col gap-6 max-w-2xl">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 w-fit backdrop-blur-sm">
+<span class="flex h-2 w-2 rounded-full bg-accent-red"></span>
+<span class="text-primary-blue text-xs font-bold text-blue-200">عروض نهاية العام</span>
+</div>
+<h1 class="text-4xl lg:text-6xl font-black text-white leading-[1.2]">
+                            طور نشاطك التجاري مع <span class="text-transparent bg-clip-text bg-gradient-to-l from-primary to-blue-300">أحدث أجهزة الكاشير</span>
+</h1>
+<p class="text-lg text-gray-300 leading-relaxed font-light">
+                            نوفر لك حلولاً متكاملة لنقاط البيع، طابعات الفواتير، وأجهزة الباركود. 
+                            <br class="hidden sm:block"/>
+                            أفضل الأسعار في السوق المصري مع ضمان حقيقي ودعم فني.
+                        </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-4 rounded-xl text-base font-bold transition-all shadow-[0_0_20px_rgba(19,91,236,0.4)] hover:shadow-[0_0_30px_rgba(19,91,236,0.6)] hover:-translate-y-1">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span>تسوق العروض</span>
+</button>
+<button class="flex items-center justify-center gap-2 bg-[#1e293b]/60 hover:bg-[#1e293b] border border-gray-600 text-white px-8 py-4 rounded-xl text-base font-bold transition-all backdrop-blur-md">
+<span>تواصل مع المبيعات</span>
+<span class="material-symbols-outlined rtl:rotate-180">arrow_right_alt</span>
+</button>
+</div>
+<div class="flex items-center gap-6 pt-8 border-t border-white/10 mt-4">
+<div class="flex items-center gap-2 text-gray-400">
+<span class="material-symbols-outlined text-primary">verified</span>
+<span class="text-sm">وكيل معتمد</span>
+</div>
+<div class="flex items-center gap-2 text-gray-400">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+<span class="text-sm">شحن لكل مصر</span>
+</div>
+<div class="flex items-center gap-2 text-gray-400">
+<span class="material-symbols-outlined text-primary">build_circle</span>
+<span class="text-sm">صيانة وضمان</span>
+</div>
+</div>
+</div>
+<div class="relative hidden lg:block">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px]"></div>
+<div class="relative glass-card p-4 rounded-2xl border border-white/10 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+<div class="w-full aspect-[4/3] bg-[#000000]/40 rounded-xl overflow-hidden" data-alt="Modern sleek point of sale terminal with dual screen on a dark background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBduotIF9U_ylRKn2foatbuirZdHROKFMaj_qD_PEp0yqxpYgyOV-KRGp04YAOnEba6OxnQydD_NN3j1ohn0vEi0fPDihFC73kgB8UDrIkA7SEPc2Oe7oXIx8fl8Hbi4vKlm16TM5aAtmq79H5w_KXt_Rq-eEouuxZu7V6RLxOJlaoHEgTIBe_-2j0Gq286u6uhdWf49VllOXIVUtpjGK6tjzLKW5-nHtqcw_-48Gxh8_7s2Ds-zsdWZF1Iu0NepkhwJ0NsamIB61Q'); background-size: cover; background-position: center;"></div>
+<div class="absolute -bottom-6 -right-6 glass-panel p-4 rounded-xl flex items-center gap-3 shadow-xl animate-bounce" style="animation-duration: 3s;">
+<div class="bg-green-500/20 p-2 rounded-full text-green-400">
+<span class="material-symbols-outlined">percent</span>
+</div>
+<div>
+<p class="text-xs text-gray-400">خصم خاص</p>
+<p class="text-white font-bold">يصل إلى ٢٠٪</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-16 relative">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="glass-card p-6 rounded-xl flex flex-col items-start gap-4 hover:border-primary/50 group">
+<div class="w-12 h-12 rounded-lg bg-[#232f48] flex items-center justify-center group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white text-2xl">shield_moon</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-bold mb-1">ضمان محلي شامل</h3>
+<p class="text-gray-400 text-sm leading-relaxed">جميع أجهزتنا تأتي بضمان حقيقي لمدة عام مع توفر قطع الغيار الأصلية.</p>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl flex flex-col items-start gap-4 hover:border-primary/50 group">
+<div class="w-12 h-12 rounded-lg bg-[#232f48] flex items-center justify-center group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white text-2xl">payments</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-bold mb-1">الدفع عند الاستلام</h3>
+<p class="text-gray-400 text-sm leading-relaxed">افحص المنتج بنفسك قبل الدفع. نوفر لك خدمة المعاينة عند الاستلام.</p>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl flex flex-col items-start gap-4 hover:border-primary/50 group">
+<div class="w-12 h-12 rounded-lg bg-[#232f48] flex items-center justify-center group-hover:bg-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white text-2xl">rocket_launch</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-bold mb-1">شحن سريع للمحافظات</h3>
+<p class="text-gray-400 text-sm leading-relaxed">توصيل خلال ٢٤ ساعة داخل القاهرة و ٤٨ ساعة لباقي المحافظات.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-end justify-between mb-8">
+<div>
+<h2 class="text-2xl md:text-3xl font-bold text-white mb-2">تسوق حسب الفئة</h2>
+<p class="text-gray-400">تصفح المنتجات حسب احتياج نشاطك</p>
+</div>
+<a class="hidden sm:flex items-center gap-1 text-primary hover:text-white transition-colors text-sm font-bold" href="#">
+<span>عرض الكل</span>
+<span class="material-symbols-outlined rtl:rotate-180 text-lg">arrow_right_alt</span>
+</a>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">print</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">طابعات فواتير</span>
+</a>
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">qr_code_scanner</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">قارئ باركود</span>
+</a>
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">point_of_sale</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">أجهزة كاشير</span>
+</a>
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">inbox</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">أدراج نقدية</span>
+</a>
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">receipt_long</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">رولات ورق</span>
+</a>
+<a class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36" href="#">
+<span class="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">scale</span>
+<span class="text-sm font-bold text-gray-300 group-hover:text-white">موازين باركود</span>
+</a>
+</div>
+</div>
+</section>
+<section class="py-16 bg-[#0d121c]/50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between mb-10">
+<h2 class="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+<span class="w-2 h-8 rounded-full bg-accent-red block"></span>
+                        الأكثر مبيعاً هذا الشهر
+                    </h2>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:bg-white/10 text-white transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="w-10 h-10 rounded-full glass-card flex items-center justify-center hover:bg-white/10 text-white transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="glass-card rounded-2xl overflow-hidden group flex flex-col h-full relative p-0 hover:z-10">
+<div class="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-6 flex items-center justify-center overflow-hidden">
+<div class="absolute top-3 right-3 z-20 flex flex-col gap-2">
+<span class="bg-accent-red text-white text-[11px] font-bold px-3 py-1 rounded-lg backdrop-blur-md shadow-lg shadow-red-900/20">خصم ١٠٪</span>
+</div>
+<div class="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110 drop-shadow-2xl" data-alt="Black thermal receipt printer Xprinter brand" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDxxJ9tmTVPceVucCSIsPiqO8tUFn8kabL61HDi4Ov6m5QZpfBdnlViwjY2haLMYyLth5Bc-Gt3u1H9M99ogXqu4GxkbXAH9fctr-zP39eATS-uGKSiy1IhrD6f28hfM4HWC8Qt8whBF0BcM4pZnrBi9UfKu54xqmYWyaiJLFpNv3f5NjPz5GZdAEA3xKjGa1KVxfI9LgMJ3CU40RlCFDsJBVfKMKd3F9iWWNpwe1KbzwvNYTF2t_nyJSxCuuVIk5EZbRDYRizhV1o');"></div>
+</div>
+<div class="p-5 flex flex-col flex-1 border-t border-white/5 bg-gradient-to-b from-[#1e293b]/20 to-[#1e293b]/60">
+<div class="mb-2">
+<h3 class="text-white font-bold text-lg leading-snug line-clamp-2 hover:text-primary transition-colors cursor-pointer">طابعة إيصالات حرارية Xprinter Q800</h3>
+</div>
+<div class="flex items-center gap-1.5 mb-4">
+<div class="flex text-yellow-400 text-sm gap-[1px]">
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px] text-gray-600">star</span>
+</div>
+<span class="text-xs text-gray-400 font-medium font-['Manrope'] pt-0.5">(24)</span>
+</div>
+<div class="mt-auto flex items-end justify-between gap-2">
+<div class="flex flex-col gap-0.5">
+<span class="text-gray-500 text-sm font-['Manrope'] line-through decoration-red-500/60 decoration-1">1650</span>
+<div class="flex items-baseline gap-1">
+<span class="text-white text-2xl font-bold font-['Manrope']">1500</span>
+<span class="text-xs text-gray-400 font-medium">ج.م</span>
+</div>
+</div>
+<button class="size-11 rounded-xl bg-primary hover:bg-primary-dark text-white flex items-center justify-center transition-all shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 group/btn">
+<span class="material-symbols-outlined group-hover/btn:animate-pulse">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-2xl overflow-hidden group flex flex-col h-full relative p-0 hover:z-10">
+<div class="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-6 flex items-center justify-center overflow-hidden">
+<div class="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110 drop-shadow-2xl" data-alt="Handheld barcode scanner black color with stand" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBKDOjzgb-jtD5OnlEJUl5E6CgtjL-tH4hUqnjzgVfT-gENm5bi4NxRILh2Duszx5ZHczzPxxPemOpmq7u39awgNL0bSIW64FVYKTa9-QzwIdklJAgcViOHmO7NwSPcpuFp5Utd4YgyvM_SrzaYcyqGeLVEg1QZhBh8UQSq4gNyHNyL0V2aRhJFpaMaI76pcg7GtgVDcoK0u-PBT_GlWPJbSGG7eTtfUHojlQdrd9hjCESoRDzOdfO4epqfXqTU0bp_tb0_LLWxzEY');"></div>
+</div>
+<div class="p-5 flex flex-col flex-1 border-t border-white/5 bg-gradient-to-b from-[#1e293b]/20 to-[#1e293b]/60">
+<div class="mb-2">
+<h3 class="text-white font-bold text-lg leading-snug line-clamp-2 hover:text-primary transition-colors cursor-pointer">قارئ باركود ثنائي الأبعاد 2D Sunmi</h3>
+</div>
+<div class="flex items-center gap-1.5 mb-4">
+<div class="flex text-yellow-400 text-sm gap-[1px]">
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+</div>
+<span class="text-xs text-gray-400 font-medium font-['Manrope'] pt-0.5">(15)</span>
+</div>
+<div class="mt-auto flex items-end justify-between gap-2">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-baseline gap-1">
+<span class="text-white text-2xl font-bold font-['Manrope']">850</span>
+<span class="text-xs text-gray-400 font-medium">ج.م</span>
+</div>
+</div>
+<button class="size-11 rounded-xl bg-gray-700 hover:bg-primary text-white flex items-center justify-center transition-all shadow-lg hover:shadow-primary/20 hover:scale-110 active:scale-95">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-2xl overflow-hidden group flex flex-col h-full relative p-0 hover:z-10">
+<div class="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-6 flex items-center justify-center overflow-hidden">
+<div class="absolute top-3 right-3 z-20 flex flex-col gap-2">
+<span class="bg-primary text-white text-[11px] font-bold px-3 py-1 rounded-lg backdrop-blur-md shadow-lg shadow-blue-900/20">وصل حديثاً</span>
+</div>
+<div class="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110 drop-shadow-2xl" data-alt="Electronic Cash Drawer black metallic" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDU8YUXsa4aX9Rgz3AXNGkLVwNo6mya28J_m5z4aXxMlu1ndIj5hKGrVW2sRO3hB9yyEhpFOZeFAo-6DEalbvgLu3P_fHPLnZr9MGo9fuEeGcQbeOvz3QiREB_dg7Oj4fYY5NrsmCpAbI9A0F8FyNwFiQHTQXNVRVZWcSl9ocP4lkjx0GO4k2D-YVOjk_uzsN1aLjkf1Jd-1kkf1S9NhlfBZezXWoO713C_Zwx3ngse-MkpGN2jlbyG9iE_4pmduTlxXzsJGrTF_S8');"></div>
+</div>
+<div class="p-5 flex flex-col flex-1 border-t border-white/5 bg-gradient-to-b from-[#1e293b]/20 to-[#1e293b]/60">
+<div class="mb-2">
+<h3 class="text-white font-bold text-lg leading-snug line-clamp-2 hover:text-primary transition-colors cursor-pointer">درج نقدية ٥ خانات معدن صلب</h3>
+</div>
+<div class="flex items-center gap-1.5 mb-4">
+<div class="flex text-yellow-400 text-sm gap-[1px]">
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px] text-gray-600">star</span>
+</div>
+<span class="text-xs text-gray-400 font-medium font-['Manrope'] pt-0.5">(8)</span>
+</div>
+<div class="mt-auto flex items-end justify-between gap-2">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-baseline gap-1">
+<span class="text-white text-2xl font-bold font-['Manrope']">950</span>
+<span class="text-xs text-gray-400 font-medium">ج.م</span>
+</div>
+</div>
+<button class="size-11 rounded-xl bg-gray-700 hover:bg-primary text-white flex items-center justify-center transition-all shadow-lg hover:shadow-primary/20 hover:scale-110 active:scale-95">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-2xl overflow-hidden group flex flex-col h-full relative p-0 hover:z-10">
+<div class="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-6 flex items-center justify-center overflow-hidden">
+<div class="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110 drop-shadow-2xl" data-alt="Roll of thermal paper white" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAePSWiHG5jOfDGouVCn_9cQnwDvm34Rd4RxGfw4Rt3qEsU8wfD32BxjJ-dBLPuIux8OKgYsfPpmIPDHtMfWj9JnsPsBhwieQ_rGSGh5BlLWA-maPhE364E_o4X0jVLeXUK4FQhiNldgW6a5xD_Yyr0zNFX4iTCyiglBx1p2vp42z8hKHB0aiOpsd4mjdfg9ML5d60bew7qIkeHfEbIDYqAxgmNWGxbxXpYb_XV3I_wIJ3-l4E23PIYLVx4Bx-Fi2xtVlHz8k9-rvQ');"></div>
+</div>
+<div class="p-5 flex flex-col flex-1 border-t border-white/5 bg-gradient-to-b from-[#1e293b]/20 to-[#1e293b]/60">
+<div class="mb-2">
+<h3 class="text-white font-bold text-lg leading-snug line-clamp-2 hover:text-primary transition-colors cursor-pointer">كرتونة ورق حراري ٧.٩ (٥٠ بكرة)</h3>
+</div>
+<div class="flex items-center gap-1.5 mb-4">
+<div class="flex text-yellow-400 text-sm gap-[1px]">
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+<span class="material-symbols-outlined symbol-filled text-[18px]">star</span>
+</div>
+<span class="text-xs text-gray-400 font-medium font-['Manrope'] pt-0.5">(42)</span>
+</div>
+<div class="mt-auto flex items-end justify-between gap-2">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-baseline gap-1">
+<span class="text-white text-2xl font-bold font-['Manrope']">1200</span>
+<span class="text-xs text-gray-400 font-medium">ج.م</span>
+</div>
+</div>
+<button class="size-11 rounded-xl bg-gray-700 hover:bg-primary text-white flex items-center justify-center transition-all shadow-lg hover:shadow-primary/20 hover:scale-110 active:scale-95">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-16">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="relative rounded-2xl overflow-hidden glass-panel border border-primary/20">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent"></div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between p-8 md:p-12 gap-8">
+<div class="flex flex-col gap-4 text-center md:text-right items-center md:items-start max-w-xl">
+<span class="bg-accent-red text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">عرض خاص</span>
+<h2 class="text-3xl md:text-4xl font-bold text-white">تجهيز كامل للسوبر ماركت</h2>
+<p class="text-gray-300 text-lg">جهاز كاشير تاتش + طابعة فواتير + قارئ باركود + درج نقدية + برنامج إدارة المخازن.</p>
+<div class="flex gap-4 mt-2">
+<span class="text-2xl font-bold text-white">١٨,٥٠٠ ج.م</span>
+<span class="text-xl text-gray-500 line-through">٢٢,٠٠٠ ج.م</span>
+</div>
+<button class="mt-4 bg-white text-primary-dark hover:bg-gray-100 px-8 py-3 rounded-lg font-bold transition-colors">
+                                احجز العرض الآن
+                            </button>
+</div>
+<div class="w-full md:w-1/3">
+<div class="w-full aspect-square bg-contain bg-center bg-no-repeat" data-alt="Illustration of a full POS hardware bundle including screen, printer and scanner" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5wEfKVfTq1cZryy7NYSkOla1vIjAT9kNdq-cGlq0ED0H3XlGVXVp-LB1RKN1ZcjutQmdR3yVIoCSSkz58XUcMZS4XdkrVd7nBJN0DDOHXBlwU5NmxKZVh0-T4AgUyla9tjegApcLgId9nBl_dTPSMudDIqAShzcMR9vbbccEwf2wSPUiL935-zLZBWJOe_FS6spqpqiwYWXGYQZcTsKlMbw-GRGrGtBZf4efYAmN3ZKOKrDIfvPOwpR4h2xWzqTqUaBKOZFH7Rhg');"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-[#0b0f17] border-t border-white/5 pt-16 pb-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<div class="flex items-center justify-center size-8 rounded-lg bg-gradient-to-br from-gray-800 to-black border border-gray-700">
+<span class="text-accent-red font-bold text-lg relative top-[-1px]">ع</span>
+</div>
+<h2 class="text-white text-xl font-bold">كاشير ستور</h2>
+</div>
+<p class="text-gray-400 text-sm leading-relaxed">
+                        وجهتك الأولى في مصر لأحدث أنظمة الكاشير والباركود. نساعدك في إدارة نشاطك التجاري بكفاءة عالية.
+                    </p>
+<div class="flex gap-4 mt-2">
+<a class="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400" href="#">
+<span class="font-bold">f</span>
+</a>
+<a class="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400" href="#">
+<span class="font-bold">in</span>
+</a>
+</div>
+</div>
+<div>
+<h3 class="text-white font-bold text-lg mb-6">روابط سريعة</h3>
+<ul class="flex flex-col gap-3 text-sm text-gray-400">
+<li><a class="hover:text-primary transition-colors" href="#">الرئيسية</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">عن الشركة</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">سياسة الضمان</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">الشروط والأحكام</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">مدونة التقنية</a></li>
+</ul>
+</div>
+<div>
+<h3 class="text-white font-bold text-lg mb-6">الأقسام</h3>
+<ul class="flex flex-col gap-3 text-sm text-gray-400">
+<li><a class="hover:text-primary transition-colors" href="#">طابعات الباركود</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">طابعات الإيصالات</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">قارئ الباركود</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">شاشات اللمس</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">موازين إلكترونية</a></li>
+</ul>
+</div>
+<div>
+<h3 class="text-white font-bold text-lg mb-6">تواصل معنا</h3>
+<ul class="flex flex-col gap-4 text-sm text-gray-400">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1">location_on</span>
+<span>٤٥ شارع التسعين، التجمع الخامس،<br/>القاهرة الجديدة، مصر</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">phone_in_talk</span>
+<span class="dir-ltr text-right">010-XXXX-XXXX</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">mail</span>
+<span>sales@cashierstore.com.eg</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+<p class="text-gray-500 text-sm">© ٢٠٢٣ كاشير ستور. جميع الحقوق محفوظة.</p>
+<div class="flex gap-4">
+<div class="w-10 h-6 bg-white/10 rounded"></div> 
+<div class="w-10 h-6 bg-white/10 rounded"></div> 
+<div class="w-10 h-6 bg-white/10 rounded"></div> 
+</div>
+</div>
+</div>
+</footer>
+
+</body></html>

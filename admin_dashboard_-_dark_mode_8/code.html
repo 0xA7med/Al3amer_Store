@@ -1,0 +1,403 @@
+<html class="dark" dir="rtl" lang="ar"><head></head><body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white min-h-screen flex flex-col">```html
+
+
+
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>مصمم حلول الكاشير الذكية - تيكـعر</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                        ai: "#8b5cf6", // Purple for AI elements
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }
+        .glass-panel {
+            background: rgba(22, 27, 38, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .glass-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #135bec;
+            box-shadow: 0 0 0 2px rgba(19, 91, 236, 0.2);
+        }
+        .ai-gradient-text {
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+        }
+        .custom-checkbox:checked + div {
+            background-color: rgba(19, 91, 236, 0.2);
+            border-color: #135bec;
+            color: white;
+        }
+        .custom-radio:checked + div {
+            background-color: rgba(139, 92, 246, 0.2);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+        }
+    </style>
+
+
+<nav class="sticky top-0 z-50 w-full glass-panel border-b border-white/5 h-20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<h1 class="text-white text-xl font-bold tracking-tight flex items-center gap-1">
+                    تيك<span class="text-secondary font-extrabold text-2xl font-display">ع</span>ـر
+                </h1>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium text-slate-300 hover:text-white transition-colors" href="#">الرئيسية</a>
+<a class="text-sm font-medium text-slate-300 hover:text-white transition-colors" href="#">المنتجات</a>
+<a class="text-sm font-bold text-ai flex items-center gap-1 bg-ai/10 px-3 py-1.5 rounded-full border border-ai/20" href="#">
+<span class="material-symbols-outlined text-[18px]">smart_toy</span>
+                    مصمم حلول الكاشير الذكية
+                </a>
+<a class="text-sm font-medium text-slate-300 hover:text-white transition-colors" href="#">العروض</a>
+<a class="text-sm font-medium text-slate-300 hover:text-white transition-colors" href="#">تواصل معنا</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="relative p-2 text-slate-400 hover:text-white transition-colors group">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-1 right-1 size-2 bg-secondary rounded-full ring-2 ring-background-dark"></span>
+</button>
+<div class="h-8 w-px bg-white/10 mx-1"></div>
+<button class="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white transition-colors">
+<div class="size-8 rounded-full bg-surface-dark border border-white/10 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<span>تسجيل الدخول</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="flex-1 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-1/4 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 pointer-events-none"></div>
+<div class="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-ai/10 rounded-full blur-[80px] translate-y-1/3 pointer-events-none"></div>
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6 text-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-ai/20 to-primary/20 text-ai border border-ai/20 mb-4 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-ai opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-ai"></span>
+</span>
+                الجيل الجديد من تجهيز المتاجر
+            </span>
+<h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+                صمم كاشير نشاطك <span class="ai-gradient-text">بالذكاء الاصطناعي</span>
+</h1>
+<p class="text-slate-400 max-w-2xl mx-auto text-lg">
+                أجب على 3 أسئلة بسيطة، وسيقوم نظامنا الذكي ببناء الحزمة المثالية لنشاطك التجاري وميزانيتك في ثوانٍ معدودة.
+            </p>
+</div>
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full">
+<div class="grid lg:grid-cols-12 gap-8 items-start">
+<div class="lg:col-span-5 flex flex-col gap-6">
+<div class="glass-panel rounded-2xl p-6 md:p-8 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-full h-1 bg-gradient-to-l from-ai to-primary"></div>
+<form class="flex flex-col gap-8" onsubmit="event.preventDefault();">
+<div class="flex flex-col gap-4">
+<label class="text-white font-bold flex items-center gap-2">
+<span class="size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs border border-primary/20">1</span>
+                                    نوع النشاط التجاري
+                                </label>
+<div class="grid grid-cols-2 gap-3">
+<label class="cursor-pointer group">
+<input checked="" class="peer sr-only custom-radio" name="business_type" type="radio"/>
+<div class="h-24 rounded-xl border border-white/10 bg-surface-dark/50 hover:bg-surface-dark flex flex-col items-center justify-center gap-2 transition-all group-hover:border-ai/50">
+<span class="material-symbols-outlined text-3xl text-amber-400 group-hover:scale-110 transition-transform">storefront</span>
+<span class="text-sm font-medium text-slate-300 group-hover:text-white">سوبر ماركت</span>
+</div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only custom-radio" name="business_type" type="radio"/>
+<div class="h-24 rounded-xl border border-white/10 bg-surface-dark/50 hover:bg-surface-dark flex flex-col items-center justify-center gap-2 transition-all group-hover:border-ai/50">
+<span class="material-symbols-outlined text-3xl text-purple-400 group-hover:scale-110 transition-transform">restaurant</span>
+<span class="text-sm font-medium text-slate-300 group-hover:text-white">مطعم / كافيه</span>
+</div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only custom-radio" name="business_type" type="radio"/>
+<div class="h-24 rounded-xl border border-white/10 bg-surface-dark/50 hover:bg-surface-dark flex flex-col items-center justify-center gap-2 transition-all group-hover:border-ai/50">
+<span class="material-symbols-outlined text-3xl text-blue-400 group-hover:scale-110 transition-transform">checkroom</span>
+<span class="text-sm font-medium text-slate-300 group-hover:text-white">ملابس وأحذية</span>
+</div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only custom-radio" name="business_type" type="radio"/>
+<div class="h-24 rounded-xl border border-white/10 bg-surface-dark/50 hover:bg-surface-dark flex flex-col items-center justify-center gap-2 transition-all group-hover:border-ai/50">
+<span class="material-symbols-outlined text-3xl text-pink-400 group-hover:scale-110 transition-transform">local_pharmacy</span>
+<span class="text-sm font-medium text-slate-300 group-hover:text-white">صيدلية</span>
+</div>
+</label>
+<label class="col-span-2 cursor-pointer group relative h-24">
+<input class="peer sr-only" name="business_type" type="radio"/>
+<div class="absolute inset-0 rounded-xl border border-white/10 bg-surface-dark/50 hover:bg-surface-dark transition-all group-hover:border-ai/50 peer-checked:bg-[rgba(139,92,246,0.2)] peer-checked:border-[#8b5cf6] peer-checked:shadow-[0_0_15px_rgba(139,92,246,0.2)]"></div>
+<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 peer-checked:hidden">
+<span class="material-symbols-outlined text-3xl text-slate-400 group-hover:scale-110 transition-transform">edit_square</span>
+<span class="text-sm font-medium text-slate-300 group-hover:text-white">نشاط آخر / مخصص</span>
+</div>
+<div class="absolute inset-0 hidden peer-checked:flex items-center justify-center px-6">
+<div class="w-full relative flex items-center gap-2">
+<span class="material-symbols-outlined text-ai">edit</span>
+<input class="w-full bg-surface-dark/60 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-ai focus:ring-1 focus:ring-ai transition-all text-sm" onclick="event.stopPropagation();" placeholder="اكتب نوع النشاط..." type="text"/>
+</div>
+</div>
+</label>
+</div>
+</div>
+<hr class="border-white/5"/>
+<div class="flex flex-col gap-4">
+<label class="text-white font-bold flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs border border-primary/20">2</span>
+                                        الميزانية التقريبية
+                                    </div>
+<span class="text-ai text-sm font-bold dir-ltr">25,000 EGP</span>
+</label>
+<input class="w-full h-2 bg-surface-dark rounded-lg appearance-none cursor-pointer accent-ai" max="100000" min="5000" step="5000" type="range" value="25000"/>
+<div class="flex justify-between text-xs text-slate-500 font-medium px-1">
+<span>اقتصادي</span>
+<span>متوسط</span>
+<span>احترافي</span>
+</div>
+</div>
+<hr class="border-white/5"/>
+<div class="flex flex-col gap-4">
+<label class="text-white font-bold flex items-center gap-2">
+<span class="size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs border border-primary/20">3</span>
+                                    الاحتياجات والمميزات
+                                </label>
+<div class="flex flex-wrap gap-2">
+<label class="cursor-pointer">
+<input checked="" class="sr-only custom-checkbox" type="checkbox"/>
+<div class="px-4 py-2 rounded-lg border border-white/10 bg-surface-dark/50 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                                            قارئ باركود
+                                        </div>
+</label>
+<label class="cursor-pointer">
+<input checked="" class="sr-only custom-checkbox" type="checkbox"/>
+<div class="px-4 py-2 rounded-lg border border-white/10 bg-surface-dark/50 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                                            طابعة فواتير
+                                        </div>
+</label>
+<label class="cursor-pointer">
+<input class="sr-only custom-checkbox" type="checkbox"/>
+<div class="px-4 py-2 rounded-lg border border-white/10 bg-surface-dark/50 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                                            درج نقدية
+                                        </div>
+</label>
+<label class="cursor-pointer">
+<input checked="" class="sr-only custom-checkbox" type="checkbox"/>
+<div class="px-4 py-2 rounded-lg border border-white/10 bg-surface-dark/50 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                                            شاشة لمس
+                                        </div>
+</label>
+<label class="cursor-pointer">
+<input class="sr-only custom-checkbox" type="checkbox"/>
+<div class="px-4 py-2 rounded-lg border border-white/10 bg-surface-dark/50 text-slate-400 text-sm font-medium hover:bg-white/5 transition-colors">
+                                            ميزان باركود
+                                        </div>
+</label>
+</div>
+</div>
+<button class="w-full mt-4 bg-gradient-to-r from-ai to-primary hover:from-ai/90 hover:to-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-ai/25 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+<span class="material-symbols-outlined animate-pulse">auto_awesome</span>
+                                إنشاء الحزمة الذكية
+                            </button>
+</form>
+</div>
+</div>
+<div class="lg:col-span-7 space-y-6 animate-float">
+<div class="flex items-start gap-4 p-4 rounded-xl bg-ai/5 border border-ai/10">
+<div class="size-10 rounded-full bg-ai/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-ai">psychology</span>
+</div>
+<div>
+<h3 class="text-white font-bold text-sm mb-1">تحليل الذكاء الاصطناعي</h3>
+<p class="text-slate-400 text-xs leading-relaxed">
+                                بناءً على اختيارك لنشاط <span class="text-amber-400 font-bold">السوبر ماركت</span> وميزانية متوسطة، قمنا باختيار أجهزة تتحمل ضغط العمل العالي مع دقة في قراءة الباركود لضمان سرعة الكاشير. هذه الحزمة توفر لك <span class="text-emerald-400 font-bold">15%</span> مقارنة بشراء القطع منفردة.
+                            </p>
+</div>
+</div>
+<div class="glass-panel rounded-2xl overflow-hidden border-ai/30 ring-1 ring-ai/20 shadow-2xl shadow-ai/5">
+<div class="bg-gradient-to-r from-ai/20 to-primary/10 p-6 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/20">الأكثر مبيعاً</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">تطابق 98%</span>
+</div>
+<h2 class="text-2xl font-bold text-white">حزمة السوبر ماركت المتكاملة</h2>
+<p class="text-slate-400 text-sm">نظام كاشير كامل جاهز للتشغيل الفوري</p>
+</div>
+<div class="text-left">
+<p class="text-xs text-slate-400 line-through mb-0.5">28,500 ج.م</p>
+<p class="text-3xl font-extrabold text-white leading-none">24,200 <span class="text-sm font-normal text-slate-400">ج.م</span></p>
+</div>
+</div>
+<div class="p-6">
+<h3 class="text-slate-300 font-bold text-sm mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">inventory_2</span>
+                                محتويات الحزمة (4 منتجات)
+                            </h3>
+<div class="space-y-3">
+<div class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-ai/30 transition-colors group">
+<div class="size-16 rounded-lg bg-white p-1 flex-shrink-0 relative overflow-hidden">
+<img alt="Touch Screen" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">شاشة لمس 15 بوصة Capacitive</h4>
+<p class="text-xs text-slate-400 mt-1">سريعة الاستجابة، مقاومة للسوائل والأتربة</p>
+</div>
+<div class="text-left hidden sm:block">
+<span class="text-white font-bold text-sm">9,500 ج.م</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-ai/30 transition-colors group">
+<div class="size-16 rounded-lg bg-white p-1 flex-shrink-0 relative overflow-hidden">
+<img alt="Barcode Scale" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">ميزان باركود إلكتروني 30 كجم</h4>
+<p class="text-xs text-slate-400 mt-1">طباعة ملصقات فورية، دقة عالية</p>
+</div>
+<div class="text-left hidden sm:block">
+<span class="text-white font-bold text-sm">8,200 ج.م</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-ai/30 transition-colors group">
+<div class="size-16 rounded-lg bg-white p-1 flex-shrink-0 relative overflow-hidden">
+<img alt="Scanner" class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">قارئ باركود ليزر 2D لاسلكي</h4>
+<p class="text-xs text-slate-400 mt-1">يقرأ من الشاشات، مدى يصل لـ 50 متر</p>
+</div>
+<div class="text-left hidden sm:block">
+<span class="text-white font-bold text-sm">2,500 ج.م</span>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-ai/30 transition-colors group">
+<div class="size-16 rounded-lg bg-white p-1 flex-shrink-0 relative overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-800 text-3xl">print</span>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">طابعة فواتير حرارية 80مم</h4>
+<p class="text-xs text-slate-400 mt-1">قص آلي، سرعة طباعة 260مم/ثانية</p>
+</div>
+<div class="text-left hidden sm:block">
+<span class="text-white font-bold text-sm">4,000 ج.م</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 bg-surface-dark border-t border-white/5 flex flex-col sm:flex-row gap-4">
+<button class="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all group">
+<span class="material-symbols-outlined group-hover:animate-bounce">shopping_cart_checkout</span>
+                                إضافة الحزمة للسلة
+                            </button>
+<button class="sm:w-auto bg-white/5 hover:bg-white/10 text-white font-bold py-3.5 px-6 rounded-xl border border-white/10 flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-outlined">tune</span>
+                                تخصيص المنتجات
+                            </button>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="flex flex-col items-center text-center gap-2 p-3 rounded-lg bg-white/5 border border-white/5">
+<span class="material-symbols-outlined text-emerald-400">verified_user</span>
+<span class="text-xs text-slate-300 font-medium">ضمان شامل لمدة عام</span>
+</div>
+<div class="flex flex-col items-center text-center gap-2 p-3 rounded-lg bg-white/5 border border-white/5">
+<span class="material-symbols-outlined text-blue-400">support_agent</span>
+<span class="text-xs text-slate-300 font-medium">دعم فني 24/7 مجاناً</span>
+</div>
+<div class="flex flex-col items-center text-center gap-2 p-3 rounded-lg bg-white/5 border border-white/5">
+<span class="material-symbols-outlined text-purple-400">rocket_launch</span>
+<span class="text-xs text-slate-300 font-medium">تركيب وتدريب مجاني</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="border-t border-white/5 bg-surface-dark py-8 relative z-20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-slate-500 text-sm">© 2023 تيكـعر لتقنية المعلومات. جميع الحقوق محفوظة.</p>
+<div class="flex items-center gap-4 text-slate-500">
+<a class="hover:text-white transition-colors" href="#">سياسة الخصوصية</a>
+<a class="hover:text-white transition-colors" href="#">الشروط والأحكام</a>
+</div>
+</div>
+</footer>
+
+</body></html>

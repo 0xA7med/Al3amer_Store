@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة كوبونات الخصم - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }.glass-panel {
+            background: rgba(22, 27, 38, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }input[type="checkbox"]:checked {
+            background-color: #135bec;
+            border-color: #135bec;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                        تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                    </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">local_offer</span>
+<span class="font-bold text-sm">كوبونات الخصم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">كوبونات الخصم</h2>
+<span class="h-6 w-px bg-white/10 mx-2"></span>
+<button class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    إضافة كوبون جديد
+                </button>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden md:block w-80">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full h-10 pr-10 pl-4 rounded-lg bg-[#161b26] border-none text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary transition-all" placeholder="بحث عن رمز الكوبون..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 left-2 size-2 bg-secondary rounded-full border border-[#161b26]"></span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-white/10">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" data-alt="User profile photo of admin" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary">local_offer</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">إجمالي الكوبونات النشطة</p>
+<h3 class="text-2xl font-bold text-white mt-1">12 <span class="text-sm font-normal text-slate-500">كوبون</span></h3>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-emerald-500">check_circle</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">مرات الاستخدام (هذا الشهر)</p>
+<h3 class="text-2xl font-bold text-white mt-1">456 <span class="text-sm font-normal text-slate-500">مرة</span></h3>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-secondary">savings</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">إجمالي الخصومات المقدمة</p>
+<h3 class="text-2xl font-bold text-white mt-1">12,500 <span class="text-sm font-normal text-slate-500">ج.م</span></h3>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6 border-t-4 border-t-primary relative">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_square</span>
+                            إنشاء / تعديل كوبون
+                        </h3>
+<button class="text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="lg:col-span-2">
+<label class="block text-sm font-medium text-slate-300 mb-2">رمز الكوبون</label>
+<div class="flex rounded-md shadow-sm">
+<input class="flex-1 rounded-r-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm" placeholder="مثال: SUMMER2024" type="text"/>
+<button class="inline-flex items-center px-4 rounded-l-lg border border-l-0 border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-medium transition-colors" type="button">
+                                    توليد تلقائي
+                                </button>
+</div>
+</div>
+<div class="lg:col-span-2">
+<label class="block text-sm font-medium text-slate-300 mb-2">نوع الخصم</label>
+<div class="grid grid-cols-2 gap-4">
+<label class="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#161b26] cursor-pointer hover:border-primary/50 transition-colors">
+<input checked="" class="text-primary bg-slate-800 border-slate-600 focus:ring-primary" name="discountType" type="radio"/>
+<span class="text-sm text-white">نسبة مئوية (%)</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-[#161b26] cursor-pointer hover:border-primary/50 transition-colors">
+<input class="text-primary bg-slate-800 border-slate-600 focus:ring-primary" name="discountType" type="radio"/>
+<span class="text-sm text-white">مبلغ ثابت (ج.م)</span>
+</label>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">قيمة الخصم</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm" placeholder="10" type="number"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">الحد الأدنى للطلب</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm" placeholder="0" type="number"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">تاريخ البدء</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm [color-scheme:dark]" type="date"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">تاريخ الانتهاء</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm [color-scheme:dark]" type="date"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">حد الاستخدام للكوبون</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm" placeholder="∞" type="number"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-2">حد الاستخدام للمستخدم</label>
+<input class="w-full rounded-lg bg-[#161b26] border-white/10 text-white placeholder-slate-500 focus:border-primary focus:ring-primary text-sm" placeholder="1" type="number"/>
+</div>
+<div class="lg:col-span-2 flex items-center gap-4 mt-2">
+<button class="flex-1 bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 transition-all" type="submit">
+                                حفظ الكوبون
+                            </button>
+<button class="px-6 py-2.5 rounded-lg border border-white/10 text-slate-300 hover:text-white hover:bg-white/5 text-sm font-bold transition-all" type="button">
+                                إلغاء
+                            </button>
+</div>
+</form>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<div class="p-6 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<h3 class="text-lg font-bold text-white">قائمة الكوبونات</h3>
+<div class="flex bg-[#161b26] rounded-lg p-1 border border-white/5">
+<button class="px-3 py-1 text-xs font-bold text-white bg-primary rounded shadow-sm">الكل</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white">النشطة</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white">المنتهية</button>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right">
+<thead class="bg-white/5 text-slate-400 font-medium">
+<tr>
+<th class="px-6 py-4 whitespace-nowrap">الكود</th>
+<th class="px-6 py-4 whitespace-nowrap">قيمة الخصم</th>
+<th class="px-6 py-4 whitespace-nowrap">الحدود</th>
+<th class="px-6 py-4 whitespace-nowrap">تاريخ الانتهاء</th>
+<th class="px-6 py-4 whitespace-nowrap">مرات الاستخدام</th>
+<th class="px-6 py-4 whitespace-nowrap">الحالة</th>
+<th class="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-slate-300">
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 select-all">WELCOME10</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white">10%</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col text-xs gap-1">
+<span>حد أدنى: 500 ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">30 ديسمبر 2024</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 w-[45%]"></div>
+</div>
+<span class="text-xs">45/100</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                        نشط
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors" title="تعديل">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-secondary/20 text-slate-400 hover:text-secondary transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-white bg-white/10 px-2 py-1 rounded border border-white/20 select-all">FLASH50</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white">50 ج.م</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col text-xs gap-1">
+<span>حد أدنى: 1000 ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">20 أكتوبر 2023</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-slate-500 w-[100%]"></div>
+</div>
+<span class="text-xs">50/50</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+<span class="size-1.5 rounded-full bg-red-400"></span>
+                                        منتهي
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors" title="تعديل">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-secondary/20 text-slate-400 hover:text-secondary transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 select-all">BF2023</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white">25%</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col text-xs gap-1">
+<span>بدون حد أدنى</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">1 نوفمبر 2023</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-yellow-500 w-[0%]"></div>
+</div>
+<span class="text-xs">0/500</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+<span class="size-1.5 rounded-full bg-yellow-400"></span>
+                                        مجدول
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors" title="تعديل">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-secondary/20 text-slate-400 hover:text-secondary transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-white/5 flex items-center justify-between">
+<span class="text-xs text-slate-500">عرض 1-3 من أصل 12 كوبون</span>
+<div class="flex items-center gap-1">
+<button class="p-1 text-slate-500 hover:text-white disabled:opacity-50">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="size-7 flex items-center justify-center rounded bg-primary text-white text-xs font-bold">1</button>
+<button class="size-7 flex items-center justify-center rounded bg-transparent hover:bg-white/5 text-slate-400 text-xs font-bold transition-colors">2</button>
+<button class="size-7 flex items-center justify-center rounded bg-transparent hover:bg-white/5 text-slate-400 text-xs font-bold transition-colors">3</button>
+<button class="p-1 text-slate-500 hover:text-white">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

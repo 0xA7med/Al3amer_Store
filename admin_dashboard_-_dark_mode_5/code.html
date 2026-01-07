@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة العملاء - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }.glass-panel {
+            background: rgba(22, 27, 38, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                            تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                        </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">group</span>
+<span class="font-bold text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">إدارة العملاء</h2>
+<span class="h-6 w-px bg-white/10 mx-2"></span>
+<span class="text-slate-400 text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span>1,240 عميل مسجل</span>
+</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 left-2 size-2 bg-secondary rounded-full border border-[#161b26]"></span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-white/10">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" data-alt="User profile photo of admin" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary">groups</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">إجمالي العملاء</p>
+<h3 class="text-2xl font-bold text-white mt-1">1,240 <span class="text-sm font-normal text-slate-500">عميل</span></h3>
+<div class="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+12.5%</span>
+<span class="text-slate-500 font-medium mr-1">هذا الشهر</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-blue-400">person_add</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">عملاء جدد</p>
+<h3 class="text-2xl font-bold text-white mt-1">45 <span class="text-sm font-normal text-slate-500">اليوم</span></h3>
+<div class="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+5.2%</span>
+<span class="text-slate-500 font-medium mr-1">مقارنة بالأمس</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-purple-400">shopping_bag</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">متوسط الطلبات للعميل</p>
+<h3 class="text-2xl font-bold text-white mt-1">3.4 <span class="text-sm font-normal text-slate-500">طلب</span></h3>
+<div class="flex items-center gap-1 mt-2 text-slate-500 text-xs font-medium">
+<span>مؤشر جيد لولاء العملاء</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-secondary/30 transition-all border-l-4 border-l-secondary">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-secondary">block</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">الحسابات المحظورة</p>
+<h3 class="text-2xl font-bold text-white mt-1">12 <span class="text-sm font-normal text-slate-500">حساب</span></h3>
+<div class="flex items-center gap-1 mt-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span>مراجعة مطلوبة</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-2 flex-1">
+<div class="relative w-full md:w-96">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full h-11 pr-10 pl-4 rounded-lg bg-[#161b26] border border-white/5 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-sm" placeholder="بحث عن عميل بالاسم، البريد أو الهاتف..." type="text"/>
+</div>
+<button class="h-11 px-4 rounded-lg bg-[#161b26] border border-white/5 text-slate-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span class="hidden sm:inline">تصفية</span>
+</button>
+<button class="h-11 px-4 rounded-lg bg-[#161b26] border border-white/5 text-slate-300 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+<span class="hidden sm:inline">تصدير</span>
+</button>
+</div>
+<button class="h-11 px-6 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px]">person_add</span>
+<span>إضافة عميل جديد</span>
+</button>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col min-h-[500px]">
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right">
+<thead class="bg-white/5 text-slate-400 font-medium">
+<tr>
+<th class="px-6 py-4 whitespace-nowrap">العميل</th>
+<th class="px-6 py-4 whitespace-nowrap">معلومات الاتصال</th>
+<th class="px-6 py-4 whitespace-nowrap">الموقع</th>
+<th class="px-6 py-4 whitespace-nowrap">عدد الطلبات</th>
+<th class="px-6 py-4 whitespace-nowrap">إجمالي الإنفاق</th>
+<th class="px-6 py-4 whitespace-nowrap">الحالة</th>
+<th class="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-slate-300">
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCgAio9WZdWpygXZ0pvf6CB-qjKUwk5AFiG4P2AyARjdCwqBAPX7TNe7ju3FM45hN1Tr8LfqMDSAlBrqqvZOfckkzPwKJiwwMhL0Jkt1NgNSxJLlD-CG8qQjkGQu-gzGbUgh_e4gP4UCZ-34eV0qekQGuYCUjaBMmgwEXy_y2fHLQh1ENa-RF-8a7GlIel0u0-BFK9iRb2yBXXw0OerBnatwWkqDxQDapcQ5_3pfVhkgDiRMJKzlCTjl77AjlIjEoeaC3l-6yvmDtg');"></div>
+<div>
+<p class="font-bold text-white">محمود سعيد</p>
+<p class="text-xs text-slate-500">تم التسجيل: 15 أكتوبر 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-0.5">
+<span class="text-white font-medium" dir="ltr">+20 100 123 4567</span>
+<span class="text-xs text-slate-500">mahmoud.s@example.com</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">القاهرة، المعادي</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1 text-white font-bold">
+<span class="material-symbols-outlined text-primary text-[16px]">shopping_cart</span>
+                                                12
+                                            </div>
+</td>
+<td class="px-6 py-4 font-bold text-emerald-400">15,250 ج.م</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                                نشط
+                                            </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors tooltip" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAjkYRJTnV2pzsyXk09eZySG1G827jTPc7_xF6FPOf3gkDYGTLVx9H218x69mMFoxHYVh07NRPd-LKQBMTYLDglli0vo8kRn7iUr3jI8nCFngJj5scwf0oqop8XAQY0iDDZmwy4isQalE4CvVXJR7u6uZYmgwtAtty3cL4pPvcm_HPtTIa0SKgfU74sKZ4duDu_yY3ybq8S4xnVUMJhSuHVd9kQLdIK0Tra7XTq6kmipMpc2-lo6wufPtFdOVlG1oIqrXndL-1l0w4');"></div>
+<div>
+<p class="font-bold text-white">سارة أحمد</p>
+<p class="text-xs text-slate-500">تم التسجيل: 02 سبتمبر 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-0.5">
+<span class="text-white font-medium" dir="ltr">+20 122 987 6543</span>
+<span class="text-xs text-slate-500">sara.ahmed@example.com</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">الجيزة، المهندسين</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1 text-white font-bold">
+<span class="material-symbols-outlined text-primary text-[16px]">shopping_cart</span>
+                                                5
+                                            </div>
+</td>
+<td class="px-6 py-4 font-bold text-emerald-400">4,800 ج.م</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                                نشط
+                                            </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBHorC67-ouSQuqsY6DFlVBKgWVWll7HtD4TQDrO1r1IGd6XFTmkA5F59k0iw-J9blun_Wx2LbI0Fp_aQCc7QhqhXmWwDTifcdhHl74zoBNx18LWz6nnHxdETeaR_euMBu38VQa9HTDEdpj6q_8LxRXvgDc8Ugj0h2uKS71vQMsuG_m1YZGKw-U7S6TGYFr-ESN6Io5mZqTYr0qaQFoKGHwSI6ib-2tn7BT_IXUMPNP0fPD7Hh3asrWjqoo6A_rcD9PPnuj8xbNm48');"></div>
+<div>
+<p class="font-bold text-white">كريم مصطفى</p>
+<p class="text-xs text-slate-500">تم التسجيل: 10 يناير 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-0.5">
+<span class="text-white font-medium" dir="ltr">+20 111 555 9999</span>
+<span class="text-xs text-slate-500">kareem.m@example.com</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">الإسكندرية، سموحة</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1 text-white font-bold">
+<span class="material-symbols-outlined text-primary text-[16px]">shopping_cart</span>
+                                                28
+                                            </div>
+</td>
+<td class="px-6 py-4 font-bold text-emerald-400">42,100 ج.م</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+<span class="material-symbols-outlined text-[14px]">diamond</span>
+                                                VIP
+                                            </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfidwKcn805bpiqvElSfPBUGPftdtGOr1A0gYIv2s-HdQLDce9ri3HDPhgMMsmJx--jZ2YR6Ic1NooNY1_AEhXbPfHjZjProBfmSIOAREPuAQ1GJfaQdgj8THz-2NIXucN9sWzOQs-Fem047xXu1WnwtVhLRGMi41TOUYGvjxnAdvA5ri4Kv_IP_SmLiLQarDFJh-7Jp6sI0aZh5oshfy87r5GS8S4fTCP9gK52ZROddzbhekxrS1a6l_nRnKFlujjHivqa65ef-s');"></div>
+<div>
+<p class="font-bold text-white">عمر خالد</p>
+<p class="text-xs text-slate-500">تم التسجيل: 20 أغسطس 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-0.5">
+<span class="text-white font-medium" dir="ltr">+20 155 333 1111</span>
+<span class="text-xs text-slate-500">omar.k@example.com</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">القاهرة، التجمع الخامس</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1 text-white font-bold">
+<span class="material-symbols-outlined text-primary text-[16px]">shopping_cart</span>
+                                                1
+                                            </div>
+</td>
+<td class="px-6 py-4 font-bold text-emerald-400">850 ج.م</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-secondary/10 text-secondary border border-secondary/20">
+<span class="size-1.5 rounded-full bg-secondary"></span>
+                                                محظور
+                                            </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCgAio9WZdWpygXZ0pvf6CB-qjKUwk5AFiG4P2AyARjdCwqBAPX7TNe7ju3FM45hN1Tr8LfqMDSAlBrqqvZOfckkzPwKJiwwMhL0Jkt1NgNSxJLlD-CG8qQjkGQu-gzGbUgh_e4gP4UCZ-34eV0qekQGuYCUjaBMmgwEXy_y2fHLQh1ENa-RF-8a7GlIel0u0-BFK9iRb2yBXXw0OerBnatwWkqDxQDapcQ5_3pfVhkgDiRMJKzlCTjl77AjlIjEoeaC3l-6yvmDtg');"></div>
+<div>
+<p class="font-bold text-white">يوسف حسن</p>
+<p class="text-xs text-slate-500">تم التسجيل: 22 أكتوبر 2023</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col gap-0.5">
+<span class="text-white font-medium" dir="ltr">+20 109 876 5432</span>
+<span class="text-xs text-slate-500">youssef.h@example.com</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">المنصورة</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-1 text-white font-bold">
+<span class="material-symbols-outlined text-primary text-[16px]">shopping_cart</span>
+                                                0
+                                            </div>
+</td>
+<td class="px-6 py-4 font-bold text-slate-500">0 ج.م</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+<span class="size-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                                                جديد
+                                            </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2">
+<button class="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-auto p-4 border-t border-white/5 flex items-center justify-between">
+<span class="text-xs text-slate-500">عرض 1-5 من 1240 عميل</span>
+<div class="flex items-center gap-2">
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 transition-colors disabled:opacity-50">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs shadow-lg shadow-primary/20">1</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 font-bold text-xs transition-colors">2</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 font-bold text-xs transition-colors">3</button>
+<span class="text-slate-600">...</span>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 font-bold text-xs transition-colors">12</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

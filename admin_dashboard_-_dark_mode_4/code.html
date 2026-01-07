@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة المنتجات - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }
+        .glass-panel {
+            background: rgba(22, 27, 38, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .checkbox-wrapper input:checked {
+            background-color: #135bec;
+            border-color: #135bec;
+        }input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                        تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                    </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">إدارة المنتجات</h2>
+<span class="h-6 w-px bg-white/10 mx-2"></span>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-xs font-bold bg-white/5 text-slate-400 border border-white/5">124 منتج</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 left-2 size-2 bg-secondary rounded-full border border-[#161b26]"></span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-white/10">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" data-alt="User profile photo of admin" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="glass-panel rounded-xl p-5 flex items-center gap-4">
+<div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]">inventory</span>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold">إجمالي المنتجات</p>
+<h3 class="text-xl font-bold text-white">124 <span class="text-xs text-slate-500 font-normal">منتج</span></h3>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-5 flex items-center gap-4">
+<div class="size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+<span class="material-symbols-outlined text-[28px]">attach_money</span>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold">قيمة المخزون</p>
+<h3 class="text-xl font-bold text-white">450,200 <span class="text-xs text-slate-500 font-normal">ج.م</span></h3>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-5 flex items-center gap-4 border-l-2 border-secondary/50">
+<div class="size-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[28px]">warning</span>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold">تنبيهات المخزون</p>
+<h3 class="text-xl font-bold text-white">5 <span class="text-xs text-slate-500 font-normal">منتجات منخفضة</span></h3>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<div class="relative w-full md:w-64">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full h-10 pr-10 pl-4 rounded-lg bg-white/5 border border-white/5 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all" placeholder="بحث باسم المنتج، SKU..." type="text"/>
+</div>
+<div class="relative w-full md:w-auto">
+<select class="appearance-none block w-full md:w-40 h-10 rounded-lg bg-white/5 border border-white/5 text-sm text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all pl-10 pr-4 cursor-pointer outline-none">
+<option value="">جميع الأقسام</option>
+<option value="scale">أجهزة الوزن</option>
+<option value="pos">أجهزة الكاشير</option>
+<option value="scan">قارئ الباركود</option>
+<option value="print">طابعات الفواتير</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="relative w-full md:w-auto">
+<select class="appearance-none block w-full md:w-40 h-10 rounded-lg bg-white/5 border border-white/5 text-sm text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all pl-10 pr-4 cursor-pointer outline-none">
+<option value="">الحالة: الكل</option>
+<option value="active">نشط</option>
+<option value="inactive">غير نشط</option>
+<option value="low">مخزون منخفض</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 w-full lg:w-auto justify-end">
+<button class="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 transition-all w-full md:w-auto border border-emerald-500/20">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>حفظ التعديلات</span>
+</button>
+<button class="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all w-full md:w-auto">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>إضافة منتج</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 transition-all">
+<span class="material-symbols-outlined text-[20px]">ios_share</span>
+</button>
+</div>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right">
+<thead class="bg-white/5 text-slate-400 font-medium border-b border-white/5">
+<tr>
+<th class="px-6 py-4 w-10">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</th>
+<th class="px-6 py-4 whitespace-nowrap">المنتج</th>
+<th class="px-6 py-4 whitespace-nowrap">القسم</th>
+<th class="px-6 py-4 whitespace-nowrap w-40">السعر</th>
+<th class="px-6 py-4 whitespace-nowrap w-32">المخزون</th>
+<th class="px-6 py-4 whitespace-nowrap">الحالة</th>
+<th class="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-slate-300">
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5">
+<img alt="Scale" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">ميزان باركود إلكتروني</span>
+<span class="text-slate-500 text-xs">SKU: SCL-2024-X</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">أجهزة الوزن</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="12,500"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-emerald-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="45"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5">
+<img alt="POS" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">جهاز كاشير لمس 15 بوصة</span>
+<span class="text-slate-500 text-xs">SKU: POS-T15-PRO</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">أجهزة الكاشير</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="8,200"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-yellow-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="3"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5">
+<img alt="Scanner" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">قارئ باركود لاسلكي</span>
+<span class="text-slate-500 text-xs">SKU: SCN-WL-2D</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">قارئ الباركود</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="1,400"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-emerald-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="120"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">print</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">طابعة فواتير حرارية 80مم</span>
+<span class="text-slate-500 text-xs">SKU: PRT-TH-80</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">طابعات الفواتير</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="3,150"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-slate-500 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="0"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+<span class="size-1.5 rounded-full bg-slate-400"></span>
+                                            نفذت
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">dns</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">درج كاشير 5 خانات</span>
+<span class="text-slate-500 text-xs">SKU: DRW-MET-5</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">إكسسوارات</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="950"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-emerald-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="22"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-400 border border-slate-500/20">
+<span class="size-1.5 rounded-full bg-slate-400"></span>
+                                            مخفي
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5">
+<img alt="Scale Small" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">ميزان منزلي ذكي</span>
+<span class="text-slate-500 text-xs">SKU: SCL-HM-01</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">أجهزة الوزن</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="850"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-emerald-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="200"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5">
+<img alt="Scanner Handheld" class="w-full h-full object-cover rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">قارئ باركود سلكي</span>
+<span class="text-slate-500 text-xs">SKU: SCN-WR-1D</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">قارئ الباركود</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="650"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-yellow-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="15"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center checkbox-wrapper">
+<input class="rounded border-white/10 bg-white/5 text-primary focus:ring-offset-0 focus:ring-0" type="checkbox"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">print</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-white text-base">رول ورق حراري 80مم</span>
+<span class="text-slate-500 text-xs">SKU: PAP-80-50</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">إكسسوارات</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="text" value="45"/>
+<span class="text-xs text-slate-500 font-bold">ج.م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 h-8 px-2 rounded bg-background-dark border border-white/10 text-emerald-400 focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm" type="number" value="5000"/>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            نشط
+                                        </span>
+</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+<button class="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-white/5 flex items-center justify-between">
+<span class="text-xs text-slate-500">عرض 1-50 من 124 منتج</span>
+<div class="flex items-center gap-2">
+<button class="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">1</button>
+<button class="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold">2</button>
+<button class="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold">3</button>
+<button class="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إعدادات المتجر - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }.glass-panel {
+            background: rgba(22, 27, 38, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }.form-input {
+            background-color: #161b26;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.625rem 1rem;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            border-color: #135bec;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(19, 91, 236, 0.2);
+        }
+        .form-label {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }.toggle-checkbox:checked {
+            right: 0;
+            border-color: #135bec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #135bec;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                            تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                        </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">settings</span>
+<span class="font-bold text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">الإعدادات العامة</h2>
+<span class="h-6 w-px bg-white/10 mx-2"></span>
+<span class="text-slate-400 text-sm">
+                        إدارة تفاصيل المتجر والربط الخارجي
+                    </span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 left-2 size-2 bg-secondary rounded-full border border-[#161b26]"></span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-white/10">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-5xl mx-auto flex flex-col gap-8">
+<div class="flex overflow-x-auto pb-2 gap-2 border-b border-white/10 no-scrollbar">
+<button class="px-4 py-2 rounded-lg bg-primary text-white font-medium text-sm whitespace-nowrap shadow-lg shadow-primary/20">عام</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">طرق الدفع</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">الشحن والتوصيل</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">الضرائب</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">الربط والتحليلات</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">واجهة المتجر</button>
+<button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 font-medium text-sm whitespace-nowrap transition-colors">SEO</button>
+</div>
+<div class="glass-panel rounded-xl p-8 animate-fade-in-up">
+<div class="flex items-start justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">storefront</span>
+                                    هوية المتجر
+                                </h3>
+<p class="text-slate-400 text-sm mt-1">البيانات الأساسية التي تظهر للعملاء في الفواتير ورسائل البريد.</p>
+</div>
+<button class="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                                حفظ التغييرات
+                            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div class="col-span-2 md:col-span-1">
+<label class="form-label">اسم المتجر (بالعربية)</label>
+<input class="form-input" type="text" value="تيكر لمعدات الكاشير"/>
+</div>
+<div class="col-span-2 md:col-span-1">
+<label class="form-label">اسم المتجر (بالإنجليزية)</label>
+<input class="form-input" type="text" value="Teker POS Hardware"/>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div>
+<label class="form-label">رقم الهاتف للدعم</label>
+<input class="form-input text-left" dir="ltr" type="tel" value="+20 100 123 4567"/>
+</div>
+<div>
+<label class="form-label">البريد الإلكتروني الرسمي</label>
+<input class="form-input text-left" dir="ltr" type="email" value="support@teker-store.com"/>
+</div>
+</div>
+<div class="mb-6">
+<label class="form-label">عنوان المقر الرئيسي</label>
+<input class="form-input" type="text" value="15 شارع التسعين الشمالي، التجمع الخامس، القاهرة، مصر"/>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+<div class="p-4 border border-dashed border-white/10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-center cursor-pointer">
+<div class="mb-3 flex justify-center">
+<div class="size-16 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-3xl font-display leading-none pb-1">S</span>
+</div>
+</div>
+<p class="text-white font-bold text-sm">شعار المتجر</p>
+<p class="text-slate-400 text-xs mt-1">PNG, JPG بحد أقصى 2MB</p>
+<button class="mt-3 text-xs text-primary font-bold hover:underline">تغيير الصورة</button>
+</div>
+<div class="p-4 border border-dashed border-white/10 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-center cursor-pointer">
+<div class="mb-3 flex justify-center">
+<div class="size-12 rounded bg-primary flex items-center justify-center">
+<span class="text-white font-bold text-xl">S</span>
+</div>
+</div>
+<p class="text-white font-bold text-sm">أيقونة المتصفح (Favicon)</p>
+<p class="text-slate-400 text-xs mt-1">ICO, PNG (32x32)</p>
+<button class="mt-3 text-xs text-primary font-bold hover:underline">تغيير الصورة</button>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-8">
+<div class="flex items-start justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-400">hub</span>
+                                    الربط والتحليلات
+                                </h3>
+<p class="text-slate-400 text-sm mt-1">إعدادات بيكسل فيسبوك وجوجل أناليتكس لتتبع الزوار.</p>
+</div>
+<button class="px-4 py-2 bg-[#161b26] border border-white/10 hover:bg-white/5 text-slate-300 hover:text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                                حفظ
+                            </button>
+</div>
+<div class="space-y-6">
+<div class="p-5 rounded-lg border border-white/5 bg-white/5 flex flex-col md:flex-row gap-6">
+<div class="flex items-start gap-4 flex-1">
+<div class="size-10 rounded-full bg-[#1877F2]/20 flex items-center justify-center text-[#1877F2]">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold">Facebook Pixel</h4>
+<p class="text-slate-400 text-xs mt-1 mb-3">تتبع التحويلات والإعلانات على فيسبوك وإنستجرام.</p>
+<div class="flex items-center gap-3">
+<input class="form-input text-left font-mono text-sm" dir="ltr" placeholder="Pixel ID (e.g., 1234567890)" type="text"/>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="p-5 rounded-lg border border-white/5 bg-white/5 flex flex-col md:flex-row gap-6">
+<div class="flex items-start gap-4 flex-1">
+<div class="size-10 rounded-full bg-[#EA4335]/20 flex items-center justify-center text-[#EA4335]">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div class="flex-1">
+<h4 class="text-white font-bold">Google Analytics 4</h4>
+<p class="text-slate-400 text-xs mt-1 mb-3">احصائيات مفصلة عن زوار متجرك وسلوكهم.</p>
+<div class="flex items-center gap-3">
+<input class="form-input text-left font-mono text-sm" dir="ltr" placeholder="Measurement ID (e.g., G-XXXXXXXXXX)" type="text"/>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-8">
+<div class="flex items-start justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400">payments</span>
+                                    بوابات الدفع
+                                </h3>
+<p class="text-slate-400 text-sm mt-1">إدارة مفاتيح الربط مع Paymob, Fawry وغيرها.</p>
+</div>
+<button class="px-4 py-2 bg-[#161b26] border border-white/10 hover:bg-white/5 text-slate-300 hover:text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                                حفظ
+                            </button>
+</div>
+<div class="grid gap-4">
+<div class="border border-white/5 rounded-lg p-5 bg-white/[0.02]">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-12 bg-white rounded flex items-center justify-center overflow-hidden">
+<span class="text-blue-600 font-black text-xs">Paymob</span>
+</div>
+<span class="text-white font-bold">Paymob</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="grid gap-3">
+<div>
+<label class="text-xs text-slate-400 mb-1 block">API Key</label>
+<input class="form-input text-sm font-mono" readonly="" type="password" value="ZXlKaGJHY2lPaUpJVXpVN... (hidden)"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="text-xs text-slate-400 mb-1 block">Integration ID (Card)</label>
+<input class="form-input text-sm font-mono" type="text" value="123456"/>
+</div>
+<div>
+<label class="text-xs text-slate-400 mb-1 block">Integration ID (Wallet)</label>
+<input class="form-input text-sm font-mono" type="text" value="789012"/>
+</div>
+</div>
+</div>
+</div>
+<div class="border border-white/5 rounded-lg p-5 bg-white/[0.02]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="h-8 w-12 bg-emerald-500/10 border border-emerald-500/20 rounded flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-emerald-400 text-lg">attach_money</span>
+</div>
+<span class="text-white font-bold">الدفع عند الاستلام</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="mt-4">
+<label class="text-xs text-slate-400 mb-1 block">رسوم إضافية (اختياري)</label>
+<div class="relative">
+<input class="form-input text-sm pl-12" type="number" value="10"/>
+<span class="absolute left-3 top-2.5 text-slate-500 text-sm">ج.م</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="glass-panel rounded-xl p-6">
+<h3 class="text-lg font-bold text-white flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-blue-400">local_shipping</span>
+                                إعدادات الشحن
+                            </h3>
+<div class="space-y-4">
+<div>
+<label class="form-label">تكلفة الشحن الثابتة</label>
+<div class="relative">
+<input class="form-input pl-12" type="number" value="50"/>
+<span class="absolute left-3 top-2.5 text-slate-500 text-sm">ج.م</span>
+</div>
+</div>
+<div>
+<label class="form-label">الشحن المجاني للطلبات فوق</label>
+<div class="relative">
+<input class="form-input pl-12" type="number" value="2000"/>
+<span class="absolute left-3 top-2.5 text-slate-500 text-sm">ج.م</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<input class="rounded border-white/20 bg-[#161b26] text-primary focus:ring-primary" id="city_rates" type="checkbox"/>
+<label class="text-sm text-slate-300" for="city_rates">تفعيل أسعار مخصصة للمحافظات</label>
+</div>
+<button class="w-full mt-2 py-2 border border-white/10 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors">إدارة مناطق الشحن</button>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-6">
+<h3 class="text-lg font-bold text-white flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-orange-400">percent</span>
+                                الضرائب
+                            </h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="text-sm text-slate-300">تفعيل ضريبة القيمة المضافة</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div>
+<label class="form-label">نسبة الضريبة (%)</label>
+<input class="form-input" type="number" value="14"/>
+</div>
+<div>
+<label class="form-label">رقم التسجيل الضريبي</label>
+<input class="form-input" type="text" value="123-456-789"/>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<input checked="" class="rounded border-white/20 bg-[#161b26] text-primary focus:ring-primary" id="tax_inc" type="checkbox"/>
+<label class="text-sm text-slate-300" for="tax_inc">الأسعار المعروضة شاملة الضريبة</label>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-8">
+<div class="flex items-start justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-pink-400">imagesmode</span>
+                                    بنرات الصفحة الرئيسية
+                                </h3>
+<p class="text-slate-400 text-sm mt-1">التحكم في الصور الإعلانية في واجهة المتجر.</p>
+</div>
+<button class="px-4 py-2 bg-[#161b26] border border-white/10 hover:bg-white/5 text-slate-300 hover:text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                إضافة بنر
+                            </button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 border border-white/5 rounded-lg bg-white/[0.02] group hover:border-white/10 transition-colors">
+<div class="w-32 h-16 bg-slate-800 rounded-md bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBXamKZJmr7N_fQ7L7hhHZKlafOiAguLG6aSD6ptFxWc-aWJNK319jwlnSxTLNvoh8lXJbWdS_3YXiR1BK90NNc23L8qJVr0MyF9zQAGcrdf6u9QUpuGRx_eHT-O5wdK_oyQKl5PLgLV3cdi7k8cR-xKF2uh30WjtJwglbB0LiHr6pEl3Zu4EYPR6AqCtHiO4EDZDiz3f86s_uHRWhFBoEZ0RYknBjGHlR9utd3bMM-mMvYqxMjyfie2bCfuU1feGz8L2tT-8-TuTA');"></div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">عرض الصيف - خصم 20%</h4>
+<p class="text-xs text-slate-500">الرابط: /collection/summer-sale</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">نشط</span>
+<button class="p-1.5 text-slate-400 hover:text-white transition-colors"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-slate-400 hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 border border-white/5 rounded-lg bg-white/[0.02] group hover:border-white/10 transition-colors">
+<div class="w-32 h-16 bg-slate-800 rounded-md bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAwuHBPMqSUzoZAr563HvDIfAnGlMrsLYDv9zoeGYkrzMhoc5Q3uU9KeNd-YA-VJfC2DRDEkAgo-s-1Fxe4ruTcOM4hcfn8CYPMqq1ebQGGdM3o6tgFvGFGwiIdxPpuzeWZLcO4aBBVhz0ofv2Q4NzSwqYCUtWtCXl9Iqhw2bN4FEGmNz107Y0fGOY_jGEDD7KM_jjQmrMmn3j-rz26IMy2wIlhQuc4Zy1vh4_tJT36izZ8wMJuZlWr2yg8dxjBvFt5GqK7BRfIC4w');"></div>
+<div class="flex-1">
+<h4 class="text-white font-bold text-sm">وصل حديثاً: طابعات X-Printer</h4>
+<p class="text-xs text-slate-500">الرابط: /products/printers</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20">نشط</span>
+<button class="p-1.5 text-slate-400 hover:text-white transition-colors"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-slate-400 hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-8 mb-8">
+<div class="flex items-start justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-cyan-400">search</span>
+                                    تحسين محركات البحث (SEO)
+                                </h3>
+<p class="text-slate-400 text-sm mt-1">إعدادات Meta Title و Description الافتراضية للمتجر.</p>
+</div>
+<button class="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                                حفظ التغييرات
+                            </button>
+</div>
+<div class="space-y-6">
+<div>
+<label class="form-label">عنوان الصفحة الرئيسية (Meta Title)</label>
+<input class="form-input" type="text" value="تيكر | أفضل معدات الكاشير ونقاط البيع في مصر"/>
+<p class="text-[11px] text-slate-500 mt-1 text-left" dir="ltr">60 / 60 characters</p>
+</div>
+<div>
+<label class="form-label">وصف المتجر (Meta Description)</label>
+<textarea class="form-input h-24 resize-none">متجر تيكر يوفر أحدث أجهزة الباركود، طابعات الفواتير، موازين إلكترونية، وأنظمة الكاشير الكاملة بأسعار منافسة في السوق المصري مع ضمان وضمان استبدال.</textarea>
+<p class="text-[11px] text-slate-500 mt-1 text-left" dir="ltr">155 / 160 characters</p>
+</div>
+<div>
+<label class="form-label">الكلمات المفتاحية (Keywords)</label>
+<input class="form-input" type="text" value="كاشير, باركود, طابعة فواتير, ميزان الكتروني, نقاط بيع, POS Egypt"/>
+<p class="text-[11px] text-slate-500 mt-1">افصل بين الكلمات بفاصلة (,)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

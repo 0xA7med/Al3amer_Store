@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin: AI Auto-Fill Settings</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Cairo:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "glass": "rgba(30, 35, 45, 0.6)",
+                        "glass-border": "rgba(255, 255, 255, 0.1)",
+                    },
+                    fontFamily: {
+                        "display": ["Cairo", "Manrope", "sans-serif"],
+                        "body": ["Cairo", "Manrope", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101622; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b4354; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #135bec; 
+        }
+        
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+        }
+        input[type=range]:focus {
+            outline: none; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-body overflow-x-hidden transition-colors duration-200">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar (Right aligned due to RTL) -->
+<aside class="hidden lg:flex w-72 flex-col border-l border-glass-border bg-[#111318] relative z-20">
+<div class="flex flex-col h-full p-4">
+<!-- Logo Area -->
+<div class="flex items-center gap-3 mb-8 px-2 mt-2">
+<div class="relative flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-primary to-[#0a3080] text-white shadow-lg shadow-primary/20">
+<span class="font-bold text-2xl font-display relative -top-1">ع</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold leading-tight">كاشير تك</h1>
+<p class="text-[#9da6b9] text-xs font-normal">لوحة تحكم المتجر</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2 flex-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9da6b9] hover:bg-[#1e232d] hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">dashboard</span>
+<span class="text-sm font-medium">الرئيسية</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9da6b9] hover:bg-[#1e232d] hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">inventory_2</span>
+<span class="text-sm font-medium">المنتجات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9da6b9] hover:bg-[#1e232d] hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">receipt_long</span>
+<span class="text-sm font-medium">الطلبات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9da6b9] hover:bg-[#1e232d] hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">group</span>
+<span class="text-sm font-medium">العملاء</span>
+</a>
+<div class="my-2 border-t border-glass-border"></div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(19,91,236,0.15)]" href="#">
+<span class="material-symbols-outlined text-[24px] fill-1">settings_suggest</span>
+<span class="text-sm font-bold">إعدادات الذكاء الاصطناعي</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9da6b9] hover:bg-[#1e232d] hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">settings</span>
+<span class="text-sm font-medium">الإعدادات العامة</span>
+</a>
+</nav>
+<!-- User Profile -->
+<div class="mt-auto pt-4 border-t border-glass-border">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#1e232d] cursor-pointer transition-colors">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-primary/30" data-alt="User profile picture showing a friendly administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDrHPXW_IXfSgrvaxe75M6e6wb0ud2nEhe6o0bqGpLbL7hUJTRQfFc29UMO0fvH2UoMv0Ru2w9DWAjEdssa6Oxj5OyW8ib1pAh_lDelS0mRfzN77saxFbF4VkJNLyYUlalHRz6Kf6P114ribSB9rUm4tAWEulqOb9yhQyj_i_qUSskGOXXb5bBncpqhuPqS4k9dHB6WeqwmvJVhGU4FsHo9yaANuqW9C4jJJtThwrsbLiRKIJc9sF_-NOI7msZGXsIro_MpYkqwcrA");'></div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">أحمد المصري</p>
+<p class="text-[#9da6b9] text-xs">مدير النظام</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Background Gradients -->
+<div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#135bec]/10 to-transparent pointer-events-none z-0"></div>
+<!-- Header (Mobile Menu & Search could go here) -->
+<header class="flex items-center justify-between px-8 py-5 z-10">
+<!-- Breadcrumbs -->
+<div class="flex flex-wrap gap-2 items-center">
+<a class="text-[#9da6b9] text-sm font-medium hover:text-primary transition-colors" href="#">الرئيسية</a>
+<span class="material-symbols-outlined text-[#9da6b9] text-sm transform rotate-180">chevron_right</span>
+<a class="text-[#9da6b9] text-sm font-medium hover:text-primary transition-colors" href="#">الإعدادات</a>
+<span class="material-symbols-outlined text-[#9da6b9] text-sm transform rotate-180">chevron_right</span>
+<span class="text-white text-sm font-medium">الذكاء الاصطناعي</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-[#9da6b9] hover:text-white hover:bg-white/5 rounded-full transition-all">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-[#101622]"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto px-4 md:px-8 pb-10 z-10 scroll-smooth">
+<div class="max-w-4xl mx-auto flex flex-col gap-6">
+<!-- Page Title -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-4 border-b border-white/5">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-3xl md:text-4xl font-bold leading-tight">إعدادات التعبئة التلقائية</h1>
+<p class="text-[#9da6b9] text-base font-normal max-w-2xl">
+                                قم بإدارة مفاتيح الربط وتفضيلات توليد المحتوى بالذكاء الاصطناعي لتسريع عملية إدخال المنتجات.
+                            </p>
+</div>
+<button class="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg border border-white/10 transition-all text-sm">
+<span class="material-symbols-outlined text-lg">history</span>
+<span>سجل التغييرات</span>
+</button>
+</div>
+<!-- Enable Switch Panel (Glassmorphism) -->
+<div class="bg-glass backdrop-blur-md rounded-xl border border-glass-border p-6 shadow-xl">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-primary/20 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined text-2xl">auto_fix_high</span>
+</div>
+<div class="flex flex-col">
+<p class="text-white text-lg font-bold">تفعيل الخدمة</p>
+<p class="text-[#9da6b9] text-sm">السماح للنظام بملء بيانات المنتجات تلقائياً عند إضافة منتج جديد</p>
+</div>
+</div>
+<label class="relative flex h-[32px] w-[56px] cursor-pointer items-center rounded-full border-2 border-transparent bg-[#282e39] transition-colors has-[:checked]:bg-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<span class="absolute right-0.5 size-6 rounded-full bg-white shadow-md transition-all peer-checked:translate-x-[-24px]"></span>
+</label>
+</div>
+</div>
+<!-- API Configuration Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 px-2">
+<span class="material-symbols-outlined text-primary">api</span>
+<h3 class="text-white text-xl font-bold">إعدادات الربط (API Configuration)</h3>
+</div>
+<div class="bg-glass backdrop-blur-md rounded-xl border border-glass-border p-6 shadow-lg">
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-white text-sm font-medium">مفتاح Google API Key</label>
+<div class="relative group">
+<div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#9da6b9]">
+<span class="material-symbols-outlined">key</span>
+</div>
+<input class="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 pr-10 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder-[#555]" placeholder="أدخل مفتاح API الخاص بك هنا" type="password" value="sk-xxxxxxxxxxxxxxxxxxxxxxxx"/>
+<button class="absolute inset-y-0 left-0 flex items-center pl-3 text-[#9da6b9] hover:text-white transition-colors" title="إظهار المفتاح">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+</div>
+<p class="text-[#9da6b9] text-xs">يستخدم هذا المفتاح للوصول إلى خدمات Gemini AI لتوليد النصوص.</p>
+</div>
+<div class="flex justify-end">
+<button class="text-primary text-sm font-bold hover:text-blue-400 flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-lg">wifi_protected_setup</span>
+                                        اختبار الاتصال
+                                    </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Content Preferences Section -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 px-2">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h3 class="text-white text-xl font-bold">تفضيلات المحتوى</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-glass backdrop-blur-md rounded-xl border border-glass-border p-6 shadow-lg">
+<!-- Tone of Voice -->
+<div class="flex flex-col gap-2">
+<label class="text-white text-sm font-medium mb-1">نبرة المحتوى</label>
+<div class="relative">
+<select class="w-full appearance-none bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+<option>رسمي (Professional)</option>
+<option selected="">تسويقي (Marketing)</option>
+<option>تقني (Technical)</option>
+<option>ودود (Friendly)</option>
+</select>
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#9da6b9]">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<p class="text-[#9da6b9] text-xs mt-1">يحدد الأسلوب الذي سيستخدمه الذكاء الاصطناعي في كتابة وصف المنتج.</p>
+</div>
+<!-- Description Length -->
+<div class="flex flex-col gap-2">
+<label class="text-white text-sm font-medium mb-1">طول الوصف المفضل</label>
+<div class="flex items-center justify-between bg-[#111318]/50 border border-[#3b4354] rounded-lg p-1">
+<button class="flex-1 py-2 text-sm text-[#9da6b9] hover:text-white hover:bg-white/5 rounded-md transition-all">قصير</button>
+<button class="flex-1 py-2 text-sm text-white bg-primary shadow-lg rounded-md font-medium transition-all">متوسط</button>
+<button class="flex-1 py-2 text-sm text-[#9da6b9] hover:text-white hover:bg-white/5 rounded-md transition-all">طويل</button>
+</div>
+<p class="text-[#9da6b9] text-xs mt-1">متوسط (حوالي 100-150 كلمة).</p>
+</div>
+<!-- Language -->
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="text-white text-sm font-medium mb-1">لغة الإخراج الأساسية</label>
+<div class="flex gap-4">
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="relative flex items-center justify-center size-5 rounded-full border border-[#3b4354] group-hover:border-primary">
+<input checked="" class="peer sr-only appearance-none" name="lang" type="radio"/>
+<div class="size-2.5 rounded-full bg-primary opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+<span class="text-white text-sm">العربية (الافتراضي)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<div class="relative flex items-center justify-center size-5 rounded-full border border-[#3b4354] group-hover:border-primary">
+<input class="peer sr-only appearance-none" name="lang" type="radio"/>
+<div class="size-2.5 rounded-full bg-primary opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+<span class="text-white text-sm">English</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Fields Selection -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-2 px-2">
+<span class="material-symbols-outlined text-primary">checklist</span>
+<h3 class="text-white text-xl font-bold">مجالات التعبئة التلقائية</h3>
+</div>
+<div class="bg-glass backdrop-blur-md rounded-xl border border-glass-border p-6 shadow-lg">
+<p class="text-[#9da6b9] text-sm mb-4">اختر الحقول التي يُسمح للذكاء الاصطناعي بتعديلها أو تعبئتها.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Checkbox Item 1 -->
+<label class="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
+<div class="relative flex items-center justify-center size-5 rounded border border-[#555] bg-[#282e39] group-hover:border-primary transition-colors">
+<input checked="" class="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10" type="checkbox"/>
+<span class="material-symbols-outlined text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none">check</span>
+</div>
+<span class="text-white text-sm font-medium">اسم المنتج</span>
+</label>
+<!-- Checkbox Item 2 -->
+<label class="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
+<div class="relative flex items-center justify-center size-5 rounded border border-[#555] bg-[#282e39] group-hover:border-primary transition-colors">
+<input checked="" class="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10" type="checkbox"/>
+<span class="material-symbols-outlined text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none">check</span>
+</div>
+<span class="text-white text-sm font-medium">الوصف التفصيلي</span>
+</label>
+<!-- Checkbox Item 3 -->
+<label class="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
+<div class="relative flex items-center justify-center size-5 rounded border border-[#555] bg-[#282e39] group-hover:border-primary transition-colors">
+<input checked="" class="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10" type="checkbox"/>
+<span class="material-symbols-outlined text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none">check</span>
+</div>
+<span class="text-white text-sm font-medium">كلمات الـ SEO</span>
+</label>
+<!-- Checkbox Item 4 -->
+<label class="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
+<div class="relative flex items-center justify-center size-5 rounded border border-[#555] bg-[#282e39] group-hover:border-primary transition-colors">
+<input class="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10" type="checkbox"/>
+<span class="material-symbols-outlined text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none">check</span>
+</div>
+<span class="text-white text-sm font-medium">المواصفات الفنية</span>
+</label>
+<!-- Checkbox Item 5 -->
+<label class="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
+<div class="relative flex items-center justify-center size-5 rounded border border-[#555] bg-[#282e39] group-hover:border-primary transition-colors">
+<input class="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10" type="checkbox"/>
+<span class="material-symbols-outlined text-white text-[16px] opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none">check</span>
+</div>
+<span class="text-white text-sm font-medium">اقتراح سعر البيع</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Action Footer -->
+<div class="sticky bottom-4 z-50 mt-4">
+<div class="bg-[#1e232d]/90 backdrop-blur-xl border border-glass-border rounded-xl p-4 flex items-center justify-between shadow-2xl">
+<button class="text-[#9da6b9] hover:text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors">
+                                إلغاء التغييرات
+                            </button>
+<button class="bg-primary hover:bg-blue-600 text-white text-base font-bold py-2.5 px-8 rounded-lg shadow-lg shadow-primary/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                                حفظ الإعدادات
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

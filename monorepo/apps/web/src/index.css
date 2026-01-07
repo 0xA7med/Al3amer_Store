@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* Al3amer Center Design System */
+@theme {
+  /* Colors */
+  --color-background-dark: #101622;
+  --color-surface-dark: #161b26;
+  --color-primary: #135bec;
+  --color-primary-dark: #0f4bc4;
+  --color-accent-red: #ef4444;
+  --color-ai: #8b5cf6;
+  --color-glass: rgba(30, 41, 59, 0.4);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Fonts */
+  --font-display: "Cairo", "Manrope", sans-serif;
+  --font-body: "Cairo", "Manrope", sans-serif;
+  --font-numbers: "Manrope", sans-serif;
+}
+
+/* Base Styles */
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background-dark);
+  color: white;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(19, 91, 236, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(19, 91, 236, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: #232f48;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #324467;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(16, 22, 34, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-glass-border);
+}
+
+.glass-card {
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(19, 91, 236, 0.5);
+  background: rgba(30, 41, 59, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px -10px rgba(19, 91, 236, 0.2);
+}
+
+/* Material Icons Filled */
+.symbol-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* AI Gradient Text */
+.ai-gradient-text {
+  background: linear-gradient(to right, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة التقييمات - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع" and alerts
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }
+        .glass-panel {
+            background: rgba(22, 27, 38, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="text-white font-bold text-2xl font-display leading-none pb-1">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1">
+                        تيك<span class="text-secondary font-extrabold text-xl font-display">ع</span>ـر
+                    </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-medium text-sm">الطلبات</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined text-[22px]">reviews</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-bold text-sm">التقييمات</span>
+<span class="bg-secondary/20 text-secondary text-[10px] font-bold px-2 py-0.5 rounded-full">12</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+<div class="my-4 border-t border-white/5"></div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all border border-white/5">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">إدارة التقييمات</h2>
+<span class="h-6 w-px bg-white/10 mx-2"></span>
+<span class="text-slate-400 text-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">home</span>
+                     / التقييمات
+                </span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden md:block w-80">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full h-10 pr-10 pl-4 rounded-lg bg-[#161b26] border-none text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary transition-all" placeholder="بحث في التقييمات..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 left-2 size-2 bg-secondary rounded-full border border-[#161b26]"></span>
+</button>
+<div class="flex items-center gap-3 pr-3 border-r border-white/10">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" data-alt="User profile photo of admin" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary">reviews</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">إجمالي التقييمات</p>
+<h3 class="text-3xl font-bold text-white mt-1">1,248</h3>
+<div class="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+24</span>
+<span class="text-slate-500 font-medium mr-1">هذا الأسبوع</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-secondary/30 transition-all border-l-4 border-l-secondary">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-secondary">pending_actions</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">في انتظار المراجعة</p>
+<h3 class="text-3xl font-bold text-white mt-1">12</h3>
+<div class="flex items-center gap-1 mt-2 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">priority_high</span>
+<span>يتطلب إجراء</span>
+</div>
+</div>
+</div>
+<div class="glass-card rounded-xl p-6 relative overflow-hidden group hover:border-yellow-500/30 transition-all">
+<div class="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-yellow-500">star</span>
+</div>
+<div class="flex flex-col gap-1 relative z-10">
+<p class="text-slate-400 text-sm font-medium">متوسط التقييم</p>
+<div class="flex items-center gap-3">
+<h3 class="text-3xl font-bold text-white mt-1">4.8</h3>
+<div class="flex text-yellow-500 mt-1">
+<span class="material-symbols-outlined filled text-[20px]">star</span>
+<span class="material-symbols-outlined filled text-[20px]">star</span>
+<span class="material-symbols-outlined filled text-[20px]">star</span>
+<span class="material-symbols-outlined filled text-[20px]">star</span>
+<span class="material-symbols-outlined text-[20px]">star_half</span>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
+<span>ممتاز</span>
+<span class="text-slate-500 font-medium mr-1">بناءً على آخر 100 تقييم</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col">
+<div class="p-4 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
+<div class="flex bg-[#161b26] p-1 rounded-lg">
+<button class="px-4 py-1.5 rounded-md text-sm font-bold text-white bg-primary shadow-sm transition-all">الكل</button>
+<button class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                                قيد المراجعة
+                                <span class="bg-secondary text-white text-[10px] px-1.5 py-0.5 rounded-full">12</span>
+</button>
+<button class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-all">تم النشر</button>
+<button class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-all">مرفوض</button>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative">
+<select class="pl-3 pr-8 py-1.5 bg-[#161b26] border border-white/10 rounded-lg text-sm text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none">
+<option>الأحدث أولاً</option>
+<option>الأعلى تقييماً</option>
+<option>الأقل تقييماً</option>
+</select>
+<span class="absolute left-2 top-1.5 pointer-events-none text-slate-500 material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+<button class="p-1.5 bg-[#161b26] border border-white/10 rounded-lg text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right">
+<thead class="bg-white/5 text-slate-400 font-medium">
+<tr>
+<th class="px-6 py-4 whitespace-nowrap w-[25%]">المنتج</th>
+<th class="px-6 py-4 whitespace-nowrap w-[20%]">العميل</th>
+<th class="px-6 py-4 whitespace-nowrap w-[15%]">التقييم</th>
+<th class="px-6 py-4 whitespace-nowrap w-[25%]">التعليق</th>
+<th class="px-6 py-4 whitespace-nowrap w-[15%]">الحالة / إجراءات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-slate-300">
+<tr class="hover:bg-white/5 transition-colors group bg-secondary/5">
+<td class="px-6 py-4 align-top">
+<div class="flex items-start gap-3">
+<div class="size-12 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden border border-white/10">
+<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+</div>
+<div>
+<p class="font-bold text-white line-clamp-2">ميزان باركود إلكتروني حساس</p>
+<p class="text-xs text-slate-500 mt-1">SKU: BAR-2023-X</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCgAio9WZdWpygXZ0pvf6CB-qjKUwk5AFiG4P2AyARjdCwqBAPX7TNe7ju3FM45hN1Tr8LfqMDSAlBrqqvZOfckkzPwKJiwwMhL0Jkt1NgNSxJLlD-CG8qQjkGQu-gzGbUgh_e4gP4UCZ-34eV0qekQGuYCUjaBMmgwEXy_y2fHLQh1ENa-RF-8a7GlIel0u0-BFK9iRb2yBXXw0OerBnatwWkqDxQDapcQ5_3pfVhkgDiRMJKzlCTjl77AjlIjEoeaC3l-6yvmDtg');"></div>
+<div>
+<p class="font-medium text-white">محمود سعيد</p>
+<p class="text-xs text-slate-500">عميل جديد</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex text-yellow-500 mb-1">
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+</div>
+<p class="text-xs text-slate-400">24 أكتوبر، 10:30 ص</p>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-slate-300 leading-relaxed text-sm">
+                                        المنتج ممتاز جداً والتوصيل كان سريع في نفس اليوم. التغليف محكم والجهاز يعمل بكفاءة عالية مع البرنامج. شكراً لكم!
+                                    </p>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-3 items-start">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+<span class="size-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                                            قيد المراجعة
+                                        </span>
+<div class="flex items-center gap-2 mt-1">
+<button class="flex items-center justify-center size-8 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all" title="قبول">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all" title="رفض">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full bg-white/5 text-slate-400 border border-white/10 hover:bg-white/20 hover:text-white transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group bg-secondary/5">
+<td class="px-6 py-4 align-top">
+<div class="flex items-start gap-3">
+<div class="size-12 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden border border-white/10">
+<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+</div>
+<div>
+<p class="font-bold text-white line-clamp-2">جهاز كاشير لمس 15 بوصة</p>
+<p class="text-xs text-slate-500 mt-1">SKU: POS-T15</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfidwKcn805bpiqvElSfPBUGPftdtGOr1A0gYIv2s-HdQLDce9ri3HDPhgMMsmJx--jZ2YR6Ic1NooNY1_AEhXbPfHjZjProBfmSIOAREPuAQ1GJfaQdgj8THz-2NIXucN9sWzOQs-Fem047xXu1WnwtVhLRGMi41TOUYGvjxnAdvA5ri4Kv_IP_SmLiLQarDFJh-7Jp6sI0aZh5oshfy87r5GS8S4fTCP9gK52ZROddzbhekxrS1a6l_nRnKFlujjHivqa65ef-s');"></div>
+<div>
+<p class="font-medium text-white">عمر خالد</p>
+<p class="text-xs text-slate-500">عميل VIP</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex text-yellow-500 mb-1">
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+</div>
+<p class="text-xs text-slate-400">23 أكتوبر، 04:15 م</p>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-slate-300 leading-relaxed text-sm">
+                                        الجهاز جيد لكن الشاشة تحتاج ضبط ألوان. السعر مرتفع قليلاً مقارنة بالمواصفات.
+                                    </p>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-3 items-start">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+<span class="size-1.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                                            قيد المراجعة
+                                        </span>
+<div class="flex items-center gap-2 mt-1">
+<button class="flex items-center justify-center size-8 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all" title="قبول">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all" title="رفض">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+<button class="flex items-center justify-center size-8 rounded-full bg-white/5 text-slate-400 border border-white/10 hover:bg-white/20 hover:text-white transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4 align-top">
+<div class="flex items-start gap-3">
+<div class="size-12 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden border border-white/10">
+<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+</div>
+<div>
+<p class="font-bold text-white line-clamp-2">قارئ باركود لاسلكي 2D</p>
+<p class="text-xs text-slate-500 mt-1">SKU: SCAN-W2</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAjkYRJTnV2pzsyXk09eZySG1G827jTPc7_xF6FPOf3gkDYGTLVx9H218x69mMFoxHYVh07NRPd-LKQBMTYLDglli0vo8kRn7iUr3jI8nCFngJj5scwf0oqop8XAQY0iDDZmwy4isQalE4CvVXJR7u6uZYmgwtAtty3cL4pPvcm_HPtTIa0SKgfU74sKZ4duDu_yY3ybq8S4xnVUMJhSuHVd9kQLdIK0Tra7XTq6kmipMpc2-lo6wufPtFdOVlG1oIqrXndL-1l0w4');"></div>
+<div>
+<p class="font-medium text-white">سارة أحمد</p>
+<p class="text-xs text-slate-500">عميل متكرر</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex text-yellow-500 mb-1">
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+</div>
+<p class="text-xs text-slate-400">22 أكتوبر، 09:20 ص</p>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-slate-300 leading-relaxed text-sm">
+                                        عملي جداً والبطارية تدوم طويلاً.
+                                    </p>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-3 items-start">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400"></span>
+                                            تم النشر
+                                        </span>
+<button class="text-xs text-slate-400 hover:text-white underline">إخفاء التقييم</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group opacity-60 hover:opacity-100">
+<td class="px-6 py-4 align-top">
+<div class="flex items-start gap-3">
+<div class="size-12 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden border border-white/10">
+<img alt="Product" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+</div>
+<div>
+<p class="font-bold text-white line-clamp-2">ميزان باركود إلكتروني حساس</p>
+<p class="text-xs text-slate-500 mt-1">SKU: BAR-2023-X</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-700 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBHorC67-ouSQuqsY6DFlVBKgWVWll7HtD4TQDrO1r1IGd6XFTmkA5F59k0iw-J9blun_Wx2LbI0Fp_aQCc7QhqhXmWwDTifcdhHl74zoBNx18LWz6nnHxdETeaR_euMBu38VQa9HTDEdpj6q_8LxRXvgDc8Ugj0h2uKS71vQMsuG_m1YZGKw-U7S6TGYFr-ESN6Io5mZqTYr0qaQFoKGHwSI6ib-2tn7BT_IXUMPNP0fPD7Hh3asrWjqoo6A_rcD9PPnuj8xbNm48');"></div>
+<div>
+<p class="font-medium text-white">كريم مصطفى</p>
+<p class="text-xs text-slate-500">عميل</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex text-yellow-500 mb-1">
+<span class="material-symbols-outlined filled text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+<span class="material-symbols-outlined text-[18px]">star</span>
+</div>
+<p class="text-xs text-slate-400">20 أكتوبر، 11:00 ص</p>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-slate-300 leading-relaxed text-sm italic">
+                                        [تم حذف المحتوى لمخالفته الشروط - دعاية خارجية]
+                                    </p>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-3 items-start">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+<span class="size-1.5 rounded-full bg-red-400"></span>
+                                            مرفوض
+                                        </span>
+<button class="text-xs text-slate-400 hover:text-white underline">عرض التفاصيل</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-white/5 flex items-center justify-between">
+<span class="text-sm text-slate-400">عرض <span class="text-white font-bold">1-4</span> من أصل <span class="text-white font-bold">1,248</span> نتيجة</span>
+<div class="flex items-center gap-2">
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-primary text-white border border-primary font-bold text-sm shadow-lg shadow-primary/20">1</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-medium">2</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-medium">3</button>
+<span class="text-slate-500">...</span>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

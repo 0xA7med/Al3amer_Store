@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>إدارة الطلبات - لوحة التحكم</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans+Arabic:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec", // Blue
+                        "primary-dark": "#0e45b5",
+                        secondary: "#ef4444", // Red accent for "ع"
+                        "background-dark": "#0f1115", // Deep charcoal/black
+                        "surface-dark": "#161b26", // Slightly lighter for sidebar
+                        "glass": "rgba(30, 41, 59, 0.4)", // Glass effect base
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                        display: ['"Noto Sans Arabic"', '"Manrope"', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1115; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568; 
+        }
+        .glass-panel {
+            background: rgba(22, 27, 38, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(19, 91, 236, 0.3);
+            box-shadow: 0 12px 40px 0 rgba(19, 91, 236, 0.1);
+        }
+        .custom-checkbox:checked {
+            background-color: #135bec;
+            border-color: #135bec;
+        }
+        .table-row-hover:hover td {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-200 antialiased font-sans selection:bg-primary selection:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<aside class="w-72 flex-shrink-0 flex flex-col border-l border-white/5 bg-surface-dark relative z-20">
+<div class="h-20 flex items-center px-8 border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-primary to-blue-900 flex items-center justify-center shadow-lg shadow-primary/20 relative group overflow-hidden">
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+<span class="text-white font-bold text-2xl font-display leading-none pb-1 relative z-10">S</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold tracking-tight flex items-center gap-1 group cursor-default">
+                        تيك<span class="text-secondary font-extrabold text-xl font-display group-hover:rotate-12 transition-transform inline-block">ع</span>ـر
+                    </h1>
+<p class="text-slate-500 text-xs font-medium">لوحة الإدارة</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-1.5">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-medium text-sm">لوحة التحكم</span>
+</a>
+<div class="px-4 pt-4 pb-2 text-xs font-bold text-slate-600 uppercase tracking-wider">التجارة</div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">inventory_2</span>
+<span class="font-medium text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all relative overflow-hidden" href="#">
+<div class="absolute inset-y-0 left-0 w-1 bg-primary"></div>
+<span class="material-symbols-outlined text-[22px]">shopping_bag</span>
+<div class="flex flex-1 items-center justify-between">
+<span class="font-bold text-sm">الطلبات</span>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full ring-1 ring-primary/30">12</span>
+</div>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">group</span>
+<span class="font-medium text-sm">العملاء</span>
+</a>
+<div class="px-4 pt-4 pb-2 text-xs font-bold text-slate-600 uppercase tracking-wider">المالية</div>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">payments</span>
+<span class="font-medium text-sm">المدفوعات</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">bar_chart</span>
+<span class="font-medium text-sm">التقارير</span>
+</a>
+</nav>
+<div class="p-4 border-t border-white/5 bg-black/20">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all group mb-2" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:text-primary transition-colors">settings</span>
+<span class="font-medium text-sm">الإعدادات</span>
+</a>
+<button class="w-full flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-sm font-bold transition-all border border-red-500/10">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span>تسجيل خروج</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-[600px] bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 pointer-events-none"></div>
+<div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[100px] translate-y-1/3 pointer-events-none"></div>
+<header class="h-20 flex items-center justify-between px-8 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-30">
+<div class="flex items-center gap-4">
+<h2 class="text-white text-xl font-bold tracking-tight">إدارة الطلبات</h2>
+<div class="h-6 w-px bg-white/10 mx-2"></div>
+<div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+<span class="material-symbols-outlined text-[16px] text-slate-400">calendar_today</span>
+<span class="text-slate-300 text-xs font-medium">اليوم: 24 أكتوبر 2023</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors group">
+<span class="material-symbols-outlined group-hover:animate-swing">notifications</span>
+<span class="absolute top-2 left-2 size-2.5 bg-secondary rounded-full border-2 border-[#161b26]"></span>
+</button>
+<div class="h-8 w-px bg-white/10"></div>
+<div class="flex items-center gap-3 pr-1 cursor-pointer hover:bg-white/5 p-1 rounded-lg transition-colors">
+<div class="text-left hidden lg:block">
+<p class="text-sm font-bold text-white leading-tight">أحمد محمد</p>
+<p class="text-xs text-slate-400">مدير النظام</p>
+</div>
+<div class="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10 ring-2 ring-transparent hover:ring-primary/50 transition-all" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNsl7-YsScDIufm0bWp1hvhySQe_KLrlH6EsQcMk2s6CRzOGXRxrrOhOEryUXRTl4siYydqOZhT3vWPnik9zC1B9fKHiS1yxc46UhSXGdOMZ2tWrH1XoqyAjkhhliN_gM6K_BIE3s6XM66Z6MvI4ef-oS6XlklzbwFWLRg-ysGSlxT41pAM85i_QuiUbQv-LgEEmUaaTa4F4fjtjG780dL65HfU9B9Rvut4DpgKS7SbL5NntaAAm3x5iX4moZudnL50bZfjpiybAk');"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+<div class="max-w-[1600px] mx-auto flex flex-col gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="glass-card p-5 rounded-xl relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-blue-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div class="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+<span class="material-symbols-outlined">shopping_cart</span>
+</div>
+<span class="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded border border-blue-500/20">+12%</span>
+</div>
+<div class="relative z-10">
+<h3 class="text-2xl font-extrabold text-white mb-1">154</h3>
+<p class="text-slate-400 text-xs font-medium">إجمالي الطلبات هذا الشهر</p>
+</div>
+</div>
+<div class="glass-card p-5 rounded-xl relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-yellow-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div class="size-10 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400 border border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+<span class="material-symbols-outlined">pending_actions</span>
+</div>
+<span class="text-xs font-bold text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 animate-pulse">مطلوب إجراء</span>
+</div>
+<div class="relative z-10">
+<h3 class="text-2xl font-extrabold text-white mb-1">12</h3>
+<p class="text-slate-400 text-xs font-medium">قيد المعالجة</p>
+</div>
+</div>
+<div class="glass-card p-5 rounded-xl relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div class="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">85% معدل</span>
+</div>
+<div class="relative z-10">
+<h3 class="text-2xl font-extrabold text-white mb-1">128</h3>
+<p class="text-slate-400 text-xs font-medium">طلبات مكتملة</p>
+</div>
+</div>
+<div class="glass-card p-5 rounded-xl relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-24 h-24 bg-red-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div class="size-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+<span class="material-symbols-outlined">cancel</span>
+</div>
+<span class="text-xs font-bold text-red-400 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">-2%</span>
+</div>
+<div class="relative z-10">
+<h3 class="text-2xl font-extrabold text-white mb-1">14</h3>
+<p class="text-slate-400 text-xs font-medium">ملغية / مرتجعة</p>
+</div>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-5 flex flex-col xl:flex-row items-center gap-5 justify-between sticky top-0 z-10 backdrop-blur-xl">
+<div class="w-full xl:w-auto flex flex-col sm:flex-row gap-4 flex-1">
+<div class="relative flex-1 max-w-md group">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full h-11 pr-10 pl-4 rounded-lg bg-[#0f1115]/50 border border-white/10 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-[#0f1115] transition-all shadow-inner" placeholder="بحث برقم الطلب، اسم العميل، الهاتف..." type="text"/>
+</div>
+<div class="flex items-center gap-1 bg-[#0f1115]/50 rounded-lg border border-white/10 p-1 overflow-x-auto max-w-full no-scrollbar">
+<button class="px-4 py-2 rounded-md text-xs font-bold bg-primary text-white shadow-md shadow-primary/20 whitespace-nowrap">الكل</button>
+<button class="px-4 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors whitespace-nowrap relative">
+                                قيد المعالجة
+                                <span class="absolute top-1 left-1 size-1.5 bg-yellow-400 rounded-full"></span>
+</button>
+<button class="px-4 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors whitespace-nowrap">جاري التوصيل</button>
+<button class="px-4 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors whitespace-nowrap">مكتمل</button>
+<button class="px-4 py-2 rounded-md text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors whitespace-nowrap">ملغي</button>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
+<div class="hidden md:block h-8 w-px bg-white/10"></div>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#0f1115] border border-white/10 text-slate-300 hover:text-white hover:border-primary/50 hover:shadow-[0_0_15px_rgba(19,91,236,0.1)] transition-all text-sm font-medium group">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">filter_alt</span>
+<span>تصفية</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#0f1115] border border-white/10 text-slate-300 hover:text-white hover:border-primary/50 hover:shadow-[0_0_15px_rgba(19,91,236,0.1)] transition-all text-sm font-medium group">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">download</span>
+<span>تصدير</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-blue-600 hover:from-blue-600 hover:to-primary text-white transition-all text-sm font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>طلب يدوي</span>
+</button>
+</div>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden flex flex-col flex-1 ring-1 ring-white/5">
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right border-collapse">
+<thead class="bg-white/[0.02] border-b border-white/5 text-slate-400 font-medium">
+<tr>
+<th class="px-6 py-4 w-10">
+<input class="custom-checkbox rounded border-slate-600 bg-transparent text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer size-4" type="checkbox"/>
+</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">رقم الطلب</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">العميل</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">المنتجات</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">
+<div class="flex items-center gap-1 cursor-pointer hover:text-white group">
+                                            التاريخ
+                                            <span class="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">arrow_drop_down</span>
+</div>
+</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الحالة</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الدفع</th>
+<th class="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الإجمالي</th>
+<th class="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-300">إجراءات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5 text-slate-300">
+<tr class="table-row-hover transition-colors group relative">
+<td class="px-6 py-4">
+<input class="custom-checkbox rounded border-slate-600 bg-transparent text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer size-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20">#ORD-00125</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<div class="size-9 rounded-full bg-slate-700 bg-cover bg-center ring-2 ring-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCgAio9WZdWpygXZ0pvf6CB-qjKUwk5AFiG4P2AyARjdCwqBAPX7TNe7ju3FM45hN1Tr8LfqMDSAlBrqqvZOfckkzPwKJiwwMhL0Jkt1NgNSxJLlD-CG8qQjkGQu-gzGbUgh_e4gP4UCZ-34eV0qekQGuYCUjaBMmgwEXy_y2fHLQh1ENa-RF-8a7GlIel0u0-BFK9iRb2yBXXw0OerBnatwWkqDxQDapcQ5_3pfVhkgDiRMJKzlCTjl77AjlIjEoeaC3l-6yvmDtg');"></div>
+<div class="absolute -bottom-1 -right-1 bg-surface-dark rounded-full p-0.5">
+<div class="size-2.5 bg-green-500 rounded-full border border-surface-dark"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="text-white font-bold hover:text-primary transition-colors cursor-pointer">محمود سعيد</span>
+<span class="text-xs text-slate-500 font-mono" dir="ltr">+20 10x xxx xxxx</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2 space-x-reverse overflow-hidden">
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+</div>
+<span class="text-xs text-slate-400 font-medium">طابعة فواتير + 1</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col">
+<span class="text-slate-300 font-medium">24 أكتوبر 2023</span>
+<span class="text-xs text-slate-500">10:30 ص</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="status-pill bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+<span class="size-1.5 rounded-full bg-yellow-400 animate-pulse ml-2"></span>
+                                            قيد المعالجة
+                                        </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 text-[18px]">payments</span>
+<span class="text-xs font-medium text-slate-300">عند الاستلام</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white font-mono text-base">1,250 ج.م</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 hover:text-primary text-slate-400 transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all" title="طباعة الفاتورة">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all shadow-sm" title="عرض التفاصيل">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors group">
+<td class="px-6 py-4">
+<input class="custom-checkbox rounded border-slate-600 bg-transparent text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer size-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20">#ORD-00124</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-slate-700 bg-cover bg-center ring-2 ring-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAjkYRJTnV2pzsyXk09eZySG1G827jTPc7_xF6FPOf3gkDYGTLVx9H218x69mMFoxHYVh07NRPd-LKQBMTYLDglli0vo8kRn7iUr3jI8nCFngJj5scwf0oqop8XAQY0iDDZmwy4isQalE4CvVXJR7u6uZYmgwtAtty3cL4pPvcm_HPtTIa0SKgfU74sKZ4duDu_yY3ybq8S4xnVUMJhSuHVd9kQLdIK0Tra7XTq6kmipMpc2-lo6wufPtFdOVlG1oIqrXndL-1l0w4');"></div>
+<div class="flex flex-col">
+<span class="text-white font-bold hover:text-primary transition-colors cursor-pointer">سارة أحمد</span>
+<span class="text-xs text-slate-500 font-mono" dir="ltr">+20 12x xxx xxxx</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2 space-x-reverse overflow-hidden">
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+</div>
+<span class="text-xs text-slate-400 font-medium">قارئ باركود</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col">
+<span class="text-slate-300 font-medium">24 أكتوبر 2023</span>
+<span class="text-xs text-slate-500">09:15 ص</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="status-pill bg-blue-500/10 text-blue-400 border border-blue-500/20">
+<span class="size-1.5 rounded-full bg-blue-400 ml-2"></span>
+                                            جاري التوصيل
+                                        </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 text-[18px]">credit_card</span>
+<span class="text-xs font-medium text-slate-300">فيزا / ماستركارد</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white font-mono text-base">8,200 ج.م</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 hover:text-primary text-slate-400 transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all" title="طباعة الفاتورة">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all shadow-sm" title="عرض التفاصيل">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors group">
+<td class="px-6 py-4">
+<input class="custom-checkbox rounded border-slate-600 bg-transparent text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer size-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20">#ORD-00123</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-slate-700 bg-cover bg-center ring-2 ring-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBHorC67-ouSQuqsY6DFlVBKgWVWll7HtD4TQDrO1r1IGd6XFTmkA5F59k0iw-J9blun_Wx2LbI0Fp_aQCc7QhqhXmWwDTifcdhHl74zoBNx18LWz6nnHxdETeaR_euMBu38VQa9HTDEdpj6q_8LxRXvgDc8Ugj0h2uKS71vQMsuG_m1YZGKw-U7S6TGYFr-ESN6Io5mZqTYr0qaQFoKGHwSI6ib-2tn7BT_IXUMPNP0fPD7Hh3asrWjqoo6A_rcD9PPnuj8xbNm48');"></div>
+<div class="flex flex-col">
+<span class="text-white font-bold hover:text-primary transition-colors cursor-pointer">كريم مصطفى</span>
+<span class="text-xs text-slate-500 font-mono" dir="ltr">+20 11x xxx xxxx</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2 space-x-reverse overflow-hidden">
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyvfnrjHmwZCnKNXNKAPjHJfXLDSqkh3I_QO5_VqbPby1SbIEYg5mYF0Vmzgh7o0Pwbd8vyH42fZ-aSElu1f3B4JJ3UyGhxC6kFE9V09yBeLBrKn5K000Te71DNIJ4ock1C5-rV_0Rf7a6jNXWB9-9Nr2lB-o59GMX8SHnZHbHfdkfmP236JgAEVzhTrye8myK7a859M3NTFMB9t0Xs-ZhoXj-geVkFA2gvhWB3vMUYslwhCOHwto2N8Lz0njeSU9s2QK57RKQmv8"/>
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB53AfAdYSVNGB5oYFzfLzNBiSHgxDobxm6eMuU04gox73Dek_5_bgFD2-g2-TUNNxbCrFx1JCtNJvhz9iO_KPbN2II8puGy8ON-PORvD67gnwscRmerEECb2p-NXJOFEzfOPA8sJpnPiQFhadp1njp5toF1Qq5ohLGGkfnXkJatXjtagEez_cEq1lqrOX4D2iaW_TAGqaPHkEmyqpzSJUKNfsO4qGUczLnyJHPXvKwxhHh4WZhvJaCF6O2LUBXNSDJxHqndnh-Q38"/>
+<div class="inline-flex size-8 items-center justify-center rounded-full ring-2 ring-[#161b26] bg-white/20 text-[10px] text-white font-bold backdrop-blur-sm">+2</div>
+</div>
+<span class="text-xs text-slate-400 font-medium">جهاز كاشير كامل</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col">
+<span class="text-slate-300 font-medium">23 أكتوبر 2023</span>
+<span class="text-xs text-slate-500">04:45 م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="status-pill bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+<span class="size-1.5 rounded-full bg-emerald-400 ml-2"></span>
+                                            مكتمل
+                                        </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 text-[18px]">account_balance_wallet</span>
+<span class="text-xs font-medium text-slate-300">محفظة إلكترونية</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white font-mono text-base">3,200 ج.م</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 hover:text-primary text-slate-400 transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all" title="طباعة الفاتورة">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all shadow-sm" title="عرض التفاصيل">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors group">
+<td class="px-6 py-4">
+<input class="custom-checkbox rounded border-slate-600 bg-transparent text-primary focus:ring-offset-background-dark focus:ring-primary cursor-pointer size-4" type="checkbox"/>
+</td>
+<td class="px-6 py-4">
+<span class="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20">#ORD-00122</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-9 rounded-full bg-slate-700 bg-cover bg-center ring-2 ring-white/10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfidwKcn805bpiqvElSfPBUGPftdtGOr1A0gYIv2s-HdQLDce9ri3HDPhgMMsmJx--jZ2YR6Ic1NooNY1_AEhXbPfHjZjProBfmSIOAREPuAQ1GJfaQdgj8THz-2NIXucN9sWzOQs-Fem047xXu1WnwtVhLRGMi41TOUYGvjxnAdvA5ri4Kv_IP_SmLiLQarDFJh-7Jp6sI0aZh5oshfy87r5GS8S4fTCP9gK52ZROddzbhekxrS1a6l_nRnKFlujjHivqa65ef-s');"></div>
+<div class="flex flex-col">
+<span class="text-white font-bold hover:text-primary transition-colors cursor-pointer">عمر خالد</span>
+<span class="text-xs text-slate-500 font-mono" dir="ltr">+20 15x xxx xxxx</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2 space-x-reverse overflow-hidden">
+<img alt="Product" class="inline-block size-8 rounded-full ring-2 ring-[#161b26] bg-white/10 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsk0P7H4thcEFU3j2-Z5bZbAV_rFQwPg5XMjBGCzXbXam3gzru2Sz_b_Cszro7q_gUGVYu2JtBua8bN4EpeGzq-3a4gEg34xJftGdxqGk14gzwM8QxIoIjDDpgpojUNf4FIrqQAjJnot855f68YgGKFcGRdwiyl-UQO5Jk32BkdWHeIgyQv0fxclBzKXJ11bymOJUwzi7kkcxLoKYjVnXJ0MsvNTF0q3X2w6nfZ0pEOCEzLcfQ6bps5DVnRBdDj6hGeyZ2x8tDmHA"/>
+</div>
+<span class="text-xs text-slate-400 font-medium">ورق كاشير حراري</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-400">
+<div class="flex flex-col">
+<span class="text-slate-300 font-medium">23 أكتوبر 2023</span>
+<span class="text-xs text-slate-500">02:20 م</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="status-pill bg-red-500/10 text-red-400 border border-red-500/20">
+<span class="size-1.5 rounded-full bg-red-400 ml-2"></span>
+                                            ملغي
+                                        </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-500 text-[18px]">payments</span>
+<span class="text-xs font-medium text-slate-300">عند الاستلام</span>
+</div>
+</td>
+<td class="px-6 py-4 font-bold text-white font-mono text-base">850 ج.م</td>
+<td class="px-6 py-4 text-left">
+<div class="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 hover:text-primary text-slate-400 transition-all" title="تعديل">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all" title="طباعة الفاتورة">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all shadow-sm" title="عرض التفاصيل">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/[0.02]">
+<p class="text-sm text-slate-400">
+                            عرض <span class="font-bold text-white">1</span> إلى <span class="font-bold text-white">4</span> من أصل <span class="font-bold text-white">154</span> طلب
+                        </p>
+<div class="flex items-center gap-2">
+<button class="size-9 flex items-center justify-center rounded-lg border border-white/10 bg-[#161b26] text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-50 transition-colors disabled:cursor-not-allowed">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+<button class="size-9 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20">
+                                1
+                            </button>
+<button class="size-9 flex items-center justify-center rounded-lg border border-white/10 bg-[#161b26] text-slate-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">
+                                2
+                            </button>
+<button class="size-9 flex items-center justify-center rounded-lg border border-white/10 bg-[#161b26] text-slate-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">
+                                3
+                            </button>
+<span class="text-slate-500 px-1">...</span>
+<button class="size-9 flex items-center justify-center rounded-lg border border-white/10 bg-[#161b26] text-slate-400 hover:text-white hover:bg-white/5 text-sm font-medium transition-colors">
+                                12
+                            </button>
+<button class="size-9 flex items-center justify-center rounded-lg border border-white/10 bg-[#161b26] text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

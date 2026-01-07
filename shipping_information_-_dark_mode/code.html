@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Shipping Information - Cashier Hardware</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Noto+Sans+Arabic:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "glass-dark": "rgba(30, 41, 59, 0.7)",
+                        "glass-border": "rgba(255, 255, 255, 0.08)",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "Noto Sans Arabic", "sans-serif"],
+                        "body": ["Manrope", "Noto Sans Arabic", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101622; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-body antialiased selection:bg-primary selection:text-white overflow-x-hidden min-h-screen flex flex-col">
+<header class="sticky top-0 z-50 w-full border-b border-glass-border bg-background-dark/90 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex h-20 items-center justify-between gap-6">
+<div class="flex items-center gap-3 flex-shrink-0">
+<div class="relative flex items-center justify-center size-10 rounded-xl bg-slate-900 border border-slate-700 text-white shadow-xl overflow-hidden group">
+<span class="material-symbols-outlined text-2xl text-blue-500 z-10">point_of_sale</span>
+<div class="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full blur-[2px] opacity-80"></div>
+</div>
+<div class="flex flex-col">
+<h1 class="text-xl font-bold leading-none tracking-tight text-white font-display">
+<span class="text-primary">كاشير</span> هاردوير
+                    </h1>
+<span class="text-[10px] text-slate-400 font-medium tracking-wide">تجهيزات نقاط البيع</span>
+</div>
+</div>
+<div class="hidden lg:flex flex-1 max-w-xl relative group mx-auto">
+<div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+<span class="material-symbols-outlined text-slate-500 group-focus-within:text-primary transition-colors text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-full border border-slate-700 bg-slate-800/50 text-white placeholder-slate-400 focus:border-primary focus:ring-1 focus:ring-primary py-2.5 pr-11 pl-4 text-sm transition-all shadow-inner" placeholder="ابحث عن منتج، ماركة، أو فئة..." type="text"/>
+</div>
+<div class="flex items-center gap-3 sm:gap-5">
+<button class="flex items-center gap-2 text-slate-300 hover:text-white transition-colors group">
+<div class="size-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center group-hover:border-slate-500 transition-colors relative">
+<span class="material-symbols-outlined text-sm">person</span>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-background-dark rounded-full"></span>
+</div>
+<div class="hidden md:flex flex-col items-start text-xs">
+<span class="text-slate-400">مرحباً</span>
+<span class="font-bold text-white">أحمد محمد</span>
+</div>
+</button>
+<div class="h-6 w-px bg-slate-700 hidden sm:block"></div>
+<div class="flex items-center gap-3">
+<a class="text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">favorite</span>
+</a>
+<a class="relative text-slate-300 hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-[26px]">shopping_cart</span>
+<span class="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-lg shadow-red-500/20">2</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="mb-8 w-full max-w-3xl mx-auto">
+<nav aria-label="Progress">
+<ol class="flex items-center justify-center" role="list">
+<li class="relative pl-8 sm:pl-20">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="h-0.5 w-full bg-primary"></div>
+</div>
+<a class="relative flex size-8 items-center justify-center rounded-full bg-primary hover:bg-blue-600 transition-colors" href="#">
+<span class="material-symbols-outlined text-white text-sm">check</span>
+<span class="sr-only">عربة التسوق</span>
+</a>
+<div class="absolute -bottom-6 right-1/2 translate-x-1/2 text-xs font-medium text-slate-400 whitespace-nowrap">عربة التسوق</div>
+</li>
+<li class="relative px-8 sm:px-20">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="h-0.5 w-full bg-slate-700"></div>
+</div>
+<a class="relative flex size-8 items-center justify-center rounded-full bg-primary ring-4 ring-primary/30 z-10" href="#">
+<span class="material-symbols-outlined text-white text-sm">local_shipping</span>
+<span class="sr-only">الشحن</span>
+</a>
+<div class="absolute -bottom-6 right-1/2 translate-x-1/2 text-xs font-bold text-primary whitespace-nowrap">الشحن</div>
+</li>
+<li class="relative pr-8 sm:pr-20">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="h-0.5 w-full bg-slate-700"></div>
+</div>
+<a class="relative flex size-8 items-center justify-center rounded-full bg-slate-800 border-2 border-slate-600 hover:border-slate-500 transition-colors z-10" href="#">
+<span class="text-slate-400 text-sm font-bold">3</span>
+<span class="sr-only">الدفع</span>
+</a>
+<div class="absolute -bottom-6 right-1/2 translate-x-1/2 text-xs font-medium text-slate-500 whitespace-nowrap">الدفع</div>
+</li>
+</ol>
+</nav>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-12 items-start">
+<div class="lg:col-span-8 space-y-6">
+<div class="flex flex-col gap-1">
+<h2 class="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">location_on</span>
+                    عنوان الشحن
+                </h2>
+<p class="text-slate-400 text-sm">يرجى إدخال تفاصيل التوصيل الخاصة بك لإتمام الطلب.</p>
+</div>
+<div class="rounded-xl border border-glass-border bg-glass-dark backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
+<form class="space-y-8">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">bookmarks</span>
+                                اختيار من العناوين المحفوظة
+                            </label>
+<a class="text-xs text-primary hover:text-blue-400 font-medium transition-colors" href="#">إدارة العناوين</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="relative">
+<input class="peer sr-only" id="addr_home" name="saved_address" type="radio"/>
+<label class="flex flex-col p-4 rounded-lg border border-slate-700 bg-slate-800/40 cursor-pointer transition-all hover:bg-slate-800 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:shadow-lg peer-checked:shadow-primary/5 group" for="addr_home">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white peer-checked:text-primary text-sm">home</span>
+<span class="font-bold text-white text-sm">المنزل</span>
+</div>
+<div class="size-4 rounded-full border border-slate-500 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="size-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed mb-1">محمد أحمد</p>
+<p class="text-xs text-slate-400 leading-relaxed">15 شارع الثورة، الدور 4، شقة 12<br/>مدينة نصر، القاهرة</p>
+</label>
+</div>
+<div class="relative">
+<input class="peer sr-only" id="addr_work" name="saved_address" type="radio"/>
+<label class="flex flex-col p-4 rounded-lg border border-slate-700 bg-slate-800/40 cursor-pointer transition-all hover:bg-slate-800 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:shadow-lg peer-checked:shadow-primary/5 group" for="addr_work">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white peer-checked:text-primary text-sm">apartment</span>
+<span class="font-bold text-white text-sm">العمل</span>
+</div>
+<div class="size-4 rounded-full border border-slate-500 peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="size-2 bg-white rounded-full opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+</div>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed mb-1">شركة كاشير هاردوير</p>
+<p class="text-xs text-slate-400 leading-relaxed">برج العرب، شارع 90، مكتب 502<br/>التجمع الخامس، القاهرة الجديدة</p>
+</label>
+</div>
+</div>
+<div class="relative py-2">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-slate-700"></div>
+</div>
+<div class="relative flex justify-center">
+<span class="bg-glass-dark px-3 text-xs text-slate-500 backdrop-blur-md">أو قم بملء بيانات عنوان جديد</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="full-name">الاسم بالكامل</label>
+<div class="relative">
+<input class="block w-full rounded-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 transition-colors" id="full-name" placeholder="مثال: محمد أحمد" type="text"/>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-slate-500 text-[20px]">person</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="phone-primary">رقم الهاتف المحمول (أساسي)</label>
+<div class="flex rounded-lg shadow-sm">
+<span class="inline-flex items-center rounded-r-lg border border-l-0 border-slate-600 bg-slate-800 px-4 text-slate-400 sm:text-sm font-sans dir-ltr">
+                                    +20
+                                </span>
+<input class="block w-full flex-1 rounded-none rounded-l-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 text-left transition-colors" id="phone-primary" placeholder="1xxx xxx xxxx" required="" type="tel"/>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
+<span class="material-symbols-outlined text-slate-500 text-[20px]">smartphone</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="phone-secondary">رقم هاتف إضافي (اختياري)</label>
+<div class="flex rounded-lg shadow-sm">
+<span class="inline-flex items-center rounded-r-lg border border-l-0 border-slate-600 bg-slate-800 px-4 text-slate-400 sm:text-sm font-sans dir-ltr">
+                                    +20
+                                </span>
+<input class="block w-full flex-1 rounded-none rounded-l-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 text-left transition-colors" id="phone-secondary" placeholder="1xxx xxx xxxx" type="tel"/>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 z-10">
+<span class="material-symbols-outlined text-slate-500 text-[20px]">call</span>
+</div>
+</div>
+</div>
+</div>
+<p class="text-xs text-slate-500 -mt-2">سنرسل لك تحديثات الطلب عبر واتساب أو SMS على الرقم الأساسي.</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="governorate">المحافظة</label>
+<div class="relative">
+<select class="block w-full appearance-none rounded-lg border-slate-600 bg-slate-900/50 text-white focus:border-primary focus:ring-primary sm:text-sm py-3 pr-4 pl-10 custom-scrollbar transition-colors" id="governorate">
+<option disabled="" selected="" value="">اختر المحافظة</option>
+<option value="Cairo">القاهرة</option>
+<option value="Giza">الجيزة</option>
+<option value="Alexandria">الإسكندرية</option>
+<option value="Dakahlia">الدقهلية</option>
+<option value="Sharkia">الشرقية</option>
+<option value="Monufia">المنوفية</option>
+<option value="Qalyubia">القليوبية</option>
+<option value="Gharbia">الغربية</option>
+<option value="Beheira">البحيرة</option>
+<option value="Damietta">دمياط</option>
+<option value="Port Said">بورسعيد</option>
+<option value="Ismailia">الإسماعيلية</option>
+<option value="Suez">السويس</option>
+<option value="Kafr El Sheikh">كفر الشيخ</option>
+<option value="Fayoum">الفيوم</option>
+<option value="Beni Suef">بني سويف</option>
+<option value="Minya">المنيا</option>
+<option value="Asyut">أسيوط</option>
+<option value="Sohag">سوهاج</option>
+<option value="Qena">قنا</option>
+<option value="Luxor">الأقصر</option>
+<option value="Aswan">أسوان</option>
+<option value="Red Sea">البحر الأحمر</option>
+<option value="New Valley">الوادي الجديد</option>
+<option value="Matrouh">مطروح</option>
+<option value="North Sinai">شمال سيناء</option>
+<option value="South Sinai">جنوب سيناء</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="city">المدينة / الحي</label>
+<input class="block w-full rounded-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 transition-colors" id="city" placeholder="مثال: مدينة نصر" type="text"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="address">العنوان بالتفصيل</label>
+<input class="block w-full rounded-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 transition-colors" id="address" placeholder="اسم الشارع، رقم العمارة، رقم الشقة" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-300" for="landmark">علامة مميزة (اختياري)</label>
+<input class="block w-full rounded-lg border-slate-600 bg-slate-900/50 text-white placeholder-slate-500 focus:border-primary focus:ring-primary sm:text-sm py-3 px-4 transition-colors" id="landmark" placeholder="مثال: بجوار مسجد النور" type="text"/>
+</div>
+</form>
+</div>
+</div>
+<div class="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
+<div class="rounded-xl border border-glass-border bg-glass-dark backdrop-blur-xl shadow-2xl overflow-hidden">
+<div class="p-6 border-b border-glass-border bg-slate-800/30">
+<h3 class="text-lg font-bold text-white">ملخص الطلب</h3>
+<p class="text-xs text-slate-400 mt-1">2 عناصر في عربة التسوق</p>
+</div>
+<div class="p-6 space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar">
+<div class="flex gap-4">
+<div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-slate-700 bg-white">
+<img alt="قارئ باركود" class="h-full w-full object-cover object-center" data-alt="Modern barcode scanner device white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ-EUHdbUjvxUT2dEY6dX7PLF1RH3qQtjtthV6RRVAwB7-Zwf8ZM2Qq0yQudIn_BEw0tB4LLQiTOgKDaG-Y2-aKQUVjcYF-sCNdZhw5hR9ofWwEtRq89IUdjCguhTNUqGhF2cR1GC1pSbiUeTX9PhTDgD729QFXCrhAB0Xgm5vEUGWYyivZeQdssQGbEhHz0oj42hC4zQgzljeymViQxlA8tg3wHGvNq-0v-41iED3gWL5r8UQd_mNPtbI_HXqEc0tsNfSJw9hqBQ"/>
+</div>
+<div class="flex flex-1 flex-col">
+<div>
+<div class="flex justify-between text-base font-medium text-white">
+<h3 class="line-clamp-2 text-sm leading-tight">قارئ باركود ليزر 2D لاسلكي</h3>
+</div>
+<p class="mt-1 text-xs text-slate-400">اللون: أسود</p>
+</div>
+<div class="flex flex-1 items-end justify-between text-sm">
+<p class="font-bold text-white">1,250 ج.م</p>
+<p class="text-slate-500">الكمية 1</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-slate-700 bg-white">
+<img alt="طابعة فواتير" class="h-full w-full object-cover object-center" data-alt="Point of sale terminal machine close up" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAziAi7cSGG7BnasRJ2hUXLnmkg5Qmgfz4TiyyTAEFpQwtvvyvSTjirY4u2IyBzQs_uvM2Yveuea1tjty5dlDpZP6a_uceqc8OlU4Js-_IuhgpWG7dPIYn0ijNsISWCOk3c1RG25XO9JrLOFUAZKhkwFItbqDPKM1pc1cz6hwHIXDotf9dmRwF3oitgBK6jIMlgcOMwxXRRUbZJ9Kni5vZQiwjs8kjlS-5ooL5ZqHcYdy9rNG_fxsnMMQMegUDjjSIxB2BdkgEXtjI"/>
+</div>
+<div class="flex flex-1 flex-col">
+<div>
+<div class="flex justify-between text-base font-medium text-white">
+<h3 class="line-clamp-2 text-sm leading-tight">طابعة فواتير حرارية 80مم</h3>
+</div>
+<p class="mt-1 text-xs text-slate-400">النوع: USB/LAN</p>
+</div>
+<div class="flex flex-1 items-end justify-between text-sm">
+<p class="font-bold text-white">3,800 ج.م</p>
+<p class="text-slate-500">الكمية 1</p>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-glass-border bg-slate-900/20 p-6 space-y-4">
+<div class="flex justify-between text-sm text-slate-300">
+<p>المجموع الفرعي</p>
+<p class="font-medium">5,050.00 ج.م</p>
+</div>
+<div class="flex justify-between text-sm text-slate-300">
+<p>الشحن</p>
+<p class="font-medium">50.00 ج.م</p>
+</div>
+<div class="flex justify-between text-sm text-slate-300">
+<p>الضرائب (14%)</p>
+<p class="font-medium">707.00 ج.م</p>
+</div>
+<div class="border-t border-slate-700 pt-4 flex justify-between items-center">
+<p class="text-base font-bold text-white">الإجمالي</p>
+<div class="text-right">
+<p class="text-xl font-bold text-primary">5,807.00 ج.م</p>
+<p class="text-[10px] text-slate-500">شامل ضريبة القيمة المضافة</p>
+</div>
+</div>
+<div class="pt-4">
+<button class="w-full flex items-center justify-center rounded-lg border border-transparent bg-primary px-6 py-4 text-base font-bold text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-slate-900 transition-all shadow-primary/25" type="submit">
+                                متابعة للدفع
+                                <span class="material-symbols-outlined mr-2">arrow_back</span>
+</button>
+<div class="mt-4 flex items-center justify-center gap-2 text-xs text-slate-500">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+                                بياناتك مشفرة ومحمية
+                            </div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-glass-dark border border-glass-border">
+<span class="material-symbols-outlined text-slate-400">package_2</span>
+<span class="text-xs font-medium text-slate-300">إرجاع خلال 14 يوم</span>
+</div>
+<div class="flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-glass-dark border border-glass-border">
+<span class="material-symbols-outlined text-slate-400">support_agent</span>
+<span class="text-xs font-medium text-slate-300">دعم فني 24/7</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto border-t border-glass-border bg-background-dark py-8">
+<div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+<p>© 2024 متجر كاشير للأجهزة. جميع الحقوق محفوظة.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">سياسة الخصوصية</a>
+<a class="hover:text-primary transition-colors" href="#">شروط الاستخدام</a>
+<a class="hover:text-primary transition-colors" href="#">اتصل بنا</a>
+</div>
+</div>
+</footer>
+
+</body></html>

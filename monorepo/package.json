@@ -1,0 +1,16 @@
+{
+  "name": "al3amer-center",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Al3amer Center - Full-Stack E-commerce Platform for POS Systems",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:web": "pnpm --filter @al3amer/web dev",
+    "dev:api": "pnpm --filter @al3amer/api dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint"
+  },
+  "keywords": ["ecommerce", "pos", "cashier", "arabic", "rtl"],
+  "author": "Al3amer Center",
+  "license": "UNLICENSED"
+}
