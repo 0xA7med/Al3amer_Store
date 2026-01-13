@@ -1,105 +1,35 @@
 import { useState } from 'react';
-
-interface Customer {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    location: string;
-    orders: number;
-    totalSpent: number;
-    status: 'active' | 'inactive' | 'blocked';
-    joinDate: string;
-    lastActive: string;
-    avatar: string;
-}
-
-const CUSTOMERS: Customer[] = [
-    {
-        id: 1,
-        name: 'أحمد محمد',
-        email: 'ahmed@email.com',
-        phone: '01012345678',
-        location: 'الرياض، السعودية',
-        orders: 15,
-        totalSpent: 24500,
-        status: 'active',
-        joinDate: '2024-01-15',
-        lastActive: 'منذ 2 ساعة',
-        avatar: 'https://i.pravatar.cc/150?u=1'
-    },
-    {
-        id: 2,
-        name: 'محمد علي',
-        email: 'mohamed@email.com',
-        phone: '01098765432',
-        location: 'طريق الملك عبدالله، جدة',
-        orders: 3,
-        totalSpent: 18200,
-        status: 'active',
-        joinDate: '2024-03-02',
-        lastActive: 'منذ يومين',
-        avatar: 'https://i.pravatar.cc/150?u=2'
-    },
-    {
-        id: 3,
-        name: 'سارة أحمد',
-        email: 'sara@email.com',
-        phone: '01155566677',
-        location: 'دبي، الإمارات',
-        orders: 8,
-        totalSpent: 45600,
-        status: 'active',
-        joinDate: '2024-02-20',
-        lastActive: 'منذ 5 ساعات',
-        avatar: 'https://i.pravatar.cc/150?u=3'
-    },
-    {
-        id: 4,
-        name: 'علي حسن',
-        email: 'ali@email.com',
-        phone: '01234567890',
-        location: 'القاهرة، مصر',
-        orders: 1,
-        totalSpent: 3400,
-        status: 'inactive',
-        joinDate: '2023-12-01',
-        lastActive: 'منذ شهر',
-        avatar: 'https://i.pravatar.cc/150?u=4'
-    },
-    {
-        id: 5,
-        name: 'فاطمة محمود',
-        email: 'fatma@email.com',
-        phone: '01111222333',
-        location: 'عمان، الأردن',
-        orders: 12,
-        totalSpent: 78500,
-        status: 'blocked',
-        joinDate: '2024-04-10',
-        lastActive: 'منذ أسبوع',
-        avatar: 'https://i.pravatar.cc/150?u=5'
-    },
-];
+import { useNavigate } from 'react-router-dom';
+import { useCustomers } from '../../hooks/useCustomers';
 
 export function CustomersManagement() {
-    const [customers, setCustomers] = useState<Customer[]>(CUSTOMERS);
+    const { customers, isLoading, updateStatus, createCustomer } = useCustomers();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'blocked'>('all');
+    const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
 
-    const toggleStatus = (id: number) => {
-        setCustomers((prev) =>
-            prev.map((c) =>
-                c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c
-            )
-        );
+    const toggleStatus = (id: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
+        // @ts-ignore
+        updateStatus(id, newStatus as 'active' | 'inactive' | 'blocked');
     };
 
     const filteredCustomers = customers.filter(c => {
-        const matchesSearch = c.name.includes(searchQuery) || c.email.includes(searchQuery) || c.phone.includes(searchQuery);
+        const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.phone.includes(searchQuery);
         const matchesFilter = filterStatus === 'all' || c.status === filterStatus;
         return matchesSearch && matchesFilter;
     });
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8">
@@ -120,7 +50,10 @@ export function CustomersManagement() {
                         <span className="material-symbols-outlined text-[20px]">file_download</span>
                         تصدير
                     </button>
-                    <button className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+                    <button
+                        onClick={() => setIsAddCustomerOpen(true)}
+                        className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                    >
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         إضافة عميل
                     </button>
@@ -135,7 +68,7 @@ export function CustomersManagement() {
                     </div>
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">إجمالي العملاء</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">1,248</h3>
+                        <h3 className="text-2xl font-bold text-white mt-1">{customers.length}</h3>
                         <p className="text-emerald-400 text-xs flex items-center gap-1 mt-1">
                             <span className="material-symbols-outlined text-[16px]">trending_up</span>
                             +12% هذا الشهر
@@ -148,8 +81,8 @@ export function CustomersManagement() {
                     </div>
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">عملاء جدد</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">45</h3>
-                        <p className="text-slate-500 text-xs mt-1">آخر 7 أيام</p>
+                        <h3 className="text-2xl font-bold text-white mt-1">{customers.filter(c => new Date(c.joinDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</h3>
+                        <p className="text-slate-500 text-xs mt-1">آخر 30 يوم</p>
                     </div>
                 </div>
                 <div className="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-secondary/30 transition-all">
@@ -158,7 +91,9 @@ export function CustomersManagement() {
                     </div>
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">متوسط الطلبات</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">3.5</h3>
+                        <h3 className="text-2xl font-bold text-white mt-1">
+                            {customers.length ? (customers.reduce((acc, c) => acc + c.orders, 0) / customers.length).toFixed(1) : 0}
+                        </h3>
                         <p className="text-slate-500 text-xs mt-1"> لكل عميل</p>
                     </div>
                 </div>
@@ -168,7 +103,7 @@ export function CustomersManagement() {
                     </div>
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">حسابات محظورة</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">12</h3>
+                        <h3 className="text-2xl font-bold text-white mt-1">{customers.filter(c => c.status === 'blocked').length}</h3>
                         <p className="text-red-400 text-xs mt-1">يتطلب مراجعة</p>
                     </div>
                 </div>
@@ -265,13 +200,13 @@ export function CustomersManagement() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${customer.status === 'active'
-                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                : customer.status === 'blocked'
-                                                    ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                            : customer.status === 'blocked'
+                                                ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
                                             }`}>
                                             <span className={`size-1.5 rounded-full ${customer.status === 'active' ? 'bg-emerald-400' :
-                                                    customer.status === 'blocked' ? 'bg-red-400' : 'bg-slate-400'
+                                                customer.status === 'blocked' ? 'bg-red-400' : 'bg-slate-400'
                                                 }`}></span>
                                             {customer.status === 'active' ? 'نشط' : customer.status === 'blocked' ? 'محظور' : 'غير نشط'}
                                         </span>
@@ -279,7 +214,7 @@ export function CustomersManagement() {
                                     <td className="px-6 py-4 text-left">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
-                                                onClick={() => toggleStatus(customer.id)}
+                                                onClick={() => toggleStatus(customer.id, customer.status)}
                                                 className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                                                 title={customer.status === 'active' ? 'حظر' : 'تنشيط'}
                                             >
@@ -287,12 +222,20 @@ export function CustomersManagement() {
                                                     {customer.status === 'active' ? 'block' : 'check_circle'}
                                                 </span>
                                             </button>
-                                            <button className="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors" title="عرض التفاصيل">
-                                                <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                            <button
+                                                onClick={() => navigate(`/admin/orders?userId=${customer.id}`)}
+                                                className="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"
+                                                title="عرض الطلبات"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">list_alt</span>
                                             </button>
-                                            <button className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors" title="مراسلة">
+                                            <a
+                                                href={`mailto:${customer.email}`}
+                                                className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                                title="مراسلة"
+                                            >
                                                 <span className="material-symbols-outlined text-[20px]">mail</span>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -301,21 +244,91 @@ export function CustomersManagement() {
                     </table>
                 </div>
 
-                {/* Pagination */}
+                {/* Pagination (Static for now) */}
                 <div className="p-4 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-xs text-slate-500">عرض 1-5 من أصل {customers.length} عميل</span>
+                    <span className="text-xs text-slate-500">عرض 1-{Math.min(5, customers.length)} من أصل {customers.length} عميل</span>
                     <div className="flex items-center gap-1">
                         <button className="p-1 text-slate-500 hover:text-white disabled:opacity-50">
                             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                         </button>
                         <button className="size-7 flex items-center justify-center rounded bg-primary text-white text-xs font-bold">1</button>
                         <button className="size-7 flex items-center justify-center rounded bg-transparent hover:bg-white/5 text-slate-400 text-xs font-bold transition-colors">2</button>
-                        <button className="size-7 flex items-center justify-center rounded bg-transparent hover:bg-white/5 text-slate-400 text-xs font-bold transition-colors">3</button>
                         <button className="p-1 text-slate-500 hover:text-white">
                             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                         </button>
                     </div>
                 </div>
+            </div>
+
+            {isAddCustomerOpen && (
+                <AddCustomerModal
+                    onClose={() => setIsAddCustomerOpen(false)}
+                    onCreate={createCustomer}
+                />
+            )}
+        </div>
+    );
+}
+
+function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate: (data: any) => Promise<any> }) {
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        address: '',
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await onCreate(formData);
+            onClose();
+        } catch (error) {
+            // Error handled in hook
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-panel rounded-xl max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white">إضافة عميل جديد</h3>
+                    <button onClick={onClose}><span className="material-symbols-outlined text-slate-400 hover:text-white">close</span></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">الاسم بالكامل</label>
+                        <input required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">البريد الإلكتروني</label>
+                        <input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف</label>
+                        <input required value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">كلمة المرور</label>
+                        <input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">العنوان</label>
+                        <input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
+                    </div>
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-bold text-sm">إلغاء</button>
+                        <button type="submit" disabled={isSubmitting} className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-sm flex items-center gap-2 disabled:opacity-50">
+                            {isSubmitting && <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                            إضافة
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

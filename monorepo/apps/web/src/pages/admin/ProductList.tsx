@@ -1,126 +1,176 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAdminProducts, useDeleteProduct, useBulkUpdateProducts, type Product } from '../../hooks/useAdmin';
+import toast from 'react-hot-toast';
 
-interface Product {
-    id: string;
-    name: string;
-    sku: string;
-    category: string;
-    price: number;
-    stock: number;
-    status: 'active' | 'inactive' | 'draft' | 'out_of_stock' | 'low_stock' | 'hidden';
-    image: string;
-}
+import { CustomSelect } from '../../components/ui/CustomSelect';
 
-const PRODUCTS: Product[] = [
-    {
-        id: '1',
-        name: 'ميزان باركود إلكتروني',
-        sku: 'SCL-2024-X',
-        price: 12500,
-        stock: 45,
-        category: 'أجهزة الوزن',
-        status: 'active',
-        image: 'https://placehold.co/100'
-    },
-    {
-        id: '2',
-        name: 'جهاز كاشير لمس 15 بوصة',
-        sku: 'POS-T15-PRO',
-        price: 8200,
-        stock: 3,
-        category: 'أجهزة الكاشير',
-        status: 'active', // Displayed as 'active' but logically low stock
-        image: 'https://placehold.co/100'
-    },
-    {
-        id: '3',
-        name: 'قارئ باركود لاسلكي',
-        sku: 'SCN-WL-2D',
-        price: 1400,
-        stock: 120,
-        category: 'قارئ الباركود',
-        status: 'active',
-        image: 'https://placehold.co/100'
-    },
-    {
-        id: '4',
-        name: 'طابعة فواتير حرارية 80مم',
-        sku: 'PRT-TH-80',
-        price: 3150,
-        stock: 0,
-        category: 'طابعات الفواتير',
-        status: 'out_of_stock',
-        image: 'https://placehold.co/100'
-    },
-    {
-        id: '5',
-        name: 'درج كاشير 5 خانات',
-        sku: 'DRW-MET-5',
-        price: 950,
-        stock: 22,
-        category: 'إكسسوارات',
-        status: 'hidden',
-        image: 'https://placehold.co/100'
-    },
-    {
-        id: '6',
-        name: 'ميزان منزلي ذكي',
-        sku: 'SCL-HM-01',
-        price: 850,
-        stock: 200,
-        category: 'أجهزة الوزن',
-        status: 'active',
-        image: 'https://placehold.co/100'
-    },
-];
-
-const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-    active: { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'نشط' },
-    inactive: { color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', label: 'غير نشط' },
-    draft: { color: 'bg-gray-500/10 text-gray-400 border-gray-500/20', label: 'مسودة' },
-    out_of_stock: { color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', label: 'نفذت' },
-    low_stock: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', label: 'مخزون منخفض' },
-    hidden: { color: 'bg-slate-500/10 text-slate-400 border-slate-500/20', label: 'مخفي' },
+const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
+    active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle' },
+    draft: { color: 'text-slate-500', label: 'غير نشط', icon: 'visibility_off' },
 };
 
+function getProductStatus(product: Product): string {
+    if (product.status === 'archived') return 'draft';
+    return product.status || 'active';
+}
+
 export function ProductList() {
-    const [products, setProducts] = useState(PRODUCTS);
+    const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
+    const deleteProduct = useDeleteProduct();
+    const bulkUpdate = useBulkUpdateProducts();
+    const products = productsData?.data || [];
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
+    const [sortBy, setSortBy] = useState('name');
+    const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; product: Product | null }>({ show: false, product: null });
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-    const handlePriceChange = (id: string, newPrice: string) => {
-        const price = parseFloat(newPrice.replace(/[^0-9.]/g, '')) || 0;
-        setProducts(prev => prev.map(p => p.id === id ? { ...p, price } : p));
+    // Inline Editing State
+    const [editedProducts, setEditedProducts] = useState<Record<string, { price?: string; stock?: number }>>({});
+
+    const hasChanges = Object.keys(editedProducts).length > 0;
+
+    const handleEditChange = (id: string, field: 'price' | 'stock', value: string) => {
+        setEditedProducts(prev => {
+            const current = prev[id] || {};
+            return {
+                ...prev,
+                [id]: {
+                    ...current,
+                    [field]: field === 'stock' ? parseInt(value) || 0 : value
+                }
+            };
+        });
     };
 
-    const handleStockChange = (id: string, newStock: string) => {
-        const stock = parseInt(newStock) || 0;
-        setProducts(prev => prev.map(p => p.id === id ? { ...p, stock } : p));
+    const handleSaveAll = async () => {
+        const updates = Object.entries(editedProducts).map(([id, data]) => ({
+            id,
+            ...data
+        }));
+        try {
+            await bulkUpdate.mutateAsync(updates);
+            setEditedProducts({});
+        } catch (err) {
+            console.error('Failed to bulk update:', err);
+        }
     };
 
-    const filteredProducts = products.filter((product) => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.sku.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === '' || product.category === selectedCategory;
-        const matchesStatus = selectedStatus === '' || product.status === selectedStatus;
-        return matchesSearch && matchesCategory && matchesStatus;
-    });
+    const handleDiscard = () => {
+        setEditedProducts({});
+    };
+
+    const handleDelete = async () => {
+        if (deleteConfirm.product) {
+            try {
+                await deleteProduct.mutateAsync(deleteConfirm.product.id);
+                setDeleteConfirm({ show: false, product: null });
+            } catch (error) {
+                console.error('Failed to delete product:', error);
+            }
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredProducts.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredProducts.map((p: Product) => p.id)));
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleBulkDelete = async () => {
+        if (window.confirm(`هل أنت متأكد من حذف ${selectedIds.size} منتجات؟`)) {
+            try {
+                for (const id of Array.from(selectedIds)) {
+                    await deleteProduct.mutateAsync(id);
+                }
+                setSelectedIds(new Set());
+                toast.success('تم حذف المنتجات المحددة بنجاح');
+            } catch (error) {
+                console.error('Failed to bulk delete:', error);
+            }
+        }
+    };
+
+    // Calculate stats
+    const totalProducts = products.length;
+    const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.price) * p.stock), 0);
+    const lowStockCount = products.filter(p => p.stock < 10 && p.stock > 0).length;
+
+    // Unique categories from data
+    const categories = [...new Set(products.map(p => p.category?.name).filter(Boolean))];
+
+    // Unified Filter and Sort Logic
+    const filteredAndSortedProducts = useMemo(() => {
+        let result = products.filter((product) => {
+            const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (product.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
+            const matchesCategory = selectedCategory === '' || product.category?.name === selectedCategory;
+            const matchesStatus = selectedStatus === '' || product.status === selectedStatus;
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+
+        result.sort((a, b) => {
+            if (sortBy === 'name') {
+                return a.name.localeCompare(b.name, 'ar');
+            }
+            if (sortBy === 'price_asc') {
+                return parseFloat(a.price) - parseFloat(b.price);
+            }
+            if (sortBy === 'price_desc') {
+                return parseFloat(b.price) - parseFloat(a.price);
+            }
+            if (sortBy === 'newest') {
+                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            }
+            if (sortBy === 'oldest') {
+                return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+            }
+            return 0;
+        });
+
+        return result;
+    }, [products, searchQuery, selectedCategory, selectedStatus, sortBy]);
+
+    const filteredProducts = filteredAndSortedProducts;
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="text-center">
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-gray-400">جاري تحميل المنتجات...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-6">
             {/* Page Header */}
-            <div className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-10 -mx-8 -mt-6 mb-2">
+            <div className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 -mx-8 -mt-6 mb-2">
                 <div className="flex items-center gap-4">
                     <h2 className="text-white text-xl font-bold tracking-tight">إدارة المنتجات</h2>
                     <span className="h-6 w-px bg-white/10 mx-2"></span>
                     <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-white/5 text-slate-400 border border-white/5">{products.length} منتج</span>
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-white/5 text-slate-400 border border-white/5">{totalProducts} منتج</span>
                     </div>
-                </div>
-                <div className="flex items-center gap-6">
-                    {/* User & Notifications would go here from layout but kept simple for now */}
                 </div>
             </div>
 
@@ -132,7 +182,7 @@ export function ProductList() {
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs font-bold">إجمالي المنتجات</p>
-                        <h3 className="text-xl font-bold text-white">{products.length} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
+                        <h3 className="text-xl font-bold text-white">{totalProducts} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
                     </div>
                 </div>
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
@@ -141,7 +191,7 @@ export function ProductList() {
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs font-bold">قيمة المخزون</p>
-                        <h3 className="text-xl font-bold text-white">450,200 <span className="text-xs text-slate-500 font-normal">ج.م</span></h3>
+                        <h3 className="text-xl font-bold text-white">{totalValue.toLocaleString('ar-EG')} <span className="text-xs text-slate-500 font-normal">ج.م</span></h3>
                     </div>
                 </div>
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4 border-l-2 border-secondary/50">
@@ -150,13 +200,13 @@ export function ProductList() {
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs font-bold">تنبيهات المخزون</p>
-                        <h3 className="text-xl font-bold text-white">5 <span className="text-xs text-slate-500 font-normal">منتجات منخفضة</span></h3>
+                        <h3 className="text-xl font-bold text-white">{lowStockCount} <span className="text-xs text-slate-500 font-normal">منتجات منخفضة</span></h3>
                     </div>
                 </div>
             </div>
 
             {/* Filters & Actions */}
-            <div className="glass-panel rounded-xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="glass-panel rounded-xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
                 <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                     <div className="relative w-full md:w-64">
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
@@ -170,52 +220,56 @@ export function ProductList() {
                             className="block w-full h-10 pr-10 pl-4 rounded-lg bg-white/5 border border-white/5 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all"
                         />
                     </div>
-                    <div className="relative w-full md:w-auto">
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="appearance-none block w-full md:w-40 h-10 rounded-lg bg-white/5 border border-white/5 text-sm text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all pl-10 pr-4 cursor-pointer outline-none"
-                        >
-                            <option value="">جميع الأقسام</option>
-                            <option value="أجهزة الوزن">أجهزة الوزن</option>
-                            <option value="أجهزة الكاشير">أجهزة الكاشير</option>
-                            <option value="قارئ الباركود">قارئ الباركود</option>
-                            <option value="طابعات الفواتير">طابعات الفواتير</option>
-                            <option value="إكسسوارات">إكسسوارات</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                        </div>
-                    </div>
-                    <div className="relative w-full md:w-auto">
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="appearance-none block w-full md:w-40 h-10 rounded-lg bg-white/5 border border-white/5 text-sm text-slate-300 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all pl-10 pr-4 cursor-pointer outline-none"
-                        >
-                            <option value="">الحالة: الكل</option>
-                            <option value="active">نشط</option>
-                            <option value="inactive">غير نشط</option>
-                            <option value="out_of_stock">نفذت</option>
-                            <option value="hidden">مخفي</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <span className="material-symbols-outlined text-[20px]">expand_more</span>
-                        </div>
-                    </div>
+                    <CustomSelect
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        options={[
+                            { value: '', label: 'جميع الأقسام' },
+                            ...categories.filter((cat): cat is string => !!cat).map(cat => ({ value: cat, label: cat }))
+                        ]}
+                        placeholder="جميع الأقسام"
+                        className="w-full md:w-48"
+                    />
+                    <CustomSelect
+                        value={selectedStatus}
+                        onChange={setSelectedStatus}
+                        options={[
+                            { value: '', label: 'الحالة: الكل' },
+                            { value: 'active', label: 'نشط' },
+                            { value: 'draft', label: 'غير نشط' }
+                        ]}
+                        placeholder="الحالة: الكل"
+                        className="w-full md:w-40"
+                    />
+                    <CustomSelect
+                        value={sortBy}
+                        onChange={setSortBy}
+                        options={[
+                            { value: 'name', label: 'الاسم (أ-ي)' },
+                            { value: 'price_asc', label: 'السعر: من الأقل' },
+                            { value: 'price_desc', label: 'السعر: من الأعلى' },
+                            { value: 'newest', label: 'الأحدث أولاً' },
+                            { value: 'oldest', label: 'الأقدم أولاً' }
+                        ]}
+                        placeholder="ترتيب حسب"
+                        className="w-full md:w-44"
+                        icon="sort"
+                    />
                 </div>
                 <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-                    <button className="flex items-center justify-center gap-2 h-10 px-6 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 transition-all w-full md:w-auto border border-emerald-500/20">
-                        <span className="material-symbols-outlined text-[20px]">save</span>
-                        <span>حفظ التعديلات</span>
-                    </button>
+                    {selectedIds.size > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold border border-red-500/20 transition-all"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
+                            <span>حذف المختار ({selectedIds.size})</span>
+                        </button>
+                    )}
                     <Link to="/admin/products/add" className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all w-full md:w-auto">
                         <span className="material-symbols-outlined text-[20px]">add</span>
                         <span>إضافة منتج</span>
                     </Link>
-                    <button className="flex items-center justify-center size-10 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 transition-all">
-                        <span className="material-symbols-outlined text-[20px]">ios_share</span>
-                    </button>
                 </div>
             </div>
 
@@ -225,100 +279,210 @@ export function ProductList() {
                     <table className="w-full text-sm text-right">
                         <thead className="bg-white/5 text-slate-400 font-medium border-b border-white/5">
                             <tr>
-                                <th className="px-6 py-4 w-10">
+                                <th className="px-6 py-3 w-10">
                                     <div className="flex items-center">
-                                        <input type="checkbox" className="rounded border-white/10 bg-white/5 text-primary focus:ring-0" />
+                                        <input
+                                            type="checkbox"
+                                            checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
+                                            onChange={toggleSelectAll}
+                                            className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer"
+                                        />
                                     </div>
                                 </th>
-                                <th className="px-6 py-4 whitespace-nowrap">المنتج</th>
-                                <th className="px-6 py-4 whitespace-nowrap">القسم</th>
-                                <th className="px-6 py-4 whitespace-nowrap w-40">السعر</th>
-                                <th className="px-6 py-4 whitespace-nowrap w-32">المخزون</th>
-                                <th className="px-6 py-4 whitespace-nowrap">الحالة</th>
-                                <th className="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
+                                <th className="px-6 py-3 whitespace-nowrap">المنتج</th>
+                                <th className="px-6 py-3 whitespace-nowrap">القسم</th>
+                                <th className="px-6 py-3 whitespace-nowrap w-32 text-center">الحالة</th>
+                                <th className="px-6 py-3 whitespace-nowrap w-40">السعر</th>
+                                <th className="px-6 py-3 whitespace-nowrap w-32">المخزون</th>
+                                <th className="px-6 py-3 whitespace-nowrap text-left">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-slate-300">
-                            {filteredProducts.map((product) => (
-                                <tr key={product.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center">
-                                            <input type="checkbox" className="rounded border-white/10 bg-white/5 text-primary focus:ring-0" />
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center">
-                                                <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded" />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-white text-base">{product.name}</span>
-                                                <span className="text-slate-500 text-xs">SKU: {product.sku}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-400">{product.category}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="text"
-                                                value={product.price.toLocaleString()}
-                                                onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                                                className="w-24 h-8 px-2 rounded bg-background-dark border border-white/10 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm"
-                                            />
-                                            <span className="text-xs text-slate-500 font-bold">ج.م</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={product.stock}
-                                                onChange={(e) => handleStockChange(product.id, e.target.value)}
-                                                className={`w-20 h-8 px-2 rounded bg-background-dark border border-white/10 ${product.stock < 5 ? 'text-red-400' : 'text-emerald-400'} focus:border-primary focus:ring-1 focus:ring-primary transition-all text-center font-bold outline-none text-sm`}
-                                            />
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_CONFIG[product.status].color}`}>
-                                            <span className={`size-1.5 rounded-full ${STATUS_CONFIG[product.status].color.split(' ')[1].replace('text-', 'bg-')}`}></span>
-                                            {STATUS_CONFIG[product.status].label}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-left">
-                                        <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
-                                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                                            </button>
-                                            <Link to={`/admin/products/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="تعديل">
-                                                <span className="material-symbols-outlined text-[18px]">edit_square</span>
-                                            </Link>
-                                            <button className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="المزيد">
-                                                <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                                            </button>
-                                        </div>
+                            {filteredProducts.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                                        <span className="material-symbols-outlined text-4xl mb-2 block">inventory_2</span>
+                                        لا توجد منتجات تطابق البحث
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                filteredProducts.map((product: Product) => {
+                                    const status = getProductStatus(product);
+                                    const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url || 'https://via.placeholder.com/100';
+
+                                    return (
+                                        <tr key={product.id} className="hover:bg-white/5 transition-colors group">
+                                            <td className="px-6 py-2">
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(product.id)}
+                                                        onChange={() => toggleSelect(product.id)}
+                                                        className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-2">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
+                                                        <img src={imageUrl} alt={product.name} className="w-full h-full object-cover rounded" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-white text-base">{product.name}</span>
+                                                        <span className="text-slate-500 text-xs">SKU: {product.sku || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-2 text-slate-400">{product.category?.name || 'غير مصنف'}</td>
+                                            <td className="px-6 py-2">
+                                                <div className="flex justify-center">
+                                                    <span
+                                                        className={`material-symbols-outlined text-[20px] ${STATUS_CONFIG[status]?.color || STATUS_CONFIG.active.color}`}
+                                                        title={STATUS_CONFIG[status]?.label || 'نشط'}
+                                                    >
+                                                        {STATUS_CONFIG[status]?.icon || STATUS_CONFIG.active.icon}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-2">
+                                                <div className="relative group/input max-w-[120px]">
+                                                    <input
+                                                        type="text"
+                                                        value={editedProducts[product.id]?.price ?? product.price}
+                                                        onChange={(e) => handleEditChange(product.id, 'price', e.target.value)}
+                                                        className={`w-full bg-white/5 border ${editedProducts[product.id]?.price !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-2 py-1 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
+                                                    />
+                                                    <span className="absolute left-2 top-1.5 text-[10px] text-slate-500 font-bold pointer-events-none">ج.م</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-2">
+                                                <div className="max-w-[80px]">
+                                                    <input
+                                                        type="number"
+                                                        value={editedProducts[product.id]?.stock ?? product.stock}
+                                                        onChange={(e) => handleEditChange(product.id, 'stock', e.target.value)}
+                                                        className={`w-full bg-white/5 border ${editedProducts[product.id]?.stock !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-2 py-1 text-sm font-bold ${product.stock === 0 ? 'text-red-500' : (product.stock < 10 ? 'text-yellow-400' : 'text-emerald-400')} transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-2 text-left">
+                                                <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setDeleteConfirm({ show: true, product })}
+                                                        className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors"
+                                                        title="حذف"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                    </button>
+                                                    <Link to={`/admin/products/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="تعديل">
+                                                        <span className="material-symbols-outlined text-[18px]">edit_square</span>
+                                                    </Link>
+                                                    <Link to={`/product/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
+                                                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                    </Link>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* Pagination */}
                 <div className="p-4 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-xs text-slate-500">عرض 1-{products.length} من {products.length} منتج</span>
+                    <span className="text-xs text-slate-500">عرض {filteredProducts.length} من {totalProducts} منتج</span>
                     <div className="flex items-center gap-2">
-                        <button className="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
-                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                        </button>
                         <button className="size-8 flex items-center justify-center rounded bg-primary text-white text-xs font-bold shadow-lg shadow-primary/20">1</button>
-                        <button className="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold">2</button>
-                        <button className="size-8 flex items-center justify-center rounded bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
-                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Action Toolbar (Sticky) */}
+            {hasChanges && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-8 duration-300">
+                    <div className="bg-slate-900/90 backdrop-blur-xl border border-primary/20 rounded-2xl p-2 pl-6 flex items-center gap-4 shadow-2xl shadow-primary/20 ring-1 ring-white/10">
+                        <div className="flex items-center gap-2">
+                            <div className="size-2 rounded-full bg-primary animate-pulse"></div>
+                            <span className="text-sm font-bold text-white whitespace-nowrap">لديك {Object.keys(editedProducts).length} تعديلات غير محفوظة</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleDiscard}
+                                disabled={bulkUpdate.isPending}
+                                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 text-sm font-bold transition-all disabled:opacity-50"
+                            >
+                                تجاهل
+                            </button>
+                            <button
+                                onClick={handleSaveAll}
+                                disabled={bulkUpdate.isPending}
+                                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold transition-all shadow-lg shadow-primary/30 flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {bulkUpdate.isPending ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        جاري الحفظ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-[18px]">save</span>
+                                        حفظ التعديلات
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm.show && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="glass-panel rounded-xl p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="size-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
+                                <span className="material-symbols-outlined text-[28px]">warning</span>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">تأكيد الحذف</h3>
+                                <p className="text-sm text-slate-400">هل أنت متأكد من حذف هذا المنتج؟</p>
+                            </div>
+                        </div>
+                        <div className="bg-white/5 rounded-lg p-3 mb-6">
+                            <p className="text-white font-medium">{deleteConfirm.product?.name}</p>
+                            <p className="text-xs text-slate-500">SKU: {deleteConfirm.product?.sku || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleteProduct.isPending}
+                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
+                            >
+                                {deleteProduct.isPending ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        جاري الحذف...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                        نعم، احذف المنتج
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setDeleteConfirm({ show: false, product: null })}
+                                disabled={deleteProduct.isPending}
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border border-white/10"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

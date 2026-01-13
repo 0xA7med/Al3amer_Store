@@ -1,21 +1,39 @@
-import React from 'react';
+import { useState } from 'react';
 import { ProductCard } from '../components/products/ProductCard';
+import { useProducts } from '../hooks/useProducts';
 
 const OffersPage = () => {
-    // Mock data for offers
-    const offerProducts = Array.from({ length: 8 }).map((_, i) => ({
-        id: `offer-${i}`,
-        title: i % 2 === 0 ? "طابعة فواتير حرارية X-Printer" : "جهاز كاشير لمس Sunmi T2",
-        price: 1299,
-        originalPrice: 1599, // Ensure original price is present for discount calculation
-        rating: 4.8,
-        reviews: 124,
-        image: i % 2 === 0
-            ? "https://images.unsplash.com/photo-1616400661955-44246ed8c826?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"
-            : "https://images.unsplash.com/photo-1599950753725-cb5f804f6e80?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
-        isNew: false,
-        category: "أجهزة نقاط البيع"
-    }));
+    const { data: response, isLoading } = useProducts();
+    const products = response?.data || [];
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+    // Filter products that have a discount
+    const discountedProducts = products.filter(p => {
+        const price = parseFloat(p.price);
+        const discountPrice = p.discountPrice ? parseFloat(p.discountPrice) : null;
+        return discountPrice && discountPrice < price;
+    });
+
+    // Filter by selected category
+    const filteredProducts = selectedCategory === 'all'
+        ? discountedProducts
+        : discountedProducts.filter(p => p.category?.name === selectedCategory);
+
+    // Dynamic categories from discounted products
+    const categories = ['all', ...Array.from(new Set(discountedProducts.map(p => p.category?.name).filter(Boolean)))];
+
+    const categoryLabels: Record<string, string> = {
+        'all': 'الكل',
+        // Map other categories if needed, or just use the name directly
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background-dark">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-background-dark min-h-screen text-slate-200 font-body">
@@ -35,34 +53,57 @@ const OffersPage = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                {/* Filters (Mock) */}
+                {/* Filters */}
                 <div className="flex flex-wrap gap-4 mb-8">
-                    <button className="px-6 py-2 rounded-full bg-primary text-white font-bold">الكل</button>
-                    <button className="px-6 py-2 rounded-full glass-card hover:bg-white/10 transition-colors">أجهزة نقاط البيع</button>
-                    <button className="px-6 py-2 rounded-full glass-card hover:bg-white/10 transition-colors">الطابعات</button>
-                    <button className="px-6 py-2 rounded-full glass-card hover:bg-white/10 transition-colors">الإكسسوارات</button>
+                    {categories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat as string)}
+                            className={`px-6 py-2 rounded-full font-bold transition-colors ${selectedCategory === cat
+                                ? 'bg-primary text-white'
+                                : 'glass-card hover:bg-white/10 text-slate-300'
+                                }`}
+                        >
+                            {categoryLabels[cat as string] || cat}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {offerProducts.map((product) => (
-                        <ProductCard
-                            key={product.id}
-                            id={product.id}
-                            name={product.title}
-                            brand={product.category}
-                            price={product.price}
-                            originalPrice={product.originalPrice}
-                            rating={product.rating}
-                            reviewCount={product.reviews}
-                            imageUrl={product.image}
-                            badge={{ type: 'discount', text: 'Sale' }}
-                        />
-                    ))}
-                </div>
+                {filteredProducts.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {filteredProducts.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                id={product.id}
+                                name={product.name}
+                                brand={product.brand?.name || product.category?.name || 'Generic'}
+                                price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
+                                originalPrice={userHasDiscount(product) ? parseFloat(product.price) : undefined}
+                                rating={5} // Mock rating if not available
+                                imageUrl={product.images?.[0]?.url || 'https://via.placeholder.com/300'}
+                                slug={product.slug}
+                                badge={{ type: 'discount', text: 'Sale' }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12">
+                        <span className="material-symbols-outlined text-6xl text-gray-600 mb-4">local_offer</span>
+                        <h3 className="text-xl font-bold text-white">لا توجد عروض حالياً</h3>
+                        <p className="text-gray-400">تابعنا قريباً للمزيد من العروض الحصرية</p>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
+// Helper to check discount properly
+function userHasDiscount(product: any) {
+    const price = parseFloat(product.price);
+    const discountPrice = product.discountPrice ? parseFloat(product.discountPrice) : null;
+    return discountPrice && discountPrice < price;
+}
 
 export default OffersPage;

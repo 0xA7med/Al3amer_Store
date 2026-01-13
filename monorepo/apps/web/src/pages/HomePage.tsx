@@ -1,63 +1,20 @@
 import { Link } from 'react-router-dom';
 import { ProductCard } from '../components/products';
 
-// Sample product data
-const BEST_SELLERS = [
-    {
-        id: '1',
-        name: 'طابعة إيصالات حرارية Xprinter Q800',
-        brand: 'Xprinter',
-        price: 1500,
-        originalPrice: 1650,
-        rating: 4,
-        reviewCount: 24,
-        imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuDxxJ9tmTVPceVucCSIsPiqO8tUFn8kabL61HDi4Ov6m5QZpfBdnlViwjY2haLMYyLth5Bc-Gt3u1H9M99ogXqu4GxkbXAH9fctr-zP39eATS-uGKSiy1IhrD6f28hfM4HWC8Qt8whBF0BcM4pZnrBi9UfKu54xqmYWyaiJLFpNv3f5NjPz5GZdAEA3xKjGa1KVxfI9LgMJ3CU40RlCFDsJBVfKMKd3F9iWWNpwe1KbzwvNYTF2t_nyJSxCuuVIk5EZbRDYRizhV1o',
-        badge: { type: 'discount' as const, text: 'خصم ١٠٪' },
-    },
-    {
-        id: '2',
-        name: 'قارئ باركود ثنائي الأبعاد 2D Sunmi',
-        brand: 'Sunmi',
-        price: 850,
-        rating: 5,
-        reviewCount: 15,
-        imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBKDOjzgb-jtD5OnlEJUl5E6CgtjL-tH4hUqnjzgVfT-gENm5bi4NxRILh2Duszx5ZHczzPxxPemOpmq7u39awgNL0bSIW64FVYKTa9-QzwIdklJAgcViOHmO7NwSPcpuFp5Utd4YgyvM_SrzaYcyqGeLVEg1QZhBh8UQSq4gNyHNyL0V2aRhJFpaMaI76pcg7GtgVDcoK0u-PBT_GlWPJbSGG7eTtfUHojlQdrd9hjCESoRDzOdfO4epqfXqTU0bp_tb0_LLWxzEY',
-    },
-    {
-        id: '3',
-        name: 'درج نقدية ٥ خانات معدن صلب',
-        brand: 'Generic',
-        price: 950,
-        rating: 4,
-        reviewCount: 8,
-        imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuDU8YUXsa4aX9Rgz3AXNGkLVwNo6mya28J_m5z4aXxMlu1ndIj5hKGrVW2sRO3hB9yyEhpFOZeFAo-6DEalbvgLu3P_fHPLnZr9MGo9fuEeGcQbeOvz3QiREB_dg7Oj4fYY5NrsmCpAbI9A0F8FyNwFiQHTQXNVRVZWcSl9ocP4lkjx0GO4k2D-YVOjk_uzsN1aLjkf1Jd-1kkf1S9NhlfBZezXWoO713C_Zwx3ngse-MkpGN2jlbyG9iE_4pmduTlxXzsJGrTF_S8',
-        badge: { type: 'new' as const, text: 'وصل حديثاً' },
-    },
-    {
-        id: '4',
-        name: 'كرتونة ورق حراري ٧.٩ (٥٠ بكرة)',
-        brand: 'Generic',
-        price: 1200,
-        rating: 5,
-        reviewCount: 42,
-        imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuAePSWiHG5jOfDGouVCn_9cQnwDvm34Rd4RxGfw4Rt3qEsU8wfD32BxjJ-dBLPuIux8OKgYsfPpmIPDHtMfWj9JnsPsBhwieQ_rGSGh5BlLWA-maPhE364E_o4X0jVLeXUK4FQhiNldgW6a5xD_Yyr0zNFX4iTCyiglBx1p2vp42z8hKHB0aiOpsd4mjdfg9ML5d60bew7qIkeHfEbIDYqAxgmNWGxbxXpYb_XV3I_wIJ3-l4E23PIYLVx4Bx-Fi2xtVlHz8k9-rvQ',
-    },
-];
+import { useFeaturedProducts, useCategories } from '../hooks/useProducts';
 
-const CATEGORIES = [
-    { icon: 'print', name: 'طابعات فواتير' },
-    { icon: 'qr_code_scanner', name: 'قارئ باركود' },
-    { icon: 'point_of_sale', name: 'أجهزة كاشير' },
-    { icon: 'inbox', name: 'أدراج نقدية' },
-    { icon: 'receipt_long', name: 'رولات ورق' },
-    { icon: 'scale', name: 'موازين باركود' },
-];
+const CATEGORY_ICONS: Record<string, string> = {
+    'pos': 'point_of_sale',
+    'printer-barcode': 'print',
+    'scanners': 'qr_code_scanner',
+    'drawers': 'inbox',
+    'scales': 'scale',
+    'rolls': 'receipt_long'
+};
 
 export function HomePage() {
+    const { data: products, isLoading } = useFeaturedProducts();
+    const { data: categories } = useCategories();
     return (
         <>
             {/* Hero Section */}
@@ -179,14 +136,14 @@ export function HomePage() {
                         </Link>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {CATEGORIES.map((cat) => (
+                        {categories?.map((cat: any) => (
                             <Link
-                                to={`/shop?category=${cat.name}`}
-                                key={cat.name}
+                                to={`/shop?categories=${cat.slug}`}
+                                key={cat.id}
                                 className="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36"
                             >
                                 <span className="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">
-                                    {cat.icon}
+                                    {CATEGORY_ICONS[cat.slug] || 'category'}
                                 </span>
                                 <span className="text-sm font-bold text-gray-300 group-hover:text-white">{cat.name}</span>
                             </Link>
@@ -205,9 +162,26 @@ export function HomePage() {
                         </h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {BEST_SELLERS.map((product) => (
-                            <ProductCard key={product.id} {...product} />
-                        ))}
+                        {isLoading ? (
+                            <div className="col-span-full flex justify-center py-12">
+                                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : (
+                            products?.map((product) => (
+                                <ProductCard
+                                    key={product.id}
+                                    id={product.id}
+                                    name={product.name}
+                                    brand={product.brand?.name || 'Generic'}
+                                    price={parseFloat(product.price)}
+                                    originalPrice={product.discountPrice ? parseFloat(product.discountPrice) : undefined}
+                                    rating={5} // Placeholder
+                                    imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
+                                    slug={product.slug}
+                                    badge={product.isFeatured ? { type: 'new', text: 'مميز' } : undefined}
+                                />
+                            ))
+                        )}
                     </div>
                 </div>
             </section>

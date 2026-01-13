@@ -1,11 +1,65 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 type AuthMode = 'login' | 'register';
 
 export function LoginPage() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { login, register, isAuthenticated } = useAuth();
+
     const [mode, setMode] = useState<AuthMode>('login');
     const [showPassword, setShowPassword] = useState(false);
+    const [emailOrPhone, setEmailOrPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [registerEmail, setRegisterEmail] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const [rememberMe, setRememberMe] = useState(true);
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            const from = (location.state as any)?.from?.pathname || '/';
+            navigate(from, { replace: true });
+        }
+    }, [isAuthenticated, navigate, location]);
+
+    if (isAuthenticated) return null;
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+
+        try {
+            if (mode === 'login') {
+                await login(emailOrPhone, password, rememberMe);
+                // Navigation will happen via the isAuthenticated check above on re-render
+                const from = (location.state as any)?.from?.pathname || '/';
+                navigate(from, { replace: true });
+            } else {
+                // Register
+                await register({
+                    name,
+                    email: registerEmail,
+                    phone: emailOrPhone,
+                    password,
+                });
+                // Navigation will happen via the isAuthenticated check
+                navigate('/', { replace: true });
+            }
+        } catch (err: any) {
+            console.error('Auth error:', err);
+            setError(err.response?.data?.message || 'حدث خطأ أثناء العملية. يرجى المحاولة مرة أخرى.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 relative">
@@ -62,8 +116,15 @@ export function LoginPage() {
                         </button>
                     </div>
 
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-sm text-center">
+                            {error}
+                        </div>
+                    )}
+
                     {/* Form */}
-                    <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-5" onSubmit={handleSubmit}>
                         {mode === 'register' && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">الاسم بالكامل</label>
@@ -73,6 +134,9 @@ export function LoginPage() {
                                         type="text"
                                         className="w-full h-12 bg-[#020617]/40 border border-white/10 rounded-xl pr-10 pl-4 text-white focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-gray-500 transition-all"
                                         placeholder="أحمد محمد"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -89,7 +153,10 @@ export function LoginPage() {
                                 <input
                                     type="text"
                                     className="w-full h-12 bg-[#020617]/40 border border-white/10 rounded-xl pr-10 pl-4 text-white focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-gray-500 transition-all text-left dir-ltr"
-                                    placeholder={mode === 'login' ? 'email@example.com أو 01xxxxxxxxx' : '01xxxxxxxxx'}
+                                    placeholder={mode === 'login' ? 'email@example.com' : '01xxxxxxxxx'}
+                                    required
+                                    value={emailOrPhone}
+                                    onChange={(e) => setEmailOrPhone(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -103,6 +170,9 @@ export function LoginPage() {
                                         type="email"
                                         className="w-full h-12 bg-[#020617]/40 border border-white/10 rounded-xl pr-10 pl-4 text-white focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-gray-500 transition-all text-left dir-ltr"
                                         placeholder="email@example.com"
+                                        required
+                                        value={registerEmail}
+                                        onChange={(e) => setRegisterEmail(e.target.value)}
                                     />
                                 </div>
                             </div>
@@ -116,6 +186,9 @@ export function LoginPage() {
                                     type={showPassword ? 'text' : 'password'}
                                     className="w-full h-12 bg-[#020617]/40 border border-white/10 rounded-xl pr-10 pl-12 text-white focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder-gray-500 transition-all"
                                     placeholder="••••••••"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                 />
                                 <button
                                     type="button"
@@ -130,7 +203,12 @@ export function LoginPage() {
                         {mode === 'login' && (
                             <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" className="sr-only peer" />
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                    />
                                     <div className="size-5 border border-gray-600 rounded bg-[#0a0f18] peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-all">
                                         <span className="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
                                     </div>
@@ -154,12 +232,19 @@ export function LoginPage() {
 
                         <button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 group"
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-blue-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/30 hover:shadow-primary/50 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <span className="text-lg">{mode === 'login' ? 'متابعة التسوق' : 'إنشاء الحساب'}</span>
-                            <span className="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">
-                                {mode === 'login' ? 'shopping_bag' : 'arrow_forward'}
-                            </span>
+                            {loading ? (
+                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <>
+                                    <span className="text-lg">{mode === 'login' ? 'متابعة التسوق' : 'إنشاء الحساب'}</span>
+                                    <span className="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">
+                                        {mode === 'login' ? 'shopping_bag' : 'arrow_forward'}
+                                    </span>
+                                </>
+                            )}
                         </button>
                     </form>
 

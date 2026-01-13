@@ -1,6 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header, Footer } from './components/layout';
-import { AdminLayout, AdminRoute } from './components/admin';
+import { AdminLayout } from './components/admin';
+import { AuthProvider } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { CartProvider } from './context/CartContext';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 // Customer Pages
 import HomePage from './pages/HomePage';
@@ -13,6 +18,8 @@ import LoginPage from './pages/LoginPage';
 import AccountPage from './pages/AccountPage';
 import OffersPage from './pages/OffersPage';
 import AboutUsPage from './pages/AboutUsPage';
+import { OrderSuccessPage } from './pages/OrderSuccessPage';
+import { OrderTrackingPage } from './pages/OrderTrackingPage';
 
 // Admin Pages
 import DashboardOverview from './pages/admin/DashboardOverview';
@@ -30,58 +37,84 @@ import AdminAISettingsPage from './pages/admin/AdminAISettingsPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Customer Routes - with Header & Footer */}
-        <Route
-          path="/*"
-          element={
-            <div className="min-h-screen flex flex-col overflow-x-hidden">
-              <Header />
-              <main className="flex-grow flex flex-col">
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/shop" element={<ShopPage />} />
-                  <Route path="/product/:id" element={<ProductDetailsPage />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/ai-builder" element={<AIBundleBuilderPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/offers" element={<OffersPage />} />
-                  <Route path="/about" element={<AboutUsPage />} />
-                </Routes>
-              </main>
-              <Footer />
-            </div>
-          }
-        />
+    <AuthProvider>
+      <SettingsProvider>
+        <CartProvider>
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid rgba(255,255,255,0.1)',
+              },
+            }}
+          />
+          <BrowserRouter>
+            <Routes>
+              {/* Customer Routes - with Header & Footer */}
+              <Route
+                path="/*"
+                element={
+                  <div className="min-h-screen flex flex-col overflow-x-hidden">
+                    <Header />
+                    <main className="flex-grow flex flex-col">
+                      <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/shop" element={<ShopPage />} />
+                        <Route path="/product/:id" element={<ProductDetailsPage />} />
+                        <Route path="/cart" element={<CartPage />} />
+                        <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/order-success/:id" element={<OrderSuccessPage />} />
+                        <Route path="/track-order/:id" element={<OrderTrackingPage />} />
+                        <Route path="/ai-builder" element={<AIBundleBuilderPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route
+                          path="/account"
+                          element={
+                            <ProtectedRoute>
+                              <AccountPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route path="/offers" element={<OffersPage />} />
+                        <Route path="/about" element={<AboutUsPage />} />
+                      </Routes>
+                    </main>
+                    <Footer />
+                  </div>
+                }
+              />
 
-        {/* Admin Routes - with AdminLayout */}
-        <Route
-          path="/admin/*"
-          element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }
-        >
-          <Route index element={<DashboardOverview />} />
-          <Route path="products" element={<ProductList />} />
-          <Route path="products/add" element={<AddProduct />} />
-          <Route path="products/:id" element={<AddProduct />} />
-          <Route path="orders" element={<OrdersManagement />} />
-          <Route path="customers" element={<CustomersManagement />} />
-          <Route path="categories" element={<CategoriesManagement />} />
-          <Route path="coupons" element={<CouponsManagement />} />
-          <Route path="reviews" element={<ReviewsModeration />} />
-          <Route path="ai-logs" element={<AIBundleLogs />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-          <Route path="ai-settings" element={<AdminAISettingsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+              {/* Admin Routes - Protected with Admin Role */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardOverview />} />
+                <Route path="products" element={<ProductList />} />
+                <Route path="products/add" element={<AddProduct />} />
+                <Route path="products/:id" element={<AddProduct />} />
+                <Route path="orders" element={<OrdersManagement />} />
+                <Route path="customers" element={<CustomersManagement />} />
+                <Route path="categories" element={<CategoriesManagement />} />
+                <Route path="coupons" element={<CouponsManagement />} />
+                <Route path="reviews" element={<ReviewsModeration />} />
+                <Route path="ai-logs" element={<AIBundleLogs />} />
+                <Route path="reports" element={<AdminReportsPage />} />
+                <Route path="ai-settings" element={<AdminAISettingsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 

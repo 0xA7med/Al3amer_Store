@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../../lib/api';
+import toast from 'react-hot-toast';
 
 export default function AdminAISettingsPage() {
-    const [apiKey, setApiKey] = useState('sk-xxxxxxxxxxxxxxxxxxxxxxxx');
+    const queryClient = useQueryClient();
+    const [apiKey, setApiKey] = useState('');
     const [showKey, setShowKey] = useState(false);
     const [isEnabled, setIsEnabled] = useState(true);
     const [descriptionLength, setDescriptionLength] = useState('medium');
@@ -17,9 +21,66 @@ export default function AdminAISettingsPage() {
         price: false
     });
 
+    // Fetch settings
+    const { data: settings, isLoading } = useQuery({
+        queryKey: ['settings'],
+        queryFn: async () => {
+            const { data } = await api.get('/settings');
+            return data;
+        },
+    });
+
+    // Update local state when settings are loaded
+    useEffect(() => {
+        if (settings) {
+            setApiKey(settings.aiApiKey || '');
+            setIsEnabled(settings.aiEnabled ?? true);
+            setDescriptionLength(settings.aiDescriptionLength || 'medium');
+            setLanguage(settings.aiLanguage || 'ar');
+            setTone(settings.aiTone || 'Marketing');
+            if (settings.aiFields) {
+                setFields(settings.aiFields);
+            }
+        }
+    }, [settings]);
+
+    // Save settings mutation
+    const updateSettingsMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const { data: response } = await api.put('/settings', data);
+            return response;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['settings'] });
+            toast.success('تم حفظ الإعدادات بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء حفظ الإعدادات');
+        },
+    });
+
+    const handleSave = () => {
+        updateSettingsMutation.mutate({
+            aiApiKey: apiKey,
+            aiEnabled: isEnabled,
+            aiDescriptionLength: descriptionLength,
+            aiLanguage: language,
+            aiTone: tone,
+            aiFields: fields,
+        });
+    };
+
     const toggleField = (field: keyof typeof fields) => {
         setFields(prev => ({ ...prev, [field]: !prev[field] }));
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-10 z-10 scroll-smooth">
@@ -233,8 +294,16 @@ export default function AdminAISettingsPage() {
                         <button className="text-[#9da6b9] hover:text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors">
                             إلغاء التغييرات
                         </button>
-                        <button className="bg-primary hover:bg-blue-600 text-white text-base font-bold py-2.5 px-8 rounded-lg shadow-lg shadow-primary/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[20px]">save</span>
+                        <button
+                            onClick={handleSave}
+                            disabled={updateSettingsMutation.isPending}
+                            className="bg-primary hover:bg-blue-600 text-white text-base font-bold py-2.5 px-8 rounded-lg shadow-lg shadow-primary/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {updateSettingsMutation.isPending ? (
+                                <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            ) : (
+                                <span className="material-symbols-outlined text-[20px]">save</span>
+                            )}
                             حفظ الإعدادات
                         </button>
                     </div>

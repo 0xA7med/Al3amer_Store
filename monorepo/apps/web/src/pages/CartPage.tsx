@@ -1,54 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-
-interface CartItem {
-    id: string;
-    name: string;
-    brand: string;
-    price: number;
-    quantity: number;
-    imageUrl: string;
-}
-
-const INITIAL_CART: CartItem[] = [
-    {
-        id: '1',
-        name: 'Sunmi V2 Pro - جهاز نقطة بيع محمول',
-        brand: 'Sunmi',
-        price: 5500,
-        quantity: 1,
-        imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCl5LUWqalszyuzhEPvyMppr_XNJbIGxWNMShxaQTSYJawO_g2EqkhwWYyuMcRm3CPIQv9coNdfrzc8iDtCea3_zmI-ld3fkIIxxlv5gk82nk5W-CR6u2ca81J_dbufcVRXbfJo42Xw5nI-FgPpQPdnHanAxy-mj6fldWBzQOiuMHPvJXcnW_vh89IevgwwGhVPM-K4KKiYXO49C_sOb8RgyQdmCDvok-h5OW06ZgMATgi0cAhPHVDcO3YmGB06KySMgA3KcDAnM9s',
-    },
-    {
-        id: '2',
-        name: 'قارئ باركود ثنائي الأبعاد 2D Wireless',
-        brand: 'Honeywell',
-        price: 1200,
-        quantity: 2,
-        imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBfbvR1i3snzBjquMX-KoHfrpJ2rpLnvGSgtDj8xfbjS8P9D_ueWAGz8VHh7aps4CzAls1ZoKBLK-OpexCfVAvHo7xlgRgu6knJSoRkupATCBK4warzy0ao3dJG8rye3_BO_K0pqR-BRj1dt0FlwdqIFpjTWeLgX2gji_yIB2BLlXtqEUcEx9kBwtY5z_MsE0uVzxJabmyl3UsXwH1Buo5XkS6EAaky-plMseaQDM0WlGnOWl_tcN66BNK5ZAcmmZbMMbgs-OhKrzY',
-    },
-];
-
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../hooks/useWishlist';
 import { CheckoutProgressBar } from '../components/checkout';
 
 export function CartPage() {
-    const [cartItems, setCartItems] = useState<CartItem[]>(INITIAL_CART);
+    const { items: cartItems, updateQuantity, removeFromCart, totalPrice: subtotal, addToCart } = useCart();
+    const { wishlist } = useWishlist();
+
+    // Filter wishlist items that are not already in the cart
+    const suggestedItems = wishlist.filter(wItem => !cartItems.find(cItem => cItem.id === wItem.productId)).slice(0, 4);
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
 
-    const updateQuantity = (id: string, delta: number) => {
-        setCartItems((prev) =>
-            prev.map((item) =>
-                item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-            )
-        );
-    };
-
-    const removeItem = (id: string) => {
-        setCartItems((prev) => prev.filter((item) => item.id !== id));
-    };
-
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const shipping = subtotal > 5000 ? 0 : 100;
     const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
     const total = subtotal + shipping - discount;
@@ -97,19 +61,19 @@ export function CartPage() {
                             <div key={item.id} className="glass-panel rounded-2xl p-4 flex gap-4 items-center group hover:border-primary/30 transition-colors">
                                 {/* Image */}
                                 <Link to={`/product/${item.id}`} className="size-24 md:size-28 rounded-xl bg-[#181a20] border border-white/5 overflow-hidden flex-shrink-0">
-                                    <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('${item.imageUrl}')` }} />
+                                    <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('${item.image}')` }} />
                                 </Link>
 
                                 {/* Info */}
                                 <div className="flex-1 flex flex-col gap-2">
                                     <div className="flex items-start justify-between gap-2">
                                         <div>
-                                            <span className="text-xs text-primary font-bold">{item.brand}</span>
+                                            {/* Brand removed as not in context yet, or allow optional */}
                                             <Link to={`/product/${item.id}`}>
                                                 <h3 className="text-white font-bold text-base md:text-lg hover:text-primary transition-colors">{item.name}</h3>
                                             </Link>
                                         </div>
-                                        <button onClick={() => removeItem(item.id)} className="text-gray-500 hover:text-accent-red transition-colors p-1">
+                                        <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-accent-red transition-colors p-1">
                                             <span className="material-symbols-outlined">delete</span>
                                         </button>
                                     </div>
@@ -117,11 +81,11 @@ export function CartPage() {
                                     <div className="flex items-center justify-between mt-auto">
                                         {/* Quantity */}
                                         <div className="flex items-center gap-1 bg-[#181a20] rounded-lg border border-white/10 h-10 px-1">
-                                            <button onClick={() => updateQuantity(item.id, 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
+                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
                                                 <span className="material-symbols-outlined text-lg">add</span>
                                             </button>
                                             <span className="w-8 text-center text-white font-bold">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.id, -1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
+                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
                                                 <span className="material-symbols-outlined text-lg">remove</span>
                                             </button>
                                         </div>
@@ -153,6 +117,51 @@ export function CartPage() {
                                 <span className="material-symbols-outlined rtl:rotate-180">arrow_forward</span>
                             </Link>
                         </div>
+
+                        {/* Wishlist Suggestions */}
+                        {suggestedItems.length > 0 && (
+                            <div className="mt-8 border-t border-white/10 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-red-500">favorite</span>
+                                    من قائمة المفضلة لديك
+                                </h3>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {suggestedItems.map(item => (
+                                        <div key={item.id} className="glass-panel p-3 rounded-xl flex flex-col gap-3 group border border-white/5 hover:border-primary/30 transition-all">
+                                            <Link to={`/product/${item.product.slug}`} className="aspect-square bg-[#181a20] rounded-lg overflow-hidden relative">
+                                                {item.product.images?.[0]?.url ? (
+                                                    <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                                        <span className="material-symbols-outlined">image</span>
+                                                    </div>
+                                                )}
+                                            </Link>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-white text-sm font-bold truncate group-hover:text-primary transition-colors">{item.product.name}</h4>
+                                                <div className="flex items-baseline gap-1.5 mt-1">
+                                                    <span className="text-accent-red font-bold text-sm">{Number(item.product.discountPrice || item.product.price).toLocaleString()}</span>
+                                                    <span className="text-gray-500 text-xs">ج.م</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => addToCart({
+                                                    id: item.product.id,
+                                                    name: item.product.name,
+                                                    price: item.product.discountPrice || item.product.price,
+                                                    image: item.product.images?.[0]?.url || '',
+                                                    quantity: 1
+                                                })}
+                                                className="w-full py-2.5 bg-white/5 hover:bg-primary text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">add_shopping_cart</span>
+                                                أضف
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Order Summary */}

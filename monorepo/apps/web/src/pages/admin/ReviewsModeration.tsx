@@ -1,52 +1,13 @@
 import { useState } from 'react';
-
-const REVIEWS = [
-    {
-        id: 1,
-        product: { name: 'ميزان باركود إلكتروني حساس', sku: 'BAR-2023-X', image: 'https://placehold.co/100' },
-        customer: { name: 'محمود سعيد', type: 'عميل جديد', avatar: 'https://i.pravatar.cc/150?u=1' },
-        rating: 5,
-        text: 'المنتج ممتاز جداً والتوصيل كان سريع في نفس اليوم. التغليف محكم والجهاز يعمل بكفاءة عالية مع البرنامج. شكراً لكم!',
-        date: '24 أكتوبر، 10:30 ص',
-        status: 'pending'
-    },
-    {
-        id: 2,
-        product: { name: 'جهاز كاشير لمس 15 بوصة', sku: 'POS-T15', image: 'https://placehold.co/100' },
-        customer: { name: 'عمر خالد', type: 'عميل VIP', avatar: 'https://i.pravatar.cc/150?u=2' },
-        rating: 4,
-        text: 'الجهاز جيد لكن الشاشة تحتاج ضبط ألوان. السعر مرتفع قليلاً مقارنة بالمواصفات.',
-        date: '23 أكتوبر، 04:15 م',
-        status: 'pending'
-    },
-    {
-        id: 3,
-        product: { name: 'قارئ باركود لاسلكي 2D', sku: 'SCAN-W2', image: 'https://placehold.co/100' },
-        customer: { name: 'سارة أحمد', type: 'عميل متكرر', avatar: 'https://i.pravatar.cc/150?u=3' },
-        rating: 5,
-        text: 'عملي جداً والبطارية تدوم طويلاً.',
-        date: '22 أكتوبر، 09:20 ص',
-        status: 'approved'
-    },
-    {
-        id: 4,
-        product: { name: 'ميزان باركود إلكتروني حساس', sku: 'BAR-2023-X', image: 'https://placehold.co/100' },
-        customer: { name: 'كريم مصطفى', type: 'عميل', avatar: 'https://i.pravatar.cc/150?u=4' },
-        rating: 1,
-        text: '[تم حذف المحتوى لمخالفته الشروط - دعاية خارجية]',
-        date: '20 أكتوبر، 11:00 ص',
-        status: 'rejected'
-    },
-];
+import { useReviews } from '../../hooks/useReviews';
 
 export function ReviewsModeration() {
-    const [reviews, setReviews] = useState(REVIEWS);
+    const { reviews, isLoading, updateReviewStatus } = useReviews();
     const [filterStatus, setFilterStatus] = useState('all');
+    const [isAddReviewOpen, setIsAddReviewOpen] = useState(false);
 
-    const handleAction = (id: number, action: 'approve' | 'reject') => {
-        setReviews((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r))
-        );
+    const handleAction = (id: string | number, action: 'approve' | 'reject') => {
+        updateReviewStatus(id, action === 'approve' ? 'approved' : 'rejected');
     };
 
     const filteredReviews = filterStatus === 'all' ? reviews : reviews.filter((r) => r.status === filterStatus);
@@ -62,6 +23,14 @@ export function ReviewsModeration() {
             </div>
         );
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-8 h-full">
@@ -86,6 +55,13 @@ export function ReviewsModeration() {
                             type="text"
                         />
                     </div>
+                    <button
+                        onClick={() => setIsAddReviewOpen(true)}
+                        className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">add</span>
+                        إضافة تقييم
+                    </button>
                 </div>
             </div>
 
@@ -97,11 +73,11 @@ export function ReviewsModeration() {
                     </div>
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">إجمالي التقييمات</p>
-                        <h3 className="text-3xl font-bold text-white mt-1">1,248</h3>
+                        <h3 className="text-3xl font-bold text-white mt-1">{reviews.length}</h3>
                         <div className="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
-                            <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                            <span>+24</span>
-                            <span className="text-slate-500 font-medium mr-1">هذا الأسبوع</span>
+                            <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                            <span>{reviews.filter(r => r.status === 'approved').length}</span>
+                            <span className="text-slate-500 font-medium mr-1">معتمدة</span>
                         </div>
                     </div>
                 </div>
@@ -125,18 +101,23 @@ export function ReviewsModeration() {
                     <div className="flex flex-col gap-1 relative z-10">
                         <p className="text-slate-400 text-sm font-medium">متوسط التقييم</p>
                         <div className="flex items-center gap-3">
-                            <h3 className="text-3xl font-bold text-white mt-1">4.8</h3>
+                            <h3 className="text-3xl font-bold text-white mt-1">
+                                {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : '0.0'}
+                            </h3>
                             <div className="flex text-yellow-500 mt-1">
-                                <span className="material-symbols-outlined filled text-[20px]">star</span>
-                                <span className="material-symbols-outlined filled text-[20px]">star</span>
-                                <span className="material-symbols-outlined filled text-[20px]">star</span>
-                                <span className="material-symbols-outlined filled text-[20px]">star</span>
-                                <span className="material-symbols-outlined text-[20px]">star_half</span>
+                                {Array.from({ length: 5 }, (_, i) => {
+                                    const avg = reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0;
+                                    return (
+                                        <span key={i} className={`material-symbols-outlined text-[20px] ${i < Math.floor(avg) ? 'filled' : ''}`}>
+                                            {i < Math.floor(avg) ? 'star' : i < avg ? 'star_half' : 'star'}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="flex items-center gap-1 mt-2 text-emerald-400 text-xs font-bold">
-                            <span>ممتاز</span>
-                            <span className="text-slate-500 font-medium mr-1">بناءً على آخر 100 تقييم</span>
+                            <span>{reviews.filter(r => r.status === 'rejected').length}</span>
+                            <span className="text-slate-500 font-medium mr-1">مرفوضة</span>
                         </div>
                     </div>
                 </div>
@@ -275,6 +256,76 @@ export function ReviewsModeration() {
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            {isAddReviewOpen && (
+                <AddReviewModal onClose={() => setIsAddReviewOpen(false)} />
+            )}
+        </div>
+    );
+}
+
+
+function AddReviewModal({ onClose }: { onClose: () => void }) {
+    const [formData, setFormData] = useState({
+        productId: '',
+        rating: 5,
+        text: '',
+        customerName: 'Admin', // Temporary, ideally select user
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // In a real app we need to search products and users
+    // For now, we will use simple inputs
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            // Need to import api. Assuming it's available or use axios. 
+            // Better to use hooks but for speed:
+            await import('../../lib/api').then(({ default: api }) =>
+                api.post('/reviews', formData)
+            );
+            // import toast?
+            onClose();
+            window.location.reload(); // Simple refresh
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glass-panel rounded-xl max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white">إضافة تقييم يدوي</h3>
+                    <button onClick={onClose}><span className="material-symbols-outlined text-slate-400 hover:text-white">close</span></button>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">معرف المنتج</label>
+                        <input required value={formData.productId} onChange={e => setFormData({ ...formData, productId: e.target.value })} placeholder="Product ID" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">التقييم (1-5)</label>
+                        <select value={formData.rating} onChange={e => setFormData({ ...formData, rating: Number(e.target.value) })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10">
+                            {[5, 4, 3, 2, 1].map(r => <option key={r} value={r}>{r} نجوم</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">التعليق</label>
+                        <textarea required value={formData.text} onChange={e => setFormData({ ...formData, text: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 h-24" />
+                    </div>
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-bold text-sm">إلغاء</button>
+                        <button type="submit" disabled={isSubmitting} className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-sm flex items-center gap-2">
+                            {isSubmitting ? 'جاري الحفظ...' : 'حفظ التقييم'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Award, ShieldCheck, Truck, Users } from 'lucide-react';
 
 const AboutUsPage = () => {

@@ -1,0 +1,472 @@
+import { Request, Response } from 'express';
+import { db } from '../db/index.js';
+import { products, productImages, categories, brands, reviews, orderItems, settings } from '../db/schema.js';
+import { eq, like, and, gte, ilike, or, inArray, sql } from 'drizzle-orm';
+import { uploadToCloudinary } from '../lib/cloudinary.js';
+
+export class ProductsController {
+    // Helper to generate SEO friendly slugs (Arabic & English)
+    static slugify(text: string): string {
+        return text
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-')     // Replace spaces with -
+            .replace(/[^\w\u0621-\u064A-]+/g, '') // Remove all non-word chars (support Arabic)
+            .replace(/--+/g, '-')     // Replace multiple - with single -
+            .replace(/^-+/, '')       // Trim - from start of text
+            .replace(/-+$/, '');      // Trim - from end of text
+    }
+
+    // GET /api/products - List products with pagination and filtering
+    static async list(req: Request, res: Response) {
+        try {
+            const {
+                page = '1',
+                limit = '10',
+                categories: categoriesParam,
+                search,
+                minPrice,
+                status = 'active',
+            } = req.query;
+
+            const pageNum = parseInt(page as string);
+            const limitNum = parseInt(limit as string);
+            const offset = (pageNum - 1) * limitNum;
+
+            const conditions = [];
+
+            if (status) {
+                conditions.push(eq(products.status, status as string));
+            }
+
+            if (categoriesParam) {
+                const categorySlugs = (categoriesParam as string).split(',');
+                const cats = await db.query.categories.findMany({
+                    where: inArray(categories.slug, categorySlugs),
+                });
+                if (cats.length > 0) {
+                    conditions.push(inArray(products.categoryId, cats.map(c => c.id)));
+                }
+            }
+
+            if (search) {
+                const searchPattern = `%${search}%`;
+                conditions.push(or(
+                    ilike(products.name, searchPattern),
+                    ilike(products.description, searchPattern)
+                ));
+            }
+
+            if (minPrice) {
+                conditions.push(gte(products.price, minPrice as string));
+            }
+
+            const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+            const productsList = await db.query.products.findMany({
+                where,
+                limit: limitNum,
+                offset,
+                with: {
+                    category: true,
+                    brand: true,
+                    images: {
+                        orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                    },
+                },
+            });
+
+            res.json({
+                data: productsList,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                },
+            });
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            res.status(500).json({ error: 'Failed to fetch products' });
+        }
+    }
+
+    // GET /api/products/search-suggestions?q=...
+    static async searchSuggestions(req: Request, res: Response) {
+        try {
+            const { q = '' } = req.query;
+
+            if (!q || (q as string).length < 2) {
+                return res.json([]);
+            }
+
+            const searchPattern = `%${q}%`;
+
+            const results = await db.query.products.findMany({
+                where: and(
+                    eq(products.status, 'active'),
+                    ilike(products.name, searchPattern)
+                ),
+                limit: 10,
+                with: {
+                    images: {
+                        where: eq(productImages.isPrimary, true),
+                        limit: 1,
+                    },
+                },
+                columns: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    slug: true,
+                    sku: true,
+                }
+            });
+
+            // Map results to be lightweight
+            const suggestions = results.map(p => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                slug: p.slug,
+                image: p.images[0]?.url || null,
+            }));
+
+            res.json(suggestions);
+        } catch (error) {
+            console.error('Error fetching search suggestions:', error);
+            res.status(500).json({ error: 'Failed to fetch suggestions' });
+        }
+    }
+
+    // POST /api/products/ai-generate
+    static async aiGenerate(req: Request, res: Response) {
+        try {
+            const { name } = req.body;
+
+            // Mock AI Generation delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Generate mock content based on name
+            const generated = {
+                description: `هذا هو وصف تفصيلي للمنتج ${name}. يتميز هذا المنتج بجودة عالية وأداء ممتاز. مثالي للاستخدام التجاري والشخصي. يأتي مع ضمان لمدة عام.`,
+                metaTitle: `${name} | أفضل سعر في مصر | العامر ستور`,
+                metaDescription: `تسوق ${name} بأفضل سعر من العامر ستور. شحن سريع لجميع المحافظات. ضمان شامل وخدمة ما بعد البيع ممتازة.`,
+            };
+
+            res.json(generated);
+        } catch (error) {
+            console.error('Error in AI generation:', error);
+            res.status(500).json({ error: 'AI generation failed' });
+        }
+    }
+
+    // GET /api/products/:id - Get single product
+    static async getOne(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            // Check if input is a valid UUID
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+            const product = await db.query.products.findFirst({
+                where: isUuid
+                    ? or(eq(products.id, id), eq(products.slug, id)) // If UUID, check both
+                    : eq(products.slug, id),                         // If not UUID, assume it's a slug
+                with: {
+                    category: true,
+                    brand: true,
+                    images: {
+                        orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                    },
+                    reviews: {
+                        where: eq(reviews.isApproved, true),
+                        with: {
+                            user: {
+                                columns: {
+                                    id: true,
+                                    name: true,
+                                }
+                            }
+                        }
+                    },
+                    orderItems: {
+                        columns: {
+                            quantity: true
+                        }
+                    }
+                },
+            });
+
+            if (!product) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            // Calculate metrics
+            const salesCount = product.orderItems.reduce((acc, item) => acc + item.quantity, 0);
+            const reviewCount = product.reviews.length;
+            const averageRating = reviewCount > 0
+                ? product.reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviewCount
+                : 0;
+
+            // Get store settings for WhatsApp
+            const storeSettings = await db.query.settings.findFirst();
+
+            res.json({
+                ...product,
+                salesCount,
+                reviewCount,
+                averageRating: Number(averageRating.toFixed(1)),
+                supportPhone: storeSettings?.supportPhone || '201012345678'
+            });
+        } catch (error) {
+            console.error('Error fetching product:', error);
+            res.status(500).json({ error: 'Failed to fetch product' });
+        }
+    }
+
+    // POST /api/products - Create new product
+    static async create(req: Request, res: Response) {
+        try {
+            const {
+                name,
+                description,
+                price,
+                discountPrice,
+                cost,
+                sku,
+                stock,
+                barcode,
+                categoryId,
+                brandId,
+                status,
+                videoUrl,
+                videoTitle,
+                videoDescription,
+                metaTitle,
+                metaDescription,
+                isFeatured,
+                specifications,
+                tags,
+                images: imageUrls,
+            } = req.body;
+
+            // Insert the product
+            const [newProduct] = await db.insert(products).values({
+                name,
+                description,
+                price,
+                discountPrice,
+                cost,
+                sku,
+                stock: stock || 0,
+                barcode,
+                categoryId,
+                brandId,
+                slug: ProductsController.slugify(name), // Auto-generate slug
+                status: status || 'active',
+                videoUrl,
+                videoTitle,
+                videoDescription,
+                metaTitle,
+                metaDescription,
+                isFeatured: isFeatured || false,
+                specifications,
+                tags,
+            }).returning();
+
+            // Insert product images if provided
+            if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
+                const hasExplicitPrimary = imageUrls.some((u: any) => typeof u === 'object' && u.isPrimary);
+                const imagesData = await Promise.all(imageUrls.map(async (img: any, index: number) => {
+                    let url = typeof img === 'string' ? img : img.url;
+
+                    // If url is base64, upload to cloudinary
+                    if (url.startsWith('data:image/')) {
+                        try {
+                            url = await uploadToCloudinary(url);
+                        } catch (err) {
+                            console.error('Failed to upload image to cloudinary, falling back to base64:', err);
+                        }
+                    }
+
+                    return {
+                        productId: newProduct.id,
+                        url: url,
+                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        sortOrder: index,
+                    };
+                }));
+
+                await db.insert(productImages).values(imagesData);
+            }
+
+            // Fetch the created product with relations
+            const createdProduct = await db.query.products.findFirst({
+                where: eq(products.id, newProduct.id),
+                with: {
+                    category: true,
+                    brand: true,
+                    images: true,
+                },
+            });
+
+            res.status(201).json(createdProduct);
+        } catch (error) {
+            console.error('Error creating product:', error);
+            res.status(500).json({ error: 'Failed to create product' });
+        }
+    }
+
+    // PUT /api/products/:id - Update product
+    static async update(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const {
+                name,
+                description,
+                price,
+                discountPrice,
+                cost,
+                sku,
+                stock,
+                barcode,
+                categoryId,
+                brandId,
+                status,
+                videoUrl,
+                videoTitle,
+                videoDescription,
+                metaTitle,
+                metaDescription,
+                isFeatured,
+                specifications,
+                tags,
+                images,
+            } = req.body;
+
+            const updateData: any = {
+                name,
+                description,
+                price,
+                discountPrice: discountPrice || null,
+                cost: cost || null,
+                sku,
+                stock: stock !== undefined ? Number(stock) : undefined,
+                barcode,
+                categoryId: categoryId || null,
+                brandId: brandId || null,
+                status,
+                videoUrl,
+                videoTitle,
+                videoDescription,
+                metaTitle,
+                metaDescription,
+                isFeatured,
+                specifications,
+                tags,
+                updatedAt: new Date(),
+            };
+
+            // Generate new slug if name changed
+            if (name) {
+                updateData.slug = ProductsController.slugify(name);
+            }
+
+            // Remove undefined fields to avoid overwriting with null if they weren't in payload
+            Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+            await db.update(products)
+                .set(updateData)
+                .where(eq(products.id, id));
+            // Handle images update if provided
+            if (req.body.images && Array.isArray(req.body.images)) {
+                // Delete existing images
+                await db.delete(productImages).where(eq(productImages.productId, id));
+
+                // Insert new images
+                const hasExplicitPrimary = req.body.images.some((u: any) => typeof u === 'object' && u.isPrimary);
+                const imagesData = await Promise.all(req.body.images.map(async (img: any, index: number) => {
+                    let url = typeof img === 'string' ? img : img.url;
+
+                    // If url is base64, upload to cloudinary
+                    if (url.startsWith('data:image/')) {
+                        try {
+                            url = await uploadToCloudinary(url);
+                        } catch (err) {
+                            console.error('Failed to upload update image to cloudinary:', err);
+                        }
+                    }
+
+                    return {
+                        productId: id,
+                        url: url,
+                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        sortOrder: index,
+                    };
+                }));
+
+                // Insert new images only if we have some
+                if (imagesData.length > 0) {
+                    await db.insert(productImages).values(imagesData);
+                }
+            }
+
+            const updatedProduct = await db.query.products.findFirst({
+                where: eq(products.id, id),
+                with: {
+                    images: true,
+                    category: true,
+                    brand: true,
+                }
+            });
+
+            res.json(updatedProduct);
+        } catch (error) {
+            console.error('Error updating product:', error);
+            res.status(500).json({
+                message: 'Error updating product',
+                error: error instanceof Error ? error.message : 'Unknown error',
+                details: error
+            });
+        }
+    }
+
+    // PATCH /api/products/bulk - Bulk update products
+    static async bulkUpdate(req: Request, res: Response) {
+        try {
+            const { updates } = req.body; // Array of { id, price, stock }
+
+            if (!updates || !Array.isArray(updates)) {
+                return res.status(400).json({ error: 'Updates must be an array' });
+            }
+
+            await db.transaction(async (tx) => {
+                for (const update of updates) {
+                    const { id, ...data } = update;
+                    await tx.update(products)
+                        .set({ ...data, updatedAt: new Date() })
+                        .where(eq(products.id, id));
+                }
+            });
+
+            res.json({ message: 'Products updated successfully' });
+        } catch (error) {
+            console.error('Error in bulk update:', error);
+            res.status(500).json({ error: 'Failed to perform bulk update' });
+        }
+    }
+
+    // DELETE /api/products/:id - Delete product
+    static async delete(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            await db.delete(products).where(eq(products.id, id));
+
+            res.json({ message: 'Product deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            res.status(500).json({ error: 'Failed to delete product' });
+        }
+    }
+}

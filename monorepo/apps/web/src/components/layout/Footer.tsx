@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useSettings } from '../../context/SettingsContext';
 
 const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Footer() {
+    const { settings } = useSettings();
+
     return (
         <footer className="bg-[#0b0f17] border-t border-white/5 pt-16 pb-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -11,28 +14,56 @@ export function Footer() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-3 group">
                             <img
-                                src={LOGO_URL}
-                                alt="Al3amer Logo"
+                                src={settings.logoUrl || LOGO_URL}
+                                alt={`${settings.storeNameAr || 'Al3amer'} Logo`}
                                 className="h-10 object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                             />
-                            <h2 className="text-white text-xl font-bold group-hover:text-primary transition-colors">مركز العامر</h2>
+                            <h2 className="text-white text-xl font-bold group-hover:text-primary transition-colors">{settings.storeNameAr || 'مركز العامر'}</h2>
                         </div>
                         <p className="text-gray-400 text-sm leading-relaxed">
-                            وجهتك الأولى في مصر لأحدث أنظمة الكاشير والباركود. نساعدك في إدارة نشاطك التجاري بكفاءة عالية.
+                            {settings.metaDescription || 'وجهتك الأولى في مصر لأحدث أنظمة الكاشير والباركود. نساعدك في إدارة نشاطك التجاري بكفاءة عالية.'}
                         </p>
                         <div className="flex gap-4 mt-2">
-                            <a
-                                href="#"
-                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
-                            >
-                                <span className="font-bold">f</span>
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
-                            >
-                                <span className="font-bold">in</span>
-                            </a>
+                            {settings.facebook && (
+                                <a
+                                    href={settings.facebook}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
+                                >
+                                    <span className="font-bold">f</span>
+                                </a>
+                            )}
+                            {settings.instagram && (
+                                <a
+                                    href={settings.instagram}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
+                                >
+                                    <span className="font-bold">in</span>
+                                </a>
+                            )}
+                            {settings.whatsapp && (
+                                <a
+                                    href={settings.whatsapp}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
+                                >
+                                    <span className="material-symbols-outlined text-lg">chat</span>
+                                </a>
+                            )}
+                            {settings.twitterX && (
+                                <a
+                                    href={settings.twitterX}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-primary hover:text-white flex items-center justify-center transition-all text-gray-400"
+                                >
+                                    <span className="font-bold">𝕏</span>
+                                </a>
+                            )}
                         </div>
                     </div>
 
@@ -66,15 +97,15 @@ export function Footer() {
                         <ul className="flex flex-col gap-4 text-sm text-gray-400">
                             <li className="flex items-start gap-3">
                                 <span className="material-symbols-outlined text-primary mt-1">location_on</span>
-                                <span>٤٥ شارع التسعين، التجمع الخامس،<br />القاهرة الجديدة، مصر</span>
+                                <span>{settings.address || 'القاهرة، مدينة نصر، شارع عباس العقاد'}</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-primary">phone_in_talk</span>
-                                <span className="dir-ltr text-right">010-XXXX-XXXX</span>
+                                <span className="dir-ltr text-right">{settings.supportPhone || '010-XXXX-XXXX'}</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-primary">mail</span>
-                                <span>sales@al3amer.com.eg</span>
+                                <span>{settings.supportEmail || 'sales@al3amer.com.eg'}</span>
                             </li>
                         </ul>
                     </div>
