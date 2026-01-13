@@ -50,6 +50,17 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 API server running on http://localhost:${PORT}`);
-});
+// الكود القديم (امسحه أو خليه في تعليق)
+// app.listen(PORT, () => {
+//     console.log(`🚀 API server running on http://localhost:${PORT}`);
+// });
+
+// الكود الجديد (Compatible with Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 3001;
+    app.listen(port, () => {
+        console.log(`Server running on http://localhost:${port}`);
+    });
+}
+
+export default app;
