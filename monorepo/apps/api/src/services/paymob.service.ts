@@ -83,4 +83,22 @@ export class PaymobService {
 
         return paymentKey;
     }
+
+    static async payWithWallet(paymentKey: string, phoneNumber: string): Promise<string> {
+        try {
+            const response = await axios.post(`${this.API_URL}/acceptance/payments/pay`, {
+                source: {
+                    identifier: phoneNumber,
+                    subtype: "WALLET"
+                },
+                payment_token: paymentKey
+            });
+            // Wallets typically return a redirect_url or iframe_redirection_url
+            // checking both just in case, prioritize redirect_url
+            return response.data.redirect_url || response.data.iframe_redirection_url;
+        } catch (error: any) {
+            console.error('Paymob Wallet Pay Error:', error.response?.data || error.message);
+            throw new Error('Failed to initiate wallet payment');
+        }
+    }
 }

@@ -262,15 +262,21 @@ export function CheckoutPage() {
 
             // Handle Redirection/Modal for Online Payment
             if (responseData.redirect_url) {
-                // Do NOT redirect window.location.href
-                // Show Modal instead
-                setIframeUrl(responseData.redirect_url);
-                setShowPaymentModal(true);
-                // We clear cart AFTER successful payment usually, but Paymob flow might be different.
-                // If we clear cart here, and user cancels, they lose cart.
-                // Ideally clear cart only on success. But this is "placing order" step.
-                // Assuming "placing order" creates pending order.
-                clearCart();
+                // Check if it's a Wallet payment (usually requires full redirect) or Card (Iframe)
+                // For now, based on user request:
+                // Card -> Modal Iframe
+                // Wallet -> Redirect
+
+                if (formData.paymentMethod === 'paymob_wallet') {
+                    // Wallet: Redirect full page
+                    window.location.href = responseData.redirect_url;
+                } else {
+                    // Card: Show Modal
+                    setIframeUrl(responseData.redirect_url);
+                    setShowPaymentModal(true);
+                }
+
+                // DO NOT clear cart here. Wait for success page or user action.
                 return;
             }
 
@@ -498,25 +504,47 @@ export function CheckoutPage() {
                                     )}
 
                                     {settings.paymobEnabled && (
-                                        <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
-                                            <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
-                                                <span className="material-symbols-outlined text-2xl">credit_card</span>
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-white font-bold text-lg">دفع إلكتروني (Paymob)</span>
-                                                    <input
-                                                        type="radio"
-                                                        name="payment"
-                                                        value="paymob"
-                                                        checked={formData.paymentMethod === 'paymob'}
-                                                        onChange={() => setFormData({ ...formData, paymentMethod: 'paymob' })}
-                                                        className="accent-primary w-5 h-5"
-                                                    />
+                                        <>
+                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                                <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
+                                                    <span className="material-symbols-outlined text-2xl">credit_card</span>
                                                 </div>
-                                                <p className="text-slate-400 text-sm mt-1">فيزا / ماستركارد / محافظ إلكترونية</p>
-                                            </div>
-                                        </label>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-white font-bold text-lg">بطاقة بنكية (Credit/Debit)</span>
+                                                        <input
+                                                            type="radio"
+                                                            name="payment"
+                                                            value="paymob"
+                                                            checked={formData.paymentMethod === 'paymob'}
+                                                            onChange={() => setFormData({ ...formData, paymentMethod: 'paymob' })}
+                                                            className="accent-primary w-5 h-5"
+                                                        />
+                                                    </div>
+                                                    <p className="text-slate-400 text-sm mt-1">Paymob (Visa / Mastercard)</p>
+                                                </div>
+                                            </label>
+
+                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob_wallet' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                                <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
+                                                    <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-white font-bold text-lg">محفظة إلكترونية</span>
+                                                        <input
+                                                            type="radio"
+                                                            name="payment"
+                                                            value="paymob_wallet"
+                                                            checked={formData.paymentMethod === 'paymob_wallet'}
+                                                            onChange={() => setFormData({ ...formData, paymentMethod: 'paymob_wallet' })}
+                                                            className="accent-primary w-5 h-5"
+                                                        />
+                                                    </div>
+                                                    <p className="text-slate-400 text-sm mt-1">Vodafone Cash / Etisalat / Orange</p>
+                                                </div>
+                                            </label>
+                                        </>
                                     )}
 
                                     {!settings.codEnabled && !settings.paymobEnabled && (
@@ -547,15 +575,15 @@ export function CheckoutPage() {
                                             </p>
                                             <p className="text-slate-300 text-sm mt-1">{formData.phone}</p>
                                         </div>
-                                        <div>
-                                            <h3 className="text-slate-400 text-sm mb-2">طريقة الدفع</h3>
-                                            <p className="text-white font-medium flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-emerald-400 text-lg">
-                                                    {formData.paymentMethod === 'cod' ? 'payments' : 'credit_card'}
-                                                </span>
-                                                {formData.paymentMethod === 'cod' ? 'الدفع عند الاستلام' : 'دفع إلكتروني (Paymob)'}
-                                            </p>
-                                        </div>
+                                        <h3 className="text-slate-400 text-sm mb-2">طريقة الدفع</h3>
+                                        <p className="text-white font-medium flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-emerald-400 text-lg">
+                                                {formData.paymentMethod === 'cod' ? 'payments' :
+                                                    formData.paymentMethod === 'paymob_wallet' ? 'account_balance_wallet' : 'credit_card'}
+                                            </span>
+                                            {formData.paymentMethod === 'cod' ? 'الدفع عند الاستلام' :
+                                                formData.paymentMethod === 'paymob_wallet' ? 'محفظة إلكترونية' : 'بطاقة بنكية (Paymob)'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -704,7 +732,7 @@ export function CheckoutPage() {
 
             {/* Paymob Iframe Modal */}
             {showPaymentModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-[#181a20] w-full max-w-4xl h-[650px] rounded-2xl border border-white/10 flex flex-col overflow-hidden relative shadow-2xl">
                         <div className="flex justify-between items-center p-4 border-b border-white/10 bg-[#1e232d]">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -727,6 +755,15 @@ export function CheckoutPage() {
                             ></iframe>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Full Screen Loading Overlay */}
+            {isSubmitting && !showPaymentModal && (
+                <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+                    <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <h3 className="text-xl font-bold text-white mb-2">جاري تنفيذ الطلب...</h3>
+                    <p className="text-slate-400 text-sm">برجاء الانتظار، لا تقم بإغلاق الصفحة</p>
                 </div>
             )}
         </div>

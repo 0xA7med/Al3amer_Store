@@ -82,17 +82,27 @@ export class OrdersController {
 
             await db.insert(orderItems).values(orderItemsData);
 
-            // Handle Paymob Payment
-            if (paymentMethod === 'paymob' || paymentMethod === 'online') {
+            // Handle Paymob Payment (Card or Wallet)
+            if (paymentMethod === 'paymob' || paymentMethod === 'paymob_wallet' || paymentMethod === 'online') {
                 const appSettings = await db.query.settings.findFirst();
-                if (appSettings?.paymobEnabled && appSettings.paymobApiKey && appSettings.paymobIntegrationCard) {
-                    if (!appSettings.paymobIframeId) {
-                        return res.status(400).json({ error: 'Paymob Iframe ID is not configured in settings' });
+                if (appSettings?.paymobEnabled && appSettings.paymobApiKey) {
+
+                    const isWallet = paymentMethod === 'paymob_wallet';
+                    const integrationId = isWallet ? appSettings.paymobIntegrationWallet : appSettings.paymobIntegrationCard;
+
+                    if (!integrationId) {
+                        return res.status(400).json({ error: isWallet ? 'Paymob Wallet Integration ID is not configured' : 'Paymob Card Integration ID is not configured' });
                     }
+
+                    // For Card Iframe, we need the Iframe ID
+                    if (!isWallet && !appSettings.paymobIframeId) {
+                        return res.status(400).json({ error: 'Paymob Iframe ID is not configured' });
+                    }
+
                     try {
                         const paymentToken = await PaymobService.generatePaymentKey(
                             appSettings.paymobApiKey,
-                            appSettings.paymobIntegrationCard, // Defaulting to card for now
+                            integrationId,
                             total,
                             'EGP',
                             {
@@ -113,7 +123,17 @@ export class OrdersController {
                             }
                         );
 
-                        const redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
+                        let redirectUrl = '';
+
+                        if (isWallet) {
+                            // Wallet: Steps 1-3 done (Auth, Order, Key). 
+                            // Step 4: Pay Request -> returns redirect URL
+                            redirectUrl = await PaymobService.payWithWallet(paymentToken, safePhone);
+                        } else {
+                            // Card: Steps 1-3 done.
+                            // Use Iframe URL
+                            redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
+                        }
 
                         return res.status(201).json({
                             id: order.id,
@@ -121,9 +141,9 @@ export class OrdersController {
                             redirect_url: redirectUrl,
                             status: 'pending_payment'
                         });
-                    } catch (paymobError) {
-                        console.error('Paymob Error:', paymobError);
-                        // Fallback or error? Let's error since they specifically chose online payment
+                    } catch (paymobError: any) {
+                        console.error('Paymob Error:', paymobError?.message || paymobError);
+                        // Fallback or error
                         return res.status(500).json({ error: 'Failed to initialize online payment' });
                     }
                 }
