@@ -701,7 +701,35 @@ export function CheckoutPage() {
                     </div>
                 </div>
             </div>
-        </div >
+
+            {/* Paymob Iframe Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#181a20] w-full max-w-4xl h-[650px] rounded-2xl border border-white/10 flex flex-col overflow-hidden relative shadow-2xl">
+                        <div className="flex justify-between items-center p-4 border-b border-white/10 bg-[#1e232d]">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">credit_card</span>
+                                الدفع الآمن
+                            </h3>
+                            <button
+                                onClick={() => setShowPaymentModal(false)}
+                                className="text-slate-400 hover:text-white transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="flex-1 w-full h-full bg-white relative">
+                            <iframe
+                                src={iframeUrl}
+                                className="w-full h-full border-0"
+                                title="Paymob Checkout"
+                                allow="payment"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 
