@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { orders, orderItems, products, productImages } from '../db/schema.js';
+import { orders, orderItems, products, productImages, settings } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { PaymobService } from '../services/paymob.service.js';
 
 export class OrdersController {
     // POST /api/orders - Create new order
@@ -75,6 +76,49 @@ export class OrdersController {
             }));
 
             await db.insert(orderItems).values(orderItemsData);
+
+            // Handle Paymob Payment
+            if (paymentMethod === 'paymob' || paymentMethod === 'online') {
+                const appSettings = await db.query.settings.findFirst();
+                if (appSettings?.paymobEnabled && appSettings.paymobApiKey && appSettings.paymobIntegrationCard) {
+                    try {
+                        const paymentToken = await PaymobService.generatePaymentKey(
+                            appSettings.paymobApiKey,
+                            appSettings.paymobIntegrationCard, // Defaulting to card for now
+                            total,
+                            'EGP',
+                            {
+                                first_name: fullName.split(' ')[0] || 'Guest',
+                                last_name: fullName.split(' ')[1] || 'Guest',
+                                email: email || 'guest@example.com',
+                                phone_number: phone,
+                                apartment: 'NA',
+                                floor: 'NA',
+                                street: address,
+                                building: 'NA',
+                                shipping_method: 'PKG',
+                                postal_code: 'NA',
+                                city: city,
+                                country: 'EGY',
+                                state: governorate,
+                            }
+                        );
+
+                        const redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/885443?payment_token=${paymentToken}`;
+
+                        return res.status(201).json({
+                            id: order.id,
+                            orderNumber: order.orderNumber,
+                            redirect_url: redirectUrl,
+                            status: 'pending_payment'
+                        });
+                    } catch (paymobError) {
+                        console.error('Paymob Error:', paymobError);
+                        // Fallback or error? Let's error since they specifically chose online payment
+                        return res.status(500).json({ error: 'Failed to initialize online payment' });
+                    }
+                }
+            }
 
             // Fetch complete order with items
             const completeOrder = await db.query.orders.findFirst({

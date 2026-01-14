@@ -201,11 +201,19 @@ export function CheckoutPage() {
             };
 
             // Call API
-            const { data: completeOrder } = await api.post('/orders', orderData);
+            const { data: responseData } = await api.post('/orders', orderData);
 
-            // Clear cart and redirect to success
+            // Clear cart
             clearCart();
-            navigate(`/order-success/${(completeOrder as any).id || (completeOrder as any)._id || 'success'}`);
+
+            // Handle Redirection for Online Payment
+            if (responseData.redirect_url) {
+                window.location.href = responseData.redirect_url;
+                return;
+            }
+
+            // Redirect to success for COD
+            navigate(`/order-success/${(responseData as any).id || 'success'}`);
         } catch (err) {
             console.error('Checkout error:', err);
             setError('حدث خطأ أثناء معالجة الطلب. الرجاء المحاولة مرة أخرى.');
@@ -427,7 +435,7 @@ export function CheckoutPage() {
                                     )}
 
                                     {settings.paymobEnabled && (
-                                        <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'online' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                        <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
                                             <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
                                                 <span className="material-symbols-outlined text-2xl">credit_card</span>
                                             </div>
@@ -437,9 +445,9 @@ export function CheckoutPage() {
                                                     <input
                                                         type="radio"
                                                         name="payment"
-                                                        value="online"
-                                                        checked={formData.paymentMethod === 'online'}
-                                                        onChange={() => setFormData({ ...formData, paymentMethod: 'online' })}
+                                                        value="paymob"
+                                                        checked={formData.paymentMethod === 'paymob'}
+                                                        onChange={() => setFormData({ ...formData, paymentMethod: 'paymob' })}
                                                         className="accent-primary w-5 h-5"
                                                     />
                                                 </div>
