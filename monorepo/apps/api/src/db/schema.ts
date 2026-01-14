@@ -242,6 +242,7 @@ export const settings = pgTable('settings', {
     paymobApiKey: text('paymob_api_key'),
     paymobIntegrationCard: text('paymob_integration_card'),
     paymobIntegrationWallet: text('paymob_integration_wallet'),
+    paymobIframeId: text('paymob_iframe_id'),
     codEnabled: boolean('cod_enabled').default(true),
     codExtraFee: numeric('cod_extra_fee', { precision: 10, scale: 2 }).default('0'),
     // Shipping

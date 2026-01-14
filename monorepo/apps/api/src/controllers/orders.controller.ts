@@ -81,6 +81,9 @@ export class OrdersController {
             if (paymentMethod === 'paymob' || paymentMethod === 'online') {
                 const appSettings = await db.query.settings.findFirst();
                 if (appSettings?.paymobEnabled && appSettings.paymobApiKey && appSettings.paymobIntegrationCard) {
+                    if (!appSettings.paymobIframeId) {
+                        return res.status(400).json({ error: 'Paymob Iframe ID is not configured in settings' });
+                    }
                     try {
                         const paymentToken = await PaymobService.generatePaymentKey(
                             appSettings.paymobApiKey,
@@ -104,7 +107,7 @@ export class OrdersController {
                             }
                         );
 
-                        const redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/885443?payment_token=${paymentToken}`;
+                        const redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
 
                         return res.status(201).json({
                             id: order.id,

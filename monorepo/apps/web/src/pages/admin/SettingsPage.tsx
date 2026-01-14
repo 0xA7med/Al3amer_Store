@@ -44,6 +44,7 @@ export default function SettingsPage() {
         paymobApiKey: '',
         paymobIntegrationCard: '',
         paymobIntegrationWallet: '',
+        paymobIframeId: '',
         // City Rates
         cityShippingRates: [] as { city: string; rate: number }[],
     });
@@ -569,6 +570,18 @@ export default function SettingsPage() {
                                                     className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                                                 />
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-white text-sm font-medium">Paymob Iframe ID</label>
+                                            <input
+                                                type="text"
+                                                value={formData.paymobIframeId || ''}
+                                                onChange={(e) => setFormData({ ...formData, paymobIframeId: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                                placeholder="e.g. 123456"
+                                            />
+                                            <p className="text-[10px] text-gray-500 italic">هذا المعرف مطلوب لعرض صفحة الدفع (Iframe) بشكل صحيح.</p>
                                         </div>
                                     </div>
                                 )}
