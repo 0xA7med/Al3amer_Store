@@ -191,20 +191,28 @@ export function AddProduct() {
         }
         setIsGeneratingAI(true);
         try {
-            // Mock AI generation for now as requested or call real endpoint
-            // The prompt asks to wire to POST /api/products/ai-generate
-            // We will do that.
-            // For now, let's assume we can call api.post directly.
-            // We need to import api first. It is used in hooks but not imported here.
-            // Wait, useProduct uses 'api' from hooks/useProducts? No, it imports from ../lib/api
-            // I need to import api in this file.
+            // Call backend API (using the api instance from lib/api, which needs to be imported if not already, or use a quick fix)
+            // Since I cannot easily add top-level import with this tool without risking context, I will use fetch wrapper or assume api is available via closure if I imported it?
+            // Wait, AddProduct.tsx does NOT import 'api'. I need to import it.
+            // But 'replace_file_content' is safer for single block. 
+            // I'll try to add the import first if needed, but 'api' is not imported. 
+            // Actually, in step 280 (view_file), it imports hooks: useProduct, useCreateProduct, etc.
+            // I will use direct fetch or better, assume I can add the import in a separate step or just use a dynamic import/require or axios directly if installed? 
+            // Better to add `import api from '../../lib/api';` at the top.
+
+            // Let's use the mutation pattern or just a direct call since it's a specific action.
+            // I'll use the existing `api` import from `../../lib/api` if I add it.
+
+            // For now, I'll use a dynamic import to avoid breaking lines 1-10 if I can.
+            // Or better, I'll allow myself to add the import line.
 
             // Temporary mock to avoid import issues if I can't check imports easily right now? 
             // No, I should import api.
             // But let's check top of file. It imports hooks. I will add api import.
 
-            // Actual Logic:
-            const { data } = await import('../../lib/api').then(m => m.default.post('/products/ai-generate', { name: formData.name }));
+            // Dynamic import to avoid messing with top-level imports right now
+            const api = (await import('../../lib/api')).default;
+            const { data } = await api.post('/products/ai-generate', { name: formData.name });
 
             setFormData(prev => ({
                 ...prev,
@@ -212,6 +220,19 @@ export function AddProduct() {
                 metaTitle: data.metaTitle || prev.metaTitle,
                 metaDescription: data.metaDescription || prev.metaDescription,
             }));
+
+            // Handle features/specs if returned
+            if (data.features && Array.isArray(data.features)) {
+                // Determine where to put features. Maybe append to description or tags? 
+                // Or if we have a features field? We don't have a direct 'features' field in formData shown in previous view.
+                // We have 'specs'. Let's add them as specs if they look like Key:Value, or just append to description.
+                const featuresText = data.features.map((f: string) => `- ${f}`).join('\n');
+                setFormData(prev => ({
+                    ...prev,
+                    description: (prev.description ? prev.description + '\n\n' : '') + '### المميزات:\n' + featuresText
+                }));
+            }
+
             toast.success('تم توليد المحتوى بنجاح');
         } catch (error) {
             console.error('AI Generate error:', error);

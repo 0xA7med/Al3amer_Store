@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { orders, products, users } from '../db/schema.js';
-import { eq, sql, count, sum, lt } from 'drizzle-orm';
+import { eq, sql, count, sum, lt, or } from 'drizzle-orm';
 
 export class AdminController {
     // GET /api/admin/stats - Dashboard statistics
@@ -23,18 +23,26 @@ export class AdminController {
                 .where(eq(users.role, 'customer'));
             const totalCustomers = customersResult?.count || 0;
 
-            // Get orders stats
-            const ordersList = await db.query.orders.findMany({
-                orderBy: (orders, { desc }) => [desc(orders.createdAt)],
-            });
+            // Get orders stats via SQL Aggregation
+            const [ordersStats] = await db.select({
+                totalOrders: count(),
+                totalRevenue: sum(sql`CAST(${orders.total} AS DECIMAL)`), // Ensure numeric casting
+            }).from(orders);
 
-            const totalOrders = ordersList.length;
-            const pendingOrders = ordersList.filter(o => o.status === 'pending' || o.status === 'processing').length;
-            const completedOrders = ordersList.filter(o => o.status === 'delivered').length;
-            const cancelledOrders = ordersList.filter(o => o.status === 'cancelled').length;
-            const totalRevenue = ordersList
-                .filter(o => o.status === 'delivered')
-                .reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
+            const [pendingStats] = await db.select({ count: count() }).from(orders)
+                .where(or(eq(orders.status, 'pending'), eq(orders.status, 'processing')));
+
+            const [completedStats] = await db.select({ count: count() }).from(orders)
+                .where(eq(orders.status, 'delivered'));
+
+            const [cancelledStats] = await db.select({ count: count() }).from(orders)
+                .where(eq(orders.status, 'cancelled'));
+
+            const totalOrders = ordersStats?.totalOrders || 0;
+            const totalRevenue = parseFloat(ordersStats?.totalRevenue as string) || 0;
+            const pendingOrders = pendingStats?.count || 0;
+            const completedOrders = completedStats?.count || 0;
+            const cancelledOrders = cancelledStats?.count || 0;
 
             // Get recent orders (last 5)
             const recentOrders = await db.query.orders.findMany({

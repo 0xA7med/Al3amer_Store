@@ -119,6 +119,12 @@ export function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
+    // Coupon State
+    const [couponCode, setCouponCode] = useState('');
+    const [couponError, setCouponError] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null);
+    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
     const flatShippingRate = parseFloat(settings.shippingFlatRate || '100');
@@ -149,7 +155,52 @@ export function CheckoutPage() {
         ? parseFloat(settings.codExtraFee || '0')
         : 0;
 
-    const finalTotal = totalPrice + shippingCost + vatAmount + codExtraFee;
+    // Calculate Discount
+    let discountAmount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage') {
+            discountAmount = (totalPrice * (Number(appliedCoupon.discount) / 100));
+        } else {
+            discountAmount = Number(appliedCoupon.discount);
+        }
+        // Ensure discount doesn't exceed total (minus shipping/tax? usually discount applies to subtotal)
+        discountAmount = Math.min(discountAmount, totalPrice);
+    }
+
+    const finalTotal = Math.max(0, totalPrice + shippingCost + vatAmount + codExtraFee - discountAmount);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setIsApplyingCoupon(true);
+        setCouponError('');
+        try {
+            // Dynamic import api if needed or use existing
+            // api is imported at top level
+            const { data } = await api.post('/coupons/validate', {
+                code: couponCode,
+                orderTotal: totalPrice
+            });
+
+            if (data.valid && data.coupon) {
+                setAppliedCoupon(data.coupon);
+                setCouponCode('');
+                // toast.success('تم تطبيق الكوبون بنجاح');
+            } else {
+                setAppliedCoupon(null);
+                setCouponError('الكوبون غير صالح');
+            }
+        } catch (err: any) {
+            setAppliedCoupon(null);
+            setCouponError(err.response?.data?.error || 'حدث خطأ أثناء تفعيل الكوبون');
+        } finally {
+            setIsApplyingCoupon(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode('');
+    };
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
@@ -197,6 +248,8 @@ export function CheckoutPage() {
                 shippingCost: shippingCost, // Send shipping cost so backend knows
                 taxAmount: vatAmount, // Send VAT amount for record keeping
                 extraFee: codExtraFee, // Send COD extra fee if applicable
+                discountAmount: discountAmount, // Send discount amount
+                couponCode: appliedCoupon?.code, // Send coupon code
                 userId: user?.id, // Link to user if logged in
             };
 
@@ -587,6 +640,49 @@ export function CheckoutPage() {
                                     <span>{codExtraFee.toLocaleString()} ج.م</span>
                                 </div>
                             )}
+
+                            {/* Coupon Input */}
+                            <div className="pt-2 border-t border-white/5">
+                                {!appliedCoupon ? (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={couponCode}
+                                            onChange={(e) => setCouponCode(e.target.value)}
+                                            placeholder="كود الخصم"
+                                            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                        />
+                                        <button
+                                            onClick={handleApplyCoupon}
+                                            disabled={isApplyingCoupon || !couponCode}
+                                            className="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                                        >
+                                            {isApplyingCoupon ? '...' : 'تطبيق'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-emerald-500 text-sm">local_offer</span>
+                                            <div>
+                                                <p className="text-emerald-500 text-sm font-bold">{appliedCoupon.code}</p>
+                                                <p className="text-emerald-500/70 text-[10px]">تم تطبيق الخصم</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={handleRemoveCoupon} className="text-red-400 hover:text-red-300">
+                                            <span className="material-symbols-outlined text-lg">close</span>
+                                        </button>
+                                    </div>
+                                )}
+                                {couponError && <p className="text-red-400 text-xs mt-1">{couponError}</p>}
+                            </div>
+
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between text-emerald-400">
+                                    <span>خصم الكوبون</span>
+                                    <span>- {discountAmount.toLocaleString()} ج.م</span>
+                                </div>
+                            )}
                             <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
                                 <span>الإجمالي</span>
                                 <span className="text-primary">{finalTotal.toLocaleString()} ج.م</span>
@@ -595,7 +691,7 @@ export function CheckoutPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

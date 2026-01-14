@@ -33,7 +33,7 @@ export default function AdminAISettingsPage() {
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings) {
-            setApiKey(settings.aiApiKey || '');
+            setApiKey(settings.googleApiKey || '');
             setIsEnabled(settings.aiEnabled ?? true);
             setDescriptionLength(settings.aiDescriptionLength || 'medium');
             setLanguage(settings.aiLanguage || 'ar');
@@ -61,7 +61,7 @@ export default function AdminAISettingsPage() {
 
     const handleSave = () => {
         updateSettingsMutation.mutate({
-            aiApiKey: apiKey,
+            googleApiKey: apiKey,
             aiEnabled: isEnabled,
             aiDescriptionLength: descriptionLength,
             aiLanguage: language,

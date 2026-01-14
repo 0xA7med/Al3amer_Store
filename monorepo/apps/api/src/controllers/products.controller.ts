@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { products, productImages, categories, brands, reviews, orderItems, settings } from '../db/schema.js';
 import { eq, like, and, gte, ilike, or, inArray, sql } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
+import { AIService } from '../services/ai.service.js';
 
 export class ProductsController {
     // Helper to generate SEO friendly slugs (Arabic & English)
@@ -16,6 +17,37 @@ export class ProductsController {
             .replace(/--+/g, '-')     // Replace multiple - with single -
             .replace(/^-+/, '')       // Trim - from start of text
             .replace(/-+$/, '');      // Trim - from end of text
+    }
+
+    // Generate AI Content
+    static async aiGenerate(req: Request, res: Response) {
+        try {
+            const { name } = req.body;
+            if (!name) {
+                return res.status(400).json({ error: 'Product name is required' });
+            }
+
+            // Get Settings
+            const appSettings = await db.query.settings.findFirst();
+            const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+
+            if (!apiKey) {
+                return res.status(400).json({ error: 'Google API Key is not configured' });
+            }
+
+            const aiService = new AIService(apiKey);
+            const result = await aiService.generateProductDetails(
+                name,
+                appSettings?.aiLanguage || 'ar',
+                appSettings?.aiTone || 'Marketing',
+                appSettings?.aiDescriptionLength || 'medium'
+            );
+
+            return res.json(result);
+        } catch (error) {
+            console.error('AI Generate Error:', error);
+            return res.status(500).json({ error: 'Failed to generate content' });
+        }
     }
 
     // GET /api/products - List products with pagination and filtering
@@ -138,27 +170,6 @@ export class ProductsController {
         }
     }
 
-    // POST /api/products/ai-generate
-    static async aiGenerate(req: Request, res: Response) {
-        try {
-            const { name } = req.body;
-
-            // Mock AI Generation delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Generate mock content based on name
-            const generated = {
-                description: `هذا هو وصف تفصيلي للمنتج ${name}. يتميز هذا المنتج بجودة عالية وأداء ممتاز. مثالي للاستخدام التجاري والشخصي. يأتي مع ضمان لمدة عام.`,
-                metaTitle: `${name} | أفضل سعر في مصر | العامر ستور`,
-                metaDescription: `تسوق ${name} بأفضل سعر من العامر ستور. شحن سريع لجميع المحافظات. ضمان شامل وخدمة ما بعد البيع ممتازة.`,
-            };
-
-            res.json(generated);
-        } catch (error) {
-            console.error('Error in AI generation:', error);
-            res.status(500).json({ error: 'AI generation failed' });
-        }
-    }
 
     // GET /api/products/:id - Get single product
     static async getOne(req: Request, res: Response) {

@@ -267,6 +267,7 @@ export const settings = pgTable('settings', {
 
     // AI Settings
     aiEnabled: boolean('ai_enabled').default(true),
+    googleApiKey: text('google_api_key'),
     aiApiKey: text('ai_api_key'),
     aiTone: text('ai_tone').default('Marketing'),
     aiLanguage: text('ai_language').default('ar'),
