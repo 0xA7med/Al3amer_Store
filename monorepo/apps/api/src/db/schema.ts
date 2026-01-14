@@ -112,7 +112,7 @@ export const products = pgTable('products', {
     barcode: text('barcode'),
     categoryId: uuid('category_id').references(() => categories.id),
     brandId: uuid('brand_id').references(() => brands.id),
-    slug: text('slug').unique(),
+    slug: text('slug').notNull().unique(),
     status: text('status').default('active'), // active | draft | archived
     videoUrl: text('video_url'),
     videoTitle: text('video_title'),

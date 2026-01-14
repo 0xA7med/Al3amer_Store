@@ -34,6 +34,7 @@ export function AddProduct() {
         videoDescription: '',
         metaTitle: '',
         metaDescription: '',
+        slug: '',
     });
 
     const [specs, setSpecs] = useState<{ key: string; value: string }[]>([
@@ -68,6 +69,7 @@ export function AddProduct() {
                 videoDescription: productData.videoDescription || '',
                 metaTitle: productData.metaTitle || '',
                 metaDescription: productData.metaDescription || '',
+                slug: productData.slug || '',
             });
 
             // Recursive helper to flatten nested {key, value} objects and handle object-to-array conversion
@@ -132,7 +134,24 @@ export function AddProduct() {
     }, [formData.category, categoriesList, mode]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => {
+            const newData = { ...prev, [name]: value };
+
+            // Auto-generate slug from name if in add mode and slug hasn't been manually edited
+            if (name === 'name' && !isEditMode) {
+                newData.slug = value
+                    .toLowerCase()
+                    .trim()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w\u0621-\u064A-]+/g, '')
+                    .replace(/--+/g, '-')
+                    .replace(/^-+/, '')
+                    .replace(/-+$/, '');
+            }
+
+            return newData;
+        });
     };
 
     const addSpec = () => {
@@ -238,6 +257,7 @@ export function AddProduct() {
             metaTitle: formData.metaTitle || null,
             metaDescription: formData.metaDescription || null,
             sku: formData.sku || null,
+            slug: formData.slug || null,
         };
 
         // Exclude internal formData keys that don't exist in DB
@@ -381,6 +401,23 @@ export function AddProduct() {
                                             </span>
                                         </button>
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">رابط المنتج (Slug / SEO URL)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            name="slug"
+                                            value={formData.slug}
+                                            onChange={handleInputChange}
+                                            className="w-full h-11 px-4 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-slate-600 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all font-mono"
+                                            placeholder="مثال: epson-prt-100"
+                                        />
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 bg-black/20 px-2 py-0.5 rounded border border-white/5">
+                                            {typeof window !== 'undefined' ? window.location.origin : ''}/product/{formData.slug || '...'}
+                                        </div>
+                                    </div>
+                                    <p className="mt-1.5 text-[10px] text-slate-500 mr-1">استخدم الحروف الإنجليزية والأرقام والشرطات (-) فقط. سيتم استخدامه في رابط الصفحة لتحسين محركات البحث.</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-300 mb-2 flex justify-between">

@@ -248,6 +248,7 @@ export class ProductsController {
                 specifications,
                 tags,
                 images: imageUrls,
+                slug: manualSlug,
             } = req.body;
 
             // Insert the product
@@ -262,7 +263,7 @@ export class ProductsController {
                 barcode,
                 categoryId,
                 brandId,
-                slug: ProductsController.slugify(name), // Auto-generate slug
+                slug: manualSlug || ProductsController.slugify(name), // Manual slug or auto-generate
                 status: status || 'active',
                 videoUrl,
                 videoTitle,
@@ -342,6 +343,7 @@ export class ProductsController {
                 specifications,
                 tags,
                 images,
+                slug: manualSlug,
             } = req.body;
 
             const updateData: any = {
@@ -367,8 +369,10 @@ export class ProductsController {
                 updatedAt: new Date(),
             };
 
-            // Generate new slug if name changed
-            if (name) {
+            // Update slug if provided or name changed
+            if (manualSlug) {
+                updateData.slug = manualSlug;
+            } else if (name) {
                 updateData.slug = ProductsController.slugify(name);
             }
 
