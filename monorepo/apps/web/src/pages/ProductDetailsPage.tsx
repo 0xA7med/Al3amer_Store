@@ -13,9 +13,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export const ProductDetailsPage = () => {
-    const { id } = useParams<{ id: string }>();
+    const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
-    const { data: product, isLoading, error } = useProduct(id || '');
+    const { data: product, isLoading, error } = useProduct(slug || '');
 
     const [userSelectedImage, setUserSelectedImage] = useState<number | null>(null);
     const [isZoomOpen, setIsZoomOpen] = useState(false);

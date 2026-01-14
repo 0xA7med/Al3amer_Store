@@ -165,13 +165,12 @@ export class ProductsController {
         try {
             const { id } = req.params;
 
-            // Check if input is a valid UUID
+            // Smart Lookup: If UUID format, search by ID. Otherwise, search by SLUG.
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            const condition = isUuid ? eq(products.id, id) : eq(products.slug, id);
 
             const product = await db.query.products.findFirst({
-                where: isUuid
-                    ? or(eq(products.id, id), eq(products.slug, id)) // If UUID, check both
-                    : eq(products.slug, id),                         // If not UUID, assume it's a slug
+                where: condition,
                 with: {
                     category: true,
                     brand: true,
