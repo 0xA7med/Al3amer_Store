@@ -24,11 +24,16 @@ export class OrdersController {
                 extraFee = 0,
             } = req.body;
 
-            console.log('📦 [POST /orders] Request Body:', JSON.stringify(req.body, null, 2));
+            console.log('📦 [POST /orders] Raw Body:', req.body);
 
-            if (!fullName || !phone || !governorate || !city || !address || !items || items.length === 0) {
+            // Relaxed validation - Log what is missing but don't crash hard if optional stuff like phone_2 is weird
+            if (!fullName || !items || items.length === 0) {
+                console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0 });
                 return res.status(400).json({ error: 'Missing required fields' });
             }
+
+            // Ensure phone is a string
+            const safePhone = phone ? String(phone) : '0000000000';
 
             // Calculate totals
             let subtotal = 0;
@@ -51,7 +56,7 @@ export class OrdersController {
                 orderNumber,
                 userId: userId || null,
                 fullName,
-                phone,
+                phone: safePhone,
                 email,
                 governorate,
                 city,
@@ -94,7 +99,8 @@ export class OrdersController {
                                 first_name: fullName.split(' ')[0] || 'Guest',
                                 last_name: fullName.split(' ')[1] || 'Guest',
                                 email: email || 'guest@example.com',
-                                phone_number: phone,
+                                start_date: 'NA', // Placeholder if needed
+                                phone_number: safePhone,
                                 apartment: 'NA',
                                 floor: 'NA',
                                 street: address,

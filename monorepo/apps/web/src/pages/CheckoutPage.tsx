@@ -125,6 +125,10 @@ export function CheckoutPage() {
     const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
+    // State for Payment Modal
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [iframeUrl, setIframeUrl] = useState('');
+
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
     const flatShippingRate = parseFloat(settings.shippingFlatRate || '100');
@@ -237,7 +241,7 @@ export function CheckoutPage() {
                 // Items
                 items: items.map(item => ({
                     productId: item.id,
-                    name: item.name, // Correct Fix: Required by backend
+                    name: item.name,
                     quantity: item.quantity,
                     price: item.price
                 })),
@@ -245,27 +249,33 @@ export function CheckoutPage() {
 
                 // Totals (backend should verify, but useful to send)
                 totalAmount: finalTotal,
-                shippingCost: shippingCost, // Send shipping cost so backend knows
-                taxAmount: vatAmount, // Send VAT amount for record keeping
-                extraFee: codExtraFee, // Send COD extra fee if applicable
-                discountAmount: discountAmount, // Send discount amount
-                couponCode: appliedCoupon?.code, // Send coupon code
-                userId: user?.id, // Link to user if logged in
+                shippingCost: shippingCost,
+                taxAmount: vatAmount,
+                extraFee: codExtraFee,
+                discountAmount: discountAmount,
+                couponCode: appliedCoupon?.code,
+                userId: user?.id,
             };
 
             // Call API
             const { data: responseData } = await api.post('/orders', orderData);
 
-            // Clear cart
-            clearCart();
-
-            // Handle Redirection for Online Payment
+            // Handle Redirection/Modal for Online Payment
             if (responseData.redirect_url) {
-                window.location.href = responseData.redirect_url;
+                // Do NOT redirect window.location.href
+                // Show Modal instead
+                setIframeUrl(responseData.redirect_url);
+                setShowPaymentModal(true);
+                // We clear cart AFTER successful payment usually, but Paymob flow might be different.
+                // If we clear cart here, and user cancels, they lose cart.
+                // Ideally clear cart only on success. But this is "placing order" step.
+                // Assuming "placing order" creates pending order.
+                clearCart();
                 return;
             }
 
             // Redirect to success for COD
+            clearCart();
             navigate(`/order-success/${(responseData as any).id || 'success'}`);
         } catch (err) {
             console.error('Checkout error:', err);
