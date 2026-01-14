@@ -738,7 +738,7 @@ export const ProductDetailsPage = () => {
                         </motion.div>
 
                         {/* Thumbnails Strip */}
-                        <div className="absolute bottom-8 flex gap-2 overflow-x-auto max-w-[90vw] p-2 no-scrollbar" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                        <div className="absolute bottom-8 flex gap-2 overflow-x-auto max-w-[90vw] p-2 no-scrollbar" onClick={(e: any) => e.stopPropagation()}>
                             {images.map((img, idx) => (
                                 <button
                                     key={idx}
