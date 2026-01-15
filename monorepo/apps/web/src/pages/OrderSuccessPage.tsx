@@ -5,27 +5,19 @@ import { CheckCircle, Package, Home, Receipt } from 'lucide-react';
 export function OrderSuccessPage() {
     const { id } = useParams();
 
-    // Frame Buster Strategy: Check if inside iframe
+    // Frame Buster: Force parent window to reload/redirect if inside an iframe (Payment Modal)
+    // This is critical for Paymob payments that redirect to success inside the iframe.
+    // Frame Buster & PostMessage: 
+    // 1. Force parent to reload if needed.
+    // 2. Send 'PAYMOB_SUCCESS' to parent to close modal cleaner.
     useEffect(() => {
-        const isIframe = window.self !== window.top;
-        if (isIframe) {
-            // Send success message to parent
-            window.parent.postMessage({ type: 'PAYMENT_SUCCESS' }, '*');
+        if (window.parent) {
+            window.parent.postMessage('PAYMOB_SUCCESS', '*');
+        }
+        if (window.top && window.self !== window.top) {
+            window.top.location.href = window.location.href;
         }
     }, []);
-
-    // If strictly inside an iframe, don't render the full UI (it looks bad)
-    // Just render a minimal loading state while we wait for parent to handle it
-    if (window.self !== window.top) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-black/90">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-white font-medium">جاري تأكيد الدفع...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-transparent to-[#101622]/50">

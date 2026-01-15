@@ -140,47 +140,45 @@ export function CheckoutPage() {
     // State for Payment Modal
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
-
-    // Polling Backup: If payment modal is open, check order status every 5 seconds
+    // Polling Backup & PostMessage Listener
     useEffect(() => {
-        let intervalId: any; // using any to avoid NodeJS namespace issues in frontend
+        let intervalId: any;
+
+        // Listener for Iframe Success Message
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data === 'PAYMOB_SUCCESS') {
+                setShowPaymentModal(false);
+                clearCart();
+                // Redirect if not already there (though success page usually has its own url)
+                // Use createdOrderId if available, or just go to success
+                if (createdOrderId) {
+                    navigate(`/order-success/${createdOrderId}`);
+                } else {
+                    navigate('/order-success/confirmed');
+                }
+            }
+        };
+        window.addEventListener('message', handleMessage);
 
         if (showPaymentModal && createdOrderId) {
             intervalId = setInterval(async () => {
                 try {
                     const { data } = await api.get(`/orders/${createdOrderId}`);
-                    // If paid or processing, close modal and redirect
                     if (data.status === 'paid' || data.status === 'processing') {
                         clearInterval(intervalId);
                         setShowPaymentModal(false);
                         clearCart();
                         navigate(`/order-success/${createdOrderId}`);
                     }
-                } catch (err) {
-                    // Ignore polling errors
-                }
-            }, 5000); // Check every 5s
+                } catch (err) { }
+            }, 5000);
         }
 
         return () => {
+            window.removeEventListener('message', handleMessage);
             if (intervalId) clearInterval(intervalId);
         };
     }, [showPaymentModal, createdOrderId, navigate, clearCart]);
-
-    // Listen for Success Message from Iframe (Frame Buster Strategy)
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            if (event.data?.type === 'PAYMENT_SUCCESS') {
-                setShowPaymentModal(false);
-                clearCart();
-                // Navigate to success page (using stored ID if available, otherwise just success)
-                navigate(createdOrderId ? `/order-success/${createdOrderId}` : '/order-success');
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [createdOrderId, navigate, clearCart]);
 
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
@@ -263,6 +261,18 @@ export function CheckoutPage() {
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validation for Wallet on Payment Step
+        if (step === 2 && formData.paymentMethod === 'paymob_wallet') {
+            const walletRegex = /^01[0125][0-9]{8}$/;
+            if (!walletRegex.test(formData.walletNumber)) {
+                // toast.error('يرجى إدخال رقم محفظة صحيح (11 رقم)');
+                // using local error if toast not available or as preference
+                setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
+                return;
+            }
+        }
+
         setStep(prev => Math.min(prev + 1, 3) as 1 | 2 | 3);
     };
 
@@ -278,7 +288,6 @@ export function CheckoutPage() {
             // Validation for Wallet Number
             if (formData.paymentMethod === 'paymob_wallet') {
                 if (!formData.walletNumber || formData.walletNumber.length !== 11 || !formData.walletNumber.startsWith('01')) {
-                    // toast.error("يرجى إدخال رقم محفظة صحيح (11 رقم)"); // Assuming toast is available, or use setError
                     setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
                     setIsSubmitting(false);
                     return;
