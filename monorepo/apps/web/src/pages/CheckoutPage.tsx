@@ -82,7 +82,8 @@ export function CheckoutPage() {
         city: '',
         governorate: '',
         notes: '',
-        paymentMethod: 'cod' // cash on delivery
+        paymentMethod: 'cod', // cash on delivery
+        walletNumber: ''
     });
 
     // Auto-fill from user or localStorage
@@ -93,6 +94,7 @@ export function CheckoutPage() {
                 fullName: user.name || prev.fullName,
                 email: user.email || prev.email,
                 phone: user.phone || prev.phone,
+                walletNumber: user.phone || prev.phone || '', // Default wallet to phone
                 // user address structure might differ, assumption here:
                 address: (user as any).address || prev.address
             }));
@@ -108,6 +110,13 @@ export function CheckoutPage() {
             }
         }
     }, [user]);
+
+    // Update wallet number when phone changes if it's empty
+    useEffect(() => {
+        if (formData.phone && !formData.walletNumber) {
+            setFormData(prev => ({ ...prev, walletNumber: formData.phone }));
+        }
+    }, [formData.phone]);
 
     // Save to localStorage on change
     useEffect(() => {
@@ -255,6 +264,7 @@ export function CheckoutPage() {
                 couponCode: appliedCoupon ? appliedCoupon.code : undefined,
                 totalAmount: finalTotal,
                 discountAmount: discountAmount,
+                walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
                 userId: user?.id,
             };
 
@@ -543,6 +553,22 @@ export function CheckoutPage() {
                                                         />
                                                     </div>
                                                     <p className="text-slate-400 text-sm mt-1">Vodafone Cash / Etisalat / Orange</p>
+
+                                                    {/* Wallet Number Input */}
+                                                    {formData.paymentMethod === 'paymob_wallet' && (
+                                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                                                            <label className="text-white text-xs mb-1 block">رقم المحفظة (مطلوب)</label>
+                                                            <input
+                                                                type="tel"
+                                                                required
+                                                                placeholder="010xxxxxxxx"
+                                                                value={formData.walletNumber}
+                                                                onChange={(e) => setFormData({ ...formData, walletNumber: e.target.value })}
+                                                                className="w-full bg-black/20 text-white border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-primary outline-none"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </label>
                                         </>

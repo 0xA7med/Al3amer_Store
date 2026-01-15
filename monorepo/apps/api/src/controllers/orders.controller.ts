@@ -23,6 +23,7 @@ export class OrdersController {
                 taxAmount = 0,
                 extraFee = 0,
                 couponCode,
+                walletNumber,
             } = req.body;
 
             console.log('📦 [POST /orders] Raw Body:', req.body);
@@ -173,7 +174,9 @@ export class OrdersController {
                         if (isWallet) {
                             // Wallet: Steps 1-3 done (Auth, Order, Key). 
                             // Step 4: Pay Request -> returns redirect URL
-                            redirectUrl = await PaymobService.payWithWallet(paymentToken, safePhone);
+                            // Use provided walletNumber or fallback to order phone (though frontend should require it)
+                            const targetPhone = walletNumber || safePhone;
+                            redirectUrl = await PaymobService.payWithWallet(paymentToken, targetPhone);
                         } else {
                             // Card: Steps 1-3 done.
                             // Use Iframe URL
