@@ -94,7 +94,7 @@ export function CheckoutPage() {
                 fullName: user.name || prev.fullName,
                 email: user.email || prev.email,
                 phone: user.phone || prev.phone,
-                walletNumber: user.phone || prev.phone || '', // Default wallet to phone
+                walletNumber: '', // Initialize empty as requested (was user.phone || prev.phone)
                 // user address structure might differ, assumption here:
                 address: (user as any).address || prev.address
             }));
@@ -111,12 +111,14 @@ export function CheckoutPage() {
         }
     }, [user]);
 
-    // Update wallet number when phone changes if it's empty
+    // Removed auto-sync of wallet number to keep it empty by default
+    /*
     useEffect(() => {
         if (formData.phone && !formData.walletNumber) {
             setFormData(prev => ({ ...prev, walletNumber: formData.phone }));
         }
     }, [formData.phone]);
+    */
 
     // Save to localStorage on change
     useEffect(() => {
@@ -231,6 +233,15 @@ export function CheckoutPage() {
         setError('');
 
         try {
+            // Validation for Wallet Number
+            if (formData.paymentMethod === 'paymob_wallet') {
+                if (!formData.walletNumber || formData.walletNumber.length !== 11 || !formData.walletNumber.startsWith('01')) {
+                    setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             // Create order payload - Flattened structure to match 'orders' table
             const finalNotes = (formData.phone_2 ? `Phone 2: ${formData.phone_2}\n` : '') + (formData.notes || '');
 

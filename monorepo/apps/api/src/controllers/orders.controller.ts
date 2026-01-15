@@ -176,6 +176,7 @@ export class OrdersController {
                             // Step 4: Pay Request -> returns redirect URL
                             // Use provided walletNumber or fallback to order phone (though frontend should require it)
                             const targetPhone = walletNumber || safePhone;
+                            console.log(`📱 Initiating Wallet Payment for: ${targetPhone} (Wallet Input: ${walletNumber}, SafePhone: ${safePhone})`);
                             redirectUrl = await PaymobService.payWithWallet(paymentToken, targetPhone);
                         } else {
                             // Card: Steps 1-3 done.
