@@ -284,19 +284,11 @@ export function CheckoutPage() {
 
             // Handle Redirection/Modal for Online Payment
             if (responseData.redirect_url) {
-                // Check if it's a Wallet payment (usually requires full redirect) or Card (Iframe)
-                // For now, based on user request:
-                // Card -> Modal Iframe
-                // Wallet -> Redirect
-
-                if (formData.paymentMethod === 'paymob_wallet') {
-                    // Wallet: Redirect full page
-                    window.location.href = responseData.redirect_url;
-                } else {
-                    // Card: Show Modal
-                    setIframeUrl(responseData.redirect_url);
-                    setShowPaymentModal(true);
-                }
+                // Unify presentation: All Paymob flows (Card & Wallet) open in Modal as requested
+                // Note: Wallets typically use a redirect, but loading it in an iframe *might* work depending on security policies.
+                // User requested this specifically.
+                setIframeUrl(responseData.redirect_url);
+                setShowPaymentModal(true);
 
                 // DO NOT clear cart here. Wait for success page or user action.
                 return;
