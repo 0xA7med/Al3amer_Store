@@ -145,7 +145,6 @@ export function CheckoutPage() {
         let intervalId: any;
 
         // Listener for Iframe Success Message
-        // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
             if (event.data === 'PAYMOB_SUCCESS') {
                 setShowPaymentModal(false);
@@ -171,7 +170,7 @@ export function CheckoutPage() {
                         navigate(`/order-success/${createdOrderId}`);
                     }
                 } catch (err) { }
-            }, 5000);
+            }, 3000); // Check every 3s
         }
 
         return () => {

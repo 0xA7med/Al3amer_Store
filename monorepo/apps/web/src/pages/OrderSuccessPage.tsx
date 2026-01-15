@@ -24,6 +24,30 @@ export function OrderSuccessPage() {
         handleFrameBuster();
     }, []);
 
+    // Manual Breakout UI for Iframe
+    if (typeof window !== 'undefined' && window.self !== window.top) {
+        return (
+            <div className="fixed inset-0 bg-[#101622] flex flex-col items-center justify-center p-4 text-center z-[99999]">
+                <div className="bg-[#181a20] rounded-3xl p-8 max-w-sm w-full border border-emerald-500/20 shadow-2xl animate-in zoom-in duration-300">
+                    <div className="size-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle className="size-10 text-emerald-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-2">تم الدفع بنجاح!</h2>
+                    <p className="text-slate-400 mb-8">اضغط على الزر أدناه لإكمال الطلب</p>
+
+                    <button
+                        onClick={() => {
+                            if (window.top) window.top.location.href = window.location.href;
+                        }}
+                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                    >
+                        إكمال الطلب
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-transparent to-[#101622]/50">
             <div className="max-w-2xl w-full">
