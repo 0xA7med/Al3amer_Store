@@ -85,14 +85,24 @@ export class PaymobService {
     }
 
     static async payWithWallet(paymentKey: string, phoneNumber: string): Promise<string> {
+        console.log(`🔌 payWithWallet called with Phone: ${phoneNumber}, Key Length: ${paymentKey?.length}`);
         try {
-            const response = await axios.post(`${this.API_URL}/acceptance/payments/pay`, {
+            const payload = {
                 source: {
                     identifier: phoneNumber,
                     subtype: "WALLET"
                 },
                 payment_token: paymentKey
-            });
+            };
+
+            console.log('🚀 Paymob Wallet Payload:', JSON.stringify({
+                source: { identifier: phoneNumber, subtype: "WALLET" },
+                payment_token: paymentKey.substring(0, 20) + '...'
+            }, null, 2));
+
+            const response = await axios.post(`${this.API_URL}/acceptance/payments/pay`, payload);
+
+            console.log('✅ Paymob Wallet Response:', response.data);
             // Wallets typically return a redirect_url or iframe_redirection_url
             // checking both just in case, prioritize redirect_url
             return response.data.redirect_url || response.data.iframe_redirection_url;

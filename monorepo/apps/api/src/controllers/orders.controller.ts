@@ -136,6 +136,8 @@ export class OrdersController {
                     const isWallet = paymentMethod === 'paymob_wallet';
                     const integrationId = isWallet ? appSettings.paymobIntegrationWallet : appSettings.paymobIntegrationCard;
 
+                    console.log(`💳 Payment Method: ${paymentMethod}, Selected Integration ID: ${integrationId} (Wallet: ${appSettings.paymobIntegrationWallet}, Card: ${appSettings.paymobIntegrationCard})`);
+
                     if (!integrationId) {
                         return res.status(400).json({ error: isWallet ? 'Paymob Wallet Integration ID is not configured' : 'Paymob Card Integration ID is not configured' });
                     }
