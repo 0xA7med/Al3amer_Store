@@ -167,6 +167,21 @@ export function CheckoutPage() {
         };
     }, [showPaymentModal, createdOrderId, navigate, clearCart]);
 
+    // Listen for Success Message from Iframe (Frame Buster Strategy)
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.data?.type === 'PAYMENT_SUCCESS') {
+                setShowPaymentModal(false);
+                clearCart();
+                // Navigate to success page (using stored ID if available, otherwise just success)
+                navigate(createdOrderId ? `/order-success/${createdOrderId}` : '/order-success');
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [createdOrderId, navigate, clearCart]);
+
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
     const flatShippingRate = parseFloat(settings.shippingFlatRate || '100');
@@ -263,6 +278,7 @@ export function CheckoutPage() {
             // Validation for Wallet Number
             if (formData.paymentMethod === 'paymob_wallet') {
                 if (!formData.walletNumber || formData.walletNumber.length !== 11 || !formData.walletNumber.startsWith('01')) {
+                    // toast.error("يرجى إدخال رقم محفظة صحيح (11 رقم)"); // Assuming toast is available, or use setError
                     setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
                     setIsSubmitting(false);
                     return;
