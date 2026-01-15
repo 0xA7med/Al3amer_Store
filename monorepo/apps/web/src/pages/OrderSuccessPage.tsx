@@ -11,12 +11,17 @@ export function OrderSuccessPage() {
     // 1. Force parent to reload if needed.
     // 2. Send 'PAYMOB_SUCCESS' to parent to close modal cleaner.
     useEffect(() => {
-        if (window.parent) {
-            window.parent.postMessage('PAYMOB_SUCCESS', '*');
-        }
-        if (window.top && window.self !== window.top) {
-            window.top.location.href = window.location.href;
-        }
+        const handleFrameBuster = () => {
+            // 1. Send 'PAYMOB_SUCCESS' to parent to close modal cleaner.
+            if (window.parent) {
+                window.parent.postMessage('PAYMOB_SUCCESS', '*');
+            }
+            // 2. Force parent to reload if needed.
+            if (window.top && window.self !== window.top) {
+                window.top.location.href = window.location.href;
+            }
+        };
+        handleFrameBuster();
     }, []);
 
     return (

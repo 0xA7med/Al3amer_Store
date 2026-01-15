@@ -145,12 +145,12 @@ export function CheckoutPage() {
         let intervalId: any;
 
         // Listener for Iframe Success Message
+        // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
             if (event.data === 'PAYMOB_SUCCESS') {
                 setShowPaymentModal(false);
                 clearCart();
-                // Redirect if not already there (though success page usually has its own url)
-                // Use createdOrderId if available, or just go to success
+                // Check if we have an order ID to redirect to
                 if (createdOrderId) {
                     navigate(`/order-success/${createdOrderId}`);
                 } else {
@@ -266,13 +266,13 @@ export function CheckoutPage() {
         if (step === 2 && formData.paymentMethod === 'paymob_wallet') {
             const walletRegex = /^01[0125][0-9]{8}$/;
             if (!walletRegex.test(formData.walletNumber)) {
-                // toast.error('يرجى إدخال رقم محفظة صحيح (11 رقم)');
-                // using local error if toast not available or as preference
                 setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
                 return;
             }
         }
 
+        // Clear error if validation passes
+        setError('');
         setStep(prev => Math.min(prev + 1, 3) as 1 | 2 | 3);
     };
 
@@ -619,7 +619,10 @@ export function CheckoutPage() {
                                                                 required
                                                                 placeholder="010xxxxxxxx"
                                                                 value={formData.walletNumber}
-                                                                onChange={(e) => setFormData({ ...formData, walletNumber: e.target.value })}
+                                                                onChange={(e) => {
+                                                                    setFormData({ ...formData, walletNumber: e.target.value });
+                                                                    if (error) setError('');
+                                                                }}
                                                                 className="w-full bg-black/20 text-white border border-white/10 rounded-lg px-3 py-2 text-sm focus:border-primary outline-none"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             />
