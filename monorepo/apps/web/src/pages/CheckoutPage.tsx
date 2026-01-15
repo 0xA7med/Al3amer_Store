@@ -122,7 +122,7 @@ export function CheckoutPage() {
     // Coupon State
     const [couponCode, setCouponCode] = useState('');
     const [couponError, setCouponError] = useState('');
-    const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' | 'free_shipping' } | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     // State for Payment Modal
@@ -162,7 +162,9 @@ export function CheckoutPage() {
     // Calculate Discount
     let discountAmount = 0;
     if (appliedCoupon) {
-        if (appliedCoupon.type === 'percentage') {
+        if (appliedCoupon.type === 'free_shipping') {
+            discountAmount = shippingCost;
+        } else if (appliedCoupon.type === 'percentage') {
             discountAmount = (totalPrice * (Number(appliedCoupon.discount) / 100));
         } else {
             discountAmount = Number(appliedCoupon.discount);
@@ -247,13 +249,12 @@ export function CheckoutPage() {
                 })),
 
 
-                // Totals (backend should verify, but useful to send)
-                totalAmount: finalTotal,
-                shippingCost: shippingCost,
+                shippingCost,
                 taxAmount: vatAmount,
                 extraFee: codExtraFee,
+                couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+                totalAmount: finalTotal,
                 discountAmount: discountAmount,
-                couponCode: appliedCoupon?.code,
                 userId: user?.id,
             };
 

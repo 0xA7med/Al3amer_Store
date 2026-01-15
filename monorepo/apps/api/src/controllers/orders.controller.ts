@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { orders, orderItems, products, productImages, settings } from '../db/schema.js';
+import { orders, orderItems, products, productImages, settings, coupons } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
 
@@ -22,6 +22,7 @@ export class OrdersController {
                 shippingCost = 0,
                 taxAmount = 0,
                 extraFee = 0,
+                couponCode,
             } = req.body;
 
             console.log('📦 [POST /orders] Raw Body:', req.body);
@@ -46,7 +47,51 @@ export class OrdersController {
                 subtotal += price * item.quantity;
             }
 
-            const total = subtotal + parseFloat(shippingCost);
+            // Calculate discount if coupon provided
+            let discountAmount = 0;
+            if (couponCode) {
+                const coupon = await db.query.coupons.findFirst({
+                    where: eq(coupons.code, couponCode.toUpperCase()),
+                });
+
+                if (coupon) {
+                    const now = new Date();
+                    // Basic Validation (Expiry, Start Date, Usage Limit)
+                    const isValid =
+                        (!coupon.expiryDate || new Date(coupon.expiryDate) > now) &&
+                        (!coupon.startDate || new Date(coupon.startDate) <= now) &&
+                        (!coupon.usageLimit || !coupon.usageCount || coupon.usageCount < coupon.usageLimit);
+
+                    if (isValid) {
+                        // Check Min Order
+                        if (!coupon.minOrder || subtotal >= parseFloat(coupon.minOrder)) {
+                            // Calculate Discount
+                            if (coupon.type === 'free_shipping') {
+                                discountAmount = parseFloat(shippingCost.toString());
+                            } else if (coupon.type === 'percentage') {
+                                discountAmount = subtotal * (parseFloat(coupon.discount) / 100);
+                            } else if (coupon.type === 'fixed') {
+                                discountAmount = parseFloat(coupon.discount);
+                            }
+
+                            // Increment usage count (optional but good practice)
+                            try {
+                                await db.update(coupons)
+                                    .set({ usageCount: (coupon.usageCount || 0) + 1 })
+                                    .where(eq(coupons.id, coupon.id));
+                            } catch (err) {
+                                console.error('Failed to update coupon usage', err);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Calculate final total
+            // Total = Subtotal + Shipping + Tax + Extra - Discount
+            let total = subtotal + parseFloat(shippingCost.toString()) + parseFloat(taxAmount.toString()) + parseFloat(extraFee.toString()) - discountAmount;
+            total = Math.max(0, total); // Ensure non-negative
+
 
             // Generate order number
             const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
