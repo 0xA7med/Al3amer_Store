@@ -1,8 +1,17 @@
+import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle, Package, Home, Receipt } from 'lucide-react';
 
 export function OrderSuccessPage() {
     const { id } = useParams();
+
+    // Frame Buster: Force parent window to reload/redirect if inside an iframe (Payment Modal)
+    // This is critical for Paymob payments that redirect to success inside the iframe.
+    useEffect(() => {
+        if (window.top && window.self !== window.top) {
+            window.top.location.href = window.location.href;
+        }
+    }, []);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-transparent to-[#101622]/50">

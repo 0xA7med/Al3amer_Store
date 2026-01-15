@@ -129,6 +129,7 @@ export function CheckoutPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
     // Coupon State
     const [couponCode, setCouponCode] = useState('');
@@ -139,6 +140,32 @@ export function CheckoutPage() {
     // State for Payment Modal
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
+
+    // Polling Backup: If payment modal is open, check order status every 5 seconds
+    useEffect(() => {
+        let intervalId: any; // using any to avoid NodeJS namespace issues in frontend
+
+        if (showPaymentModal && createdOrderId) {
+            intervalId = setInterval(async () => {
+                try {
+                    const { data } = await api.get(`/orders/${createdOrderId}`);
+                    // If paid or processing, close modal and redirect
+                    if (data.status === 'paid' || data.status === 'processing') {
+                        clearInterval(intervalId);
+                        setShowPaymentModal(false);
+                        clearCart();
+                        navigate(`/order-success/${createdOrderId}`);
+                    }
+                } catch (err) {
+                    // Ignore polling errors
+                }
+            }, 5000); // Check every 5s
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [showPaymentModal, createdOrderId, navigate, clearCart]);
 
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
@@ -288,6 +315,7 @@ export function CheckoutPage() {
                 // Note: Wallets typically use a redirect, but loading it in an iframe *might* work depending on security policies.
                 // User requested this specifically.
                 setIframeUrl(responseData.redirect_url);
+                setCreatedOrderId(responseData.id); // Save for polling
                 setShowPaymentModal(true);
 
                 // DO NOT clear cart here. Wait for success page or user action.
