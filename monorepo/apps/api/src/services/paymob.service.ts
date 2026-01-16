@@ -73,7 +73,7 @@ export class PaymobService {
         amount: number,
         currency: string = 'EGP',
         billingData: any
-    ): Promise<string> {
+    ): Promise<{ paymentKey: string; orderId: number }> {
         // Paymob expects amount in cents
         const amountCents = Math.round(amount * 100);
 
@@ -81,7 +81,7 @@ export class PaymobService {
         const orderId = await this.registerOrder(authToken, amountCents, currency);
         const paymentKey = await this.getPaymentKey(authToken, orderId, amountCents, currency, integrationId, billingData);
 
-        return paymentKey;
+        return { paymentKey, orderId };
     }
 
     static async payWithWallet(paymentKey: string, phoneNumber: string): Promise<string> {

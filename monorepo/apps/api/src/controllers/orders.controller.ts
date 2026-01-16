@@ -148,7 +148,7 @@ export class OrdersController {
                     }
 
                     try {
-                        const paymentToken = await PaymobService.generatePaymentKey(
+                        const { paymentKey: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
                             appSettings.paymobApiKey,
                             integrationId,
                             total,
@@ -170,6 +170,11 @@ export class OrdersController {
                                 state: governorate,
                             }
                         );
+
+                        // CRITICAL: Save Paymob Order ID to our database
+                        await db.update(orders)
+                            .set({ paymobOrderId: paymobOrderId.toString() })
+                            .where(eq(orders.id, order.id));
 
                         let redirectUrl = '';
 
@@ -354,6 +359,30 @@ export class OrdersController {
         } catch (error) {
             console.error('Error updating order status:', error);
             res.status(500).json({ error: 'Failed to update order status' });
+        }
+    }
+
+    // GET /api/orders/:id/status - Lightweight status check for polling
+    static async getStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            // Fetch only necessary fields
+            const order = await db.query.orders.findFirst({
+                where: eq(orders.id, id),
+                columns: {
+                    status: true,
+                }
+            });
+
+            if (!order) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            res.json(order);
+        } catch (error) {
+            console.error('Error fetching order status:', error);
+            res.status(500).json({ error: 'Internal server error' });
         }
     }
 }

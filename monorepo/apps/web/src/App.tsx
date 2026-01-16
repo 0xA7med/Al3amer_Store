@@ -20,6 +20,7 @@ import OffersPage from './pages/OffersPage';
 import AboutUsPage from './pages/AboutUsPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
+import { PaymobCallbackPage } from './pages/PaymobCallbackPage';
 
 // Admin Pages
 import DashboardOverview from './pages/admin/DashboardOverview';
@@ -67,6 +68,7 @@ function App() {
                         <Route path="/cart" element={<CartPage />} />
                         <Route path="/checkout" element={<CheckoutPage />} />
                         <Route path="/order-success/:id" element={<OrderSuccessPage />} />
+                        <Route path="/paymob-callback" element={<PaymobCallbackPage />} />
                         <Route path="/track-order/:id" element={<OrderTrackingPage />} />
                         <Route path="/ai-builder" element={<AIBundleBuilderPage />} />
                         <Route path="/login" element={<LoginPage />} />

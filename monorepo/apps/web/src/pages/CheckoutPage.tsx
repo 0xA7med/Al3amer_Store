@@ -146,7 +146,7 @@ export function CheckoutPage() {
 
         // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
-            if (event.data === 'PAYMOB_SUCCESS') {
+            if (event.data?.type === 'PAYMOB_PAYMENT_COMPLETED' || event.data === 'PAYMOB_SUCCESS') {
                 setShowPaymentModal(false);
                 clearCart();
                 // Check if we have an order ID to redirect to
@@ -160,17 +160,22 @@ export function CheckoutPage() {
         window.addEventListener('message', handleMessage);
 
         if (showPaymentModal && createdOrderId) {
+            // Aggressive Polling (Fail-Safe)
             intervalId = setInterval(async () => {
                 try {
-                    const { data } = await api.get(`/orders/${createdOrderId}`);
-                    if (data.status === 'paid' || data.status === 'processing') {
+                    // Use lightweight status endpoint
+                    const { data } = await api.get(`/orders/${createdOrderId}/status`);
+                    // Check if paid or processing (which means paid in some contexts)
+                    if (data.payment_status === 'paid' || data.status === 'processing') {
                         clearInterval(intervalId);
                         setShowPaymentModal(false);
                         clearCart();
                         navigate(`/order-success/${createdOrderId}`);
                     }
-                } catch (err) { }
-            }, 3000); // Check every 3s
+                } catch (err) {
+                    // Silent fail, keep polling
+                }
+            }, 2000); // Check every 2 seconds
         }
 
         return () => {

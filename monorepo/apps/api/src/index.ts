@@ -13,6 +13,7 @@ import couponsRouter from './routes/coupons.js';
 import reviewsRouter from './routes/reviews.js';
 import addressesRouter from './routes/addresses.js';
 import wishlistRouter from './routes/wishlist.js';
+import webhookRouter from './routes/webhook.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/coupons', couponsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/addresses', addressesRouter);
 app.use('/api/wishlist', wishlistRouter);
+app.use('/api/webhook', webhookRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
