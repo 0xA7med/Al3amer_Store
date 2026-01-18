@@ -15,6 +15,7 @@ interface AuthContextType {
     isLoading: boolean;
     isAuthenticated: boolean;
     login: (email: string, password: string, remember?: boolean) => Promise<void>;
+    loginWithToken: (token: string, user: User) => void;
     register: (data: { name: string; email: string; phone: string; password: string }) => Promise<void>;
     logout: () => void;
 }
@@ -59,6 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
     };
 
+    const loginWithToken = (token: string, userData: User) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+    };
+
     const register = async (data: { name: string; email: string; phone: string; password: string }) => {
         const response = await api.post('/auth/register', {
             ...data,
@@ -91,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isLoading,
                 isAuthenticated: !!user,
                 login,
+                loginWithToken,
                 register,
                 logout,
             }}

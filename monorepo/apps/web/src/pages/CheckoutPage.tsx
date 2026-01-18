@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -137,17 +137,22 @@ export function CheckoutPage() {
     const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' | 'free_shipping' } | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-    const paymentRef = useRef<HTMLDivElement>(null);
-    // State for Inline Payment
-    const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+    // State for Payment Modal
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [iframeUrl, setIframeUrl] = useState('');
+    const [isCheckingPayment, setIsCheckingPayment] = useState(false);
     // Polling Backup & PostMessage Listener
     useEffect(() => {
         let intervalId: any;
 
         // Listener for Iframe Success Message
+        // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
-            if (event.data?.type === 'PAYMOB_PAYMENT_COMPLETED' || event.data === 'PAYMOB_SUCCESS') {
-                setPaymentUrl(null);
+            console.log('Checkout Page received message:', event.data, 'from:', event.origin);
+
+            if (event.data === 'PAYMOB_SUCCESS') {
+                console.log('PAYMOB_SUCCESS matched. Closing modal...');
+                setShowPaymentModal(false);
                 clearCart();
                 // Check if we have an order ID to redirect to
                 if (createdOrderId) {
@@ -155,34 +160,48 @@ export function CheckoutPage() {
                 } else {
                     navigate('/order-success/confirmed');
                 }
+            } else if (event.data === 'PAYMOB_FAILED') {
+                console.log('PAYMOB_FAILED matched. Closing modal...');
+                setShowPaymentModal(false);
+                setError('فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.');
             }
         };
         window.addEventListener('message', handleMessage);
 
-        if (paymentUrl && createdOrderId) {
-            // Aggressive Polling (Fail-Safe)
+        let pollCount = 0;
+        const MAX_POLL_ATTEMPTS = 120; // 120 * 5s = 10 minutes max polling time
+
+        if (showPaymentModal && createdOrderId) {
             intervalId = setInterval(async () => {
+                pollCount++;
+                if (pollCount > MAX_POLL_ATTEMPTS) {
+                    console.log('Max polling attempts reached. Stopping verification.');
+                    clearInterval(intervalId);
+                    return;
+                }
+
                 try {
-                    // Use lightweight status endpoint
-                    const { data } = await api.get(`/orders/${createdOrderId}/status`);
-                    // Check if paid or processing (which means paid in some contexts)
-                    if (data.status === 'processing' || data.status === 'paid' || data.status === 'shipping') {
+                    // passively check? No, we need to actively verify because locally we don't get webhooks.
+                    // Call verify-payment to force a check with Paymob.
+                    const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
+                    if (data.status === 'paid' || data.status === 'processing') {
                         clearInterval(intervalId);
-                        setPaymentUrl(null);
+                        setShowPaymentModal(false);
                         clearCart();
                         navigate(`/order-success/${createdOrderId}`);
                     }
-                } catch (err) {
-                    // Silent fail, keep polling
+                } catch (error) {
+                    // Ignore errors during polling, just keep trying until max attempts or user closes
+                    console.error('Polling error:', error);
                 }
-            }, 2000); // Check every 2 seconds
+            }, 5000);
         }
 
         return () => {
             window.removeEventListener('message', handleMessage);
             if (intervalId) clearInterval(intervalId);
         };
-    }, [paymentUrl, createdOrderId, navigate, clearCart]);
+    }, [showPaymentModal, createdOrderId, navigate, clearCart]);
 
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
@@ -338,22 +357,14 @@ export function CheckoutPage() {
             // Call API
             const { data: responseData } = await api.post('/orders', orderData);
 
-            setCreatedOrderId(responseData.id); // Save for polling
-
-            // Handle Redirection/Inline for Online Payment
+            // Handle Redirection/Modal for Online Payment
             if (responseData.redirect_url) {
-                if (formData.paymentMethod === 'paymob_wallet') {
-                    // WALLETS: Full Page Redirect (Most Reliable)
-                    window.location.href = responseData.redirect_url;
-                } else {
-                    // CARDS: Inline Iframe (Standard UX)
-                    setPaymentUrl(responseData.redirect_url);
-
-                    // Scroll to payment section smoothly
-                    setTimeout(() => {
-                        paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
-                }
+                // Unify presentation: All Paymob flows (Card & Wallet) open in Modal as requested
+                // Note: Wallets typically use a redirect, but loading it in an iframe *might* work depending on security policies.
+                // User requested this specifically.
+                setIframeUrl(responseData.redirect_url);
+                setCreatedOrderId(responseData.id); // Save for polling
+                setShowPaymentModal(true);
 
                 // DO NOT clear cart here. Wait for success page or user action.
                 return;
@@ -828,27 +839,68 @@ export function CheckoutPage() {
                 </div>
             </div>
 
-            {/* Inline Payment Section */}
-            {paymentUrl && (
-                <div ref={paymentRef} className="mt-8 pt-8 border-t border-white/10 scroll-mt-20">
-                    <div className="bg-[#181a20] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+            {/* Paymob Iframe Modal */}
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#181a20] w-full max-w-4xl h-[650px] rounded-2xl border border-white/10 flex flex-col overflow-hidden relative shadow-2xl">
                         <div className="flex justify-between items-center p-4 border-b border-white/10 bg-[#1e232d]">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">credit_card</span>
                                 الدفع الآمن
                             </h3>
-                            <button
-                                onClick={() => setPaymentUrl(null)}
-                                className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-sm bg-white/5 px-3 py-1 rounded-full"
-                            >
-                                <span className="material-symbols-outlined text-sm">close</span>
-                                إلغاء الدفع
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={async () => {
+                                        setIsCheckingPayment(true);
+                                        try {
+                                            if (!createdOrderId) return;
+                                            const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
+
+                                            if (data.status === 'paid') {
+                                                setShowPaymentModal(false);
+                                                clearCart();
+                                                navigate(`/order-success/${createdOrderId}`);
+                                            } else {
+                                                // Show simplified error (toast would be better but alert is quick for now or we set error state)
+                                                // Using basic alert for this modal context or just updating button text temporarily
+                                                const originalError = error;
+                                                setError('لم يتم تأكيد الدفع بعد. الرجاء المحاولة مرة أخرى أو التواصل مع الدعم.');
+                                                setTimeout(() => setError(originalError), 5000);
+                                            }
+                                        } catch (err) {
+                                            console.error('Verification failed', err);
+                                            // Handle error
+                                        } finally {
+                                            setIsCheckingPayment(false);
+                                        }
+                                    }}
+                                    disabled={isCheckingPayment}
+                                    className="text-emerald-400 hover:text-emerald-300 text-sm font-bold border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors hover:bg-emerald-500/10 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isCheckingPayment ? (
+                                        <>
+                                            <div className="size-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                            جاري التحقق...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-sm">sync</span>
+                                            تحقق من الدفع
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
                         </div>
-                        <div className="bg-white p-1">
+                        <div className="flex-1 w-full h-full bg-white relative">
                             <iframe
-                                src={paymentUrl}
-                                className="w-full h-[700px] border-0 rounded-lg"
+                                src={iframeUrl}
+                                className="w-full h-full border-0"
                                 title="Paymob Checkout"
                                 allow="payment"
                             ></iframe>
@@ -858,7 +910,7 @@ export function CheckoutPage() {
             )}
 
             {/* Full Screen Loading Overlay */}
-            {isSubmitting && !paymentUrl && (
+            {isSubmitting && !showPaymentModal && (
                 <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
                     <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                     <h3 className="text-xl font-bold text-white mb-2">جاري تنفيذ الطلب...</h3>

@@ -56,6 +56,16 @@ export function OrderTrackingPage() {
     // If status is "cancelled", show red alert.
     const isCancelled = order.status === 'cancelled';
 
+    // Construct WhatsApp message
+    const statusLabel = STATUS_STEPS.find(s => s.id === order.status)?.label || order.status;
+    const whatsappMessage = encodeURIComponent(
+        `مرحباً متجر العامر،\n` +
+        `عندي استفسار بخصوص الطلب رقم: #${order.orderNumber || id?.slice(-8).toUpperCase()}\n` +
+        `حالة الطلب: ${statusLabel}\n` +
+        `الاسم: ${order.fullName}\n\n` +
+        `استفساري هو:`
+    );
+
     return (
         <div className="container mx-auto px-4 py-8 lg:py-12 max-w-5xl">
             {/* Header */}
@@ -228,7 +238,7 @@ export function OrderTrackingPage() {
                         </p>
                         <div className="space-y-3">
                             <a
-                                href="https://wa.me/201093166540"
+                                href={`https://wa.me/201093166540?text=${whatsappMessage}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 rounded-xl transition-colors"

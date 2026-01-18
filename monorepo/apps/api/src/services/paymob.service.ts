@@ -22,14 +22,16 @@ export class PaymobService {
         return response.data.token;
     }
 
-    static async registerOrder(authToken: string, amountCents: number, currency: string): Promise<number> {
+    static async registerOrder(authToken: string, amountCents: number, currency: string, merchantOrderId: string): Promise<number> {
         const response = await axios.post<PaymobOrderResponse>(`${this.API_URL}/ecommerce/orders`, {
             auth_token: authToken,
             delivery_needed: 'false',
             amount_cents: amountCents,
             currency: currency,
+            merchant_order_id: merchantOrderId, // Link to our order number
             items: [],
         });
+        console.log(`📦 Paymob Order Created: ID=${response.data.id}, Merchant Order=${merchantOrderId}`);
         return response.data.id;
     }
 
@@ -71,17 +73,18 @@ export class PaymobService {
         apiKey: string,
         integrationId: string,
         amount: number,
+        merchantOrderId: string,
         currency: string = 'EGP',
         billingData: any
-    ): Promise<{ paymentKey: string; orderId: number }> {
+    ): Promise<{ token: string; orderId: string }> {
         // Paymob expects amount in cents
         const amountCents = Math.round(amount * 100);
 
         const authToken = await this.authenticate(apiKey);
-        const orderId = await this.registerOrder(authToken, amountCents, currency);
+        const orderId = await this.registerOrder(authToken, amountCents, currency, merchantOrderId);
         const paymentKey = await this.getPaymentKey(authToken, orderId, amountCents, currency, integrationId, billingData);
 
-        return { paymentKey, orderId };
+        return { token: paymentKey, orderId: orderId.toString() };
     }
 
     static async payWithWallet(paymentKey: string, phoneNumber: string): Promise<string> {
@@ -109,6 +112,76 @@ export class PaymobService {
         } catch (error: any) {
             console.error('Paymob Wallet Pay Error:', error.response?.data || error.message);
             throw new Error('Failed to initiate wallet payment');
+        }
+    }
+
+    static async getOrderIdByMerchantOrderId(apiKey: string, merchantOrderId: string): Promise<string | null> {
+        try {
+            const authToken = await this.authenticate(apiKey);
+            if (!authToken) {
+                throw new Error('Failed to authenticate with Paymob');
+            }
+            console.log(`🔍 Looking up Paymob Order for Merchant ID: ${merchantOrderId}`);
+
+            // Search for Paymob order by our Merchant Order ID
+            // We pass auth_token in query params AND as Bearer token to be safe
+            const response = await axios.get(`${this.API_URL}/ecommerce/orders`, {
+                params: {
+                    auth_token: authToken, // Legacy/V1
+                    merchant_order_id: merchantOrderId
+                },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}` // Attempt V2 style or just extra safety
+                }
+            });
+
+            // Response.data.results should contain the array of orders
+            const orders = response.data.results || [];
+            if (orders.length > 0) {
+                const foundId = orders[0].id.toString();
+                console.log(`✅ Found Paymob Order ID: ${foundId}`);
+                return foundId;
+            }
+            console.log(`⚠️ No Paymob order found for Merchant ID: ${merchantOrderId}`);
+            return null;
+        } catch (error: any) {
+            console.error('Paymob Get Order By Merchant ID Error:', error.response?.data || error.message);
+            // If 401/403, it means token issue. 
+            throw new Error('Failed to fetch order ID from Paymob');
+        }
+    }
+
+    static async getTransactionStatus(apiKey: string, paymobOrderId: string): Promise<boolean> {
+        try {
+            const authToken = await this.authenticate(apiKey);
+            if (!authToken) {
+                throw new Error('Failed to authenticate with Paymob');
+            }
+
+            console.log(`🔍 Checking Paymob Transactions for Order ${paymobOrderId}...`);
+
+            // Get transactions for this order
+            const response = await axios.get(`${this.API_URL}/acceptance/transactions`, {
+                params: {
+                    auth_token: authToken,
+                    order_id: paymobOrderId
+                },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}` // Add for V2 API compatibility
+                }
+            });
+
+            // Check if any transaction is successful
+            const transactions = response.data.results || [];
+            const isPaid = transactions.some((t: any) => t.success === true);
+
+            console.log(`✅ Found ${transactions.length} transaction(s), Payment Status: ${isPaid ? 'PAID' : 'PENDING'}`);
+            return isPaid;
+        } catch (error: any) {
+            console.error('Paymob Transaction Status Error:', error.response?.data || error.message);
+            throw new Error('Failed to fetch transaction status');
         }
     }
 }

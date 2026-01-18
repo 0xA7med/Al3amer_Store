@@ -148,10 +148,11 @@ export class OrdersController {
                     }
 
                     try {
-                        const { paymentKey: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
+                        const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
                             appSettings.paymobApiKey,
                             integrationId,
                             total,
+                            orderNumber, // CRITICAL: Pass our order number to Paymob
                             'EGP',
                             {
                                 first_name: fullName.split(' ')[0] || 'Guest',
@@ -171,10 +172,14 @@ export class OrdersController {
                             }
                         );
 
-                        // CRITICAL: Save Paymob Order ID to our database
+                        console.log(`💳 Paymob Key Generated. Token length: ${paymentToken.length}, Order ID: ${paymobOrderId}`);
+
+                        // Save Paymob Order ID to database
                         await db.update(orders)
-                            .set({ paymobOrderId: paymobOrderId.toString() })
+                            .set({ paymobOrderId: paymobOrderId })
                             .where(eq(orders.id, order.id));
+
+                        console.log(`✅ Paymob Order ID ${paymobOrderId} saved to DB for Order #${orderNumber}`);
 
                         let redirectUrl = '';
 
@@ -361,28 +366,73 @@ export class OrdersController {
             res.status(500).json({ error: 'Failed to update order status' });
         }
     }
-
-    // GET /api/orders/:id/status - Lightweight status check for polling
-    static async getStatus(req: Request, res: Response) {
+    // POST /api/orders/:id/verify-payment
+    static async verifyPayment(req: Request, res: Response) {
         try {
             const { id } = req.params;
 
-            // Fetch only necessary fields
+            // 1. Get Order
             const order = await db.query.orders.findFirst({
                 where: eq(orders.id, id),
-                columns: {
-                    status: true,
-                }
             });
 
             if (!order) {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            res.json(order);
+            if (order.status === 'paid' || order.status === 'processing') {
+                return res.json({ status: order.status, message: 'Order is already paid' });
+            }
+
+            // 2. Get Settings
+            const appSettings = await db.query.settings.findFirst();
+            if (!appSettings?.paymobApiKey) {
+                return res.status(500).json({ error: 'Paymob API Key not configured' });
+            }
+
+            // 3. Verify with Paymob
+            console.log(`🔍 Verifying payment for Order #${order.orderNumber} (ID: ${id})...`);
+
+            // A. Get Paymob Order ID
+            let paymobOrderId = order.paymobOrderId;
+
+            // Optional: If not yet saved (legacy orders), try to find by merchant ID
+            if (!paymobOrderId) {
+                console.log('⚠️ paymobOrderId not found in DB. Attempting lookup by Merchant Order ID...');
+                try {
+                    paymobOrderId = await PaymobService.getOrderIdByMerchantOrderId(appSettings.paymobApiKey, order.orderNumber);
+                    if (paymobOrderId) {
+                        // Save it for future
+                        await db.update(orders).set({ paymobOrderId }).where(eq(orders.id, id));
+                    }
+                } catch (err) {
+                    console.error('Failed to lookup Paymob Order ID:', err);
+                }
+            }
+
+            if (!paymobOrderId) {
+                console.log('❌ Could not find corresponding Paymob Order ID.');
+                return res.status(400).json({ status: 'pending', error: 'Could not locate payment record at provider' });
+            }
+
+            // B. Check Transaction Status
+            const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+
+            if (isPaid) {
+                console.log('✅ Payment Verified! Updating order status...');
+                await db.update(orders)
+                    .set({ status: 'paid', updatedAt: new Date() })
+                    .where(eq(orders.id, id));
+
+                return res.json({ status: 'paid', message: 'Payment verified successfully' });
+            } else {
+                console.log('⚠️ Payment not yet successful.');
+                return res.json({ status: 'pending', message: 'Payment not yet confirmed' });
+            }
+
         } catch (error) {
-            console.error('Error fetching order status:', error);
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('Error verifying payment:', error);
+            res.status(500).json({ error: 'Failed to verify payment' });
         }
     }
 }
