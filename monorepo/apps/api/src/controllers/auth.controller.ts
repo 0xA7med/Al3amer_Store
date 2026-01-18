@@ -175,16 +175,8 @@ export class AuthController {
             // Handle missing email/phone cases
             // If phone auth gave no email, generate a placeholder
             const finalEmail = email || `${uid}@social.login`;
-            // If google auth gave no phone, valid schema might require unique phone or null. 
-            // Schema has `phone text not null unique`. 
-            // We need a phone number. If missing, we might set a placeholder? 
-            // Better strategy: If phone is missing (Google Login often has no phone), 
-            // we should prompt user for it? 
-            // OR save a placeholder like `social_${uid}` if validation allows.
-            // Looking at schema: `phone: text('phone').notNull().unique()`
-            // We MUST provide a unique phone.
-
-            const finalPhone = phone || `social_${uid}`;
+            // Schema `phone` is now nullable.
+            // If phone is provided, use it. If not, it remains null.
 
             const randomPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
@@ -192,7 +184,7 @@ export class AuthController {
             const [newUser] = await db.insert(users).values({
                 name: name || 'New User',
                 email: finalEmail,
-                phone: finalPhone,
+                phone: phone || null, // Allow null phone
                 password: hashedPassword,
                 role: 'customer',
                 loyaltyPoints: 0,

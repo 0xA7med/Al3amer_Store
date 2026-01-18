@@ -4,7 +4,7 @@ import { useCoupons, type Coupon, type CreateCouponData } from '../../hooks/useC
 interface FormData {
     code: string;
     discount: number;
-    type: 'percentage' | 'fixed';
+    type: 'percentage' | 'fixed' | 'free_shipping';
     usageLimit: number;
     minOrder?: number;
     startDate?: string;
@@ -186,12 +186,12 @@ export function CouponsManagement() {
                         </div>
                         <div className="lg:col-span-2">
                             <label className="block text-sm font-medium text-slate-300 mb-2">نوع الخصم</label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <label className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${formData.type === 'percentage' ? 'border-primary bg-primary/10' : 'border-white/10 bg-[#161b26] hover:border-primary/50'}`}>
                                     <input
                                         type="radio"
                                         name="discountType"
-                                        className="text-primary bg-slate-800 border-slate-600 focus:ring-primary"
+                                        className="text-primary bg-slate-800 border-slate-600 focus:ring-primary h-4 w-4"
                                         checked={formData.type === 'percentage'}
                                         onChange={() => setFormData({ ...formData, type: 'percentage' })}
                                     />
@@ -201,11 +201,21 @@ export function CouponsManagement() {
                                     <input
                                         type="radio"
                                         name="discountType"
-                                        className="text-primary bg-slate-800 border-slate-600 focus:ring-primary"
+                                        className="text-primary bg-slate-800 border-slate-600 focus:ring-primary h-4 w-4"
                                         checked={formData.type === 'fixed'}
                                         onChange={() => setFormData({ ...formData, type: 'fixed' })}
                                     />
                                     <span className="text-sm text-white">مبلغ ثابت (ج.م)</span>
+                                </label>
+                                <label className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${formData.type === 'free_shipping' ? 'border-primary bg-primary/10' : 'border-white/10 bg-[#161b26] hover:border-primary/50'}`}>
+                                    <input
+                                        type="radio"
+                                        name="discountType"
+                                        className="text-primary bg-slate-800 border-slate-600 focus:ring-primary h-4 w-4"
+                                        checked={formData.type === 'free_shipping'}
+                                        onChange={() => setFormData({ ...formData, type: 'free_shipping', discount: 0 })}
+                                    />
+                                    <span className="text-sm text-white">شحن مجاني</span>
                                 </label>
                             </div>
                         </div>

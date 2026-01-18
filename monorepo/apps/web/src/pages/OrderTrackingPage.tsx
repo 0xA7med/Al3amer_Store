@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ArrowRight, Package, Truck, CheckCircle, Clock, MapPin, Phone, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
+import { useSettings } from '../context/SettingsContext';
 
 const STATUS_STEPS = [
     { id: 'pending', label: 'تم الاستلام', icon: Clock, description: 'تم استلام طلبك بنجاح' },
@@ -50,13 +51,26 @@ export function OrderTrackingPage() {
         );
     }
 
+    // Fetch settings for dynamic contact info
+    const { settings } = useSettings();
+
+    // Helper to extract phone number from WhatsApp URL or string
+    const getWhatsAppNumber = (input: string | undefined) => {
+        if (!input) return '201093166540'; // Fallback
+        // Remove non-numeric characters
+        return input.replace(/\D/g, '');
+    };
+
+    const whatsappNumber = getWhatsAppNumber(settings.whatsapp);
+    const supportPhone = settings.supportPhone || '+201093166540';
+
     const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === order.status);
     // If cancelled or unknown, maybe default to 0 or handle separately. 
     // For specific status logic, simple index matching:
     // If status is "cancelled", show red alert.
     const isCancelled = order.status === 'cancelled';
 
-    // Construct WhatsApp message
+    // Construct WhatsApp message with dynamic number
     const statusLabel = STATUS_STEPS.find(s => s.id === order.status)?.label || order.status;
     const whatsappMessage = encodeURIComponent(
         `مرحباً متجر العامر،\n` +
@@ -238,7 +252,7 @@ export function OrderTrackingPage() {
                         </p>
                         <div className="space-y-3">
                             <a
-                                href={`https://wa.me/201093166540?text=${whatsappMessage}`}
+                                href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 rounded-xl transition-colors"
@@ -247,7 +261,7 @@ export function OrderTrackingPage() {
                                 تواصل عبر واتساب
                             </a>
                             <a
-                                href="tel:+201093166540"
+                                href={`tel:${supportPhone}`}
                                 className="flex items-center justify-center gap-2 w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-colors border border-white/10"
                             >
                                 <Phone className="size-5" />

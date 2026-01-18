@@ -6,9 +6,10 @@ export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
-    phone: text('phone').notNull().unique(),
+    phone: text('phone').unique(),
     password: text('password').notNull(),
     address: text('address'),
+    avatar: text('avatar'),
     loyaltyPoints: integer('loyalty_points').default(0),
     role: text('role').default('customer'), // customer | admin
     status: text('status').default('active'), // active | inactive | blocked
@@ -77,6 +78,7 @@ export const categories = pgTable('categories', {
     slug: text('slug').notNull().unique(),
     parentId: uuid('parent_id'),
     image: text('image'),
+    icon: text('icon'),
     isActive: boolean('is_active').default(true),
 });
 

@@ -8,6 +8,7 @@ export interface Category {
     slug: string;
     parentId: string | null;
     image: string | null;
+    icon: string | null;
     isActive: boolean;
     children?: Category[]; // For tree structure
     parent?: Category | null;

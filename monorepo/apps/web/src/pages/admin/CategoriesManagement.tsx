@@ -44,7 +44,9 @@ export default function CategoriesManagement() {
                             {category.image ? (
                                 <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             ) : (
-                                <span className="material-symbols-outlined text-slate-600">category</span>
+                                <span className="material-symbols-outlined text-slate-600">
+                                    {category.icon || 'category'}
+                                </span>
                             )}
                         </div>
 
@@ -199,6 +201,7 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
     const [formData, setFormData] = useState({
         name: category.name || '',
         image: category.image || '',
+        icon: category.icon || '',
         parentId: category.parentId || null,
         isActive: category.isActive ?? true,
     });
@@ -229,6 +232,15 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
                             className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
                             placeholder="مثال: إلكترونيات"
                             required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">رمز الأيقونة (Material Symbol)</label>
+                        <input
+                            value={formData.icon || ''}
+                            onChange={e => setFormData({ ...formData, icon: e.target.value })}
+                            className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                            placeholder="مثال: inventory_2"
                         />
                     </div>
                     <div>

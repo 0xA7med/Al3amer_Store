@@ -6,9 +6,9 @@ import { Header } from '../layout/Header';
 const SIDEBAR_LINKS = [
     { path: '/admin', icon: 'dashboard', label: 'لوحة التحكم', exact: true },
     { path: '/admin/products', icon: 'inventory_2', label: 'المنتجات' },
+    { path: '/admin/categories', icon: 'account_tree', label: 'الفئات' },
     { path: '/admin/orders', icon: 'receipt_long', label: 'الطلبات' },
     { path: '/admin/customers', icon: 'people', label: 'العملاء' },
-    { path: '/admin/categories', icon: 'account_tree', label: 'الفئات' },
     { path: '/admin/coupons', icon: 'confirmation_number', label: 'أكواد الخصم' },
     { path: '/admin/reviews', icon: 'reviews', label: 'التقييمات' },
     { path: '/admin/reports', icon: 'bar_chart', label: 'التقارير' },
