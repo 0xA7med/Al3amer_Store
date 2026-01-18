@@ -143,7 +143,7 @@ export function HomePage() {
                                 className="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36"
                             >
                                 <span className="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">
-                                    {CATEGORY_ICONS[cat.slug] || 'category'}
+                                    {cat.icon || 'category'}
                                 </span>
                                 <span className="text-sm font-bold text-gray-300 group-hover:text-white">{cat.name}</span>
                             </Link>
