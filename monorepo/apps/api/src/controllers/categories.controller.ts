@@ -42,7 +42,7 @@ export class CategoriesController {
 
     async create(req: Request, res: Response) {
         try {
-            const { name, parentId, image, isActive } = req.body;
+            const { name, parentId, image, icon, isActive } = req.body;
 
             // simple slug generation
             const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF\-]+/g, '') + '-' + Date.now();
@@ -52,6 +52,7 @@ export class CategoriesController {
                 slug,
                 parentId: parentId || null,
                 image,
+                icon,
                 isActive: isActive ?? true,
             }).returning();
 
@@ -65,13 +66,14 @@ export class CategoriesController {
     async update(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, parentId, image, isActive } = req.body;
+            const { name, parentId, image, icon, isActive } = req.body;
 
             const [updatedCategory] = await db.update(categories)
                 .set({
                     name,
                     parentId: parentId || null,
                     image,
+                    icon,
                     isActive,
                     // optionally update slug if name changes, but usually slugs are permanent. Let's keep slug stable.
                 })
