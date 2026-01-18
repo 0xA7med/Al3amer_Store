@@ -133,9 +133,13 @@ export function HomePage() {
                                 key={cat.id}
                                 className="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36"
                             >
-                                <span className="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">
-                                    {cat.icon || 'category'}
-                                </span>
+                                {cat.image ? (
+                                    <img src={cat.image} alt={cat.name} className="w-12 h-12 object-contain" />
+                                ) : (
+                                    <span className="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">
+                                        {cat.icon || 'category'}
+                                    </span>
+                                )}
                                 <span className="text-sm font-bold text-gray-300 group-hover:text-white">{cat.name}</span>
                             </Link>
                         ))}
