@@ -367,6 +367,24 @@ export function LoginPage() {
                                 </div>
                             </div>
 
+                            {mode === 'login' && (
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                        />
+                                        <div className="size-5 border border-gray-600 rounded bg-[#0a0f18] peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center transition-all">
+                                            <span className="material-symbols-outlined text-white text-sm opacity-0 peer-checked:opacity-100">check</span>
+                                        </div>
+                                        <span className="text-sm text-gray-400 group-hover:text-gray-300">تذكرني</span>
+                                    </label>
+                                    <Link to="#" className="text-sm font-medium text-primary hover:text-blue-300 transition-colors">نسيت كلمة المرور؟</Link>
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
                                 disabled={loading}
