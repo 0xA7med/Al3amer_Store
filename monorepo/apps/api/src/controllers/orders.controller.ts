@@ -449,7 +449,7 @@ export class OrdersController {
 
             return res.json({
                 status: order.status,
-                payment_status: order.paymentStatus || (order as any).payment_status // Handle camelCase vs snake_case if schema differs
+                payment_status: order.status // Schema uses 'status' for payment/order state (pending, paid, etc.)
             });
         } catch (error) {
             console.error('Get Status Error:', error);
