@@ -435,4 +435,25 @@ export class OrdersController {
             res.status(500).json({ error: 'Failed to verify payment' });
         }
     }
+    // GET /api/orders/:id/status - Get order status (for polling)
+    public static async getStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const order = await db.query.orders.findFirst({
+                where: eq(orders.id, id),
+            });
+
+            if (!order) {
+                return res.status(404).json({ message: 'Order not found' });
+            }
+
+            return res.json({
+                status: order.status,
+                payment_status: order.paymentStatus || (order as any).payment_status // Handle camelCase vs snake_case if schema differs
+            });
+        } catch (error) {
+            console.error('Get Status Error:', error);
+            return res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
 }
