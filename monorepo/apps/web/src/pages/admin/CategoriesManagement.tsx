@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCategories, type Category } from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
 
@@ -206,6 +206,17 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
         isActive: category.isActive ?? true,
     });
 
+    // Update form data when category prop changes (for edit mode)
+    useEffect(() => {
+        setFormData({
+            name: category.name || '',
+            image: category.image || '',
+            icon: category.icon || '',
+            parentId: category.parentId || null,
+            isActive: category.isActive ?? true,
+        });
+    }, [category]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name) return toast.error('Required fields');
@@ -242,6 +253,12 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
                             className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
                             placeholder="مثال: inventory_2"
                         />
+                        {formData.icon && (
+                            <div className="mt-2 flex items-center gap-2 p-2 bg-white/5 rounded-lg">
+                                <span className="material-symbols-outlined text-primary text-2xl">{formData.icon}</span>
+                                <span className="text-sm text-gray-400">معاينة الأيقونة</span>
+                            </div>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">رابط الصورة (URL)</label>

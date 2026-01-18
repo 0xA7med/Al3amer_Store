@@ -67,8 +67,13 @@ export class CouponsController {
                 expiryDate,
             } = req.body;
 
-            if (!code || !discount || !type || !usageLimit || !expiryDate) {
+            if (!code || discount === undefined || discount === null || !type || !usageLimit || !expiryDate) {
                 return res.status(400).json({ error: 'Missing required fields' });
+            }
+
+            // For free_shipping type, discount can be 0
+            if (type !== 'free_shipping' && !discount) {
+                return res.status(400).json({ error: 'Discount is required for percentage and fixed types' });
             }
 
             const [newCoupon] = await db.insert(coupons).values({
