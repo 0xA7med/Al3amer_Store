@@ -3,15 +3,6 @@ import { ProductCard } from '../components/products';
 
 import { useFeaturedProducts, useCategories } from '../hooks/useProducts';
 
-const CATEGORY_ICONS: Record<string, string> = {
-    'pos': 'point_of_sale',
-    'printer-barcode': 'print',
-    'scanners': 'qr_code_scanner',
-    'drawers': 'inbox',
-    'scales': 'scale',
-    'rolls': 'receipt_long'
-};
-
 export function HomePage() {
     const { data: products, isLoading } = useFeaturedProducts();
     const { data: categories } = useCategories();
