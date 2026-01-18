@@ -140,6 +140,7 @@ export function CheckoutPage() {
     // State for Payment Modal
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
+    const [isCheckingPayment, setIsCheckingPayment] = useState(false);
     // Polling Backup & PostMessage Listener
     useEffect(() => {
         let intervalId: any;
@@ -147,7 +148,10 @@ export function CheckoutPage() {
         // Listener for Iframe Success Message
         // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
+            console.log('Checkout Page received message:', event.data, 'from:', event.origin);
+
             if (event.data === 'PAYMOB_SUCCESS') {
+                console.log('PAYMOB_SUCCESS matched. Closing modal...');
                 setShowPaymentModal(false);
                 clearCart();
                 // Check if we have an order ID to redirect to
@@ -156,21 +160,40 @@ export function CheckoutPage() {
                 } else {
                     navigate('/order-success/confirmed');
                 }
+            } else if (event.data === 'PAYMOB_FAILED') {
+                console.log('PAYMOB_FAILED matched. Closing modal...');
+                setShowPaymentModal(false);
+                setError('فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.');
             }
         };
         window.addEventListener('message', handleMessage);
 
+        let pollCount = 0;
+        const MAX_POLL_ATTEMPTS = 120; // 120 * 5s = 10 minutes max polling time
+
         if (showPaymentModal && createdOrderId) {
             intervalId = setInterval(async () => {
+                pollCount++;
+                if (pollCount > MAX_POLL_ATTEMPTS) {
+                    console.log('Max polling attempts reached. Stopping verification.');
+                    clearInterval(intervalId);
+                    return;
+                }
+
                 try {
-                    const { data } = await api.get(`/orders/${createdOrderId}`);
+                    // passively check? No, we need to actively verify because locally we don't get webhooks.
+                    // Call verify-payment to force a check with Paymob.
+                    const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
                     if (data.status === 'paid' || data.status === 'processing') {
                         clearInterval(intervalId);
                         setShowPaymentModal(false);
                         clearCart();
                         navigate(`/order-success/${createdOrderId}`);
                     }
-                } catch (err) { }
+                } catch (error) {
+                    // Ignore errors during polling, just keep trying until max attempts or user closes
+                    console.error('Polling error:', error);
+                }
             }, 5000);
         }
 
@@ -825,12 +848,54 @@ export function CheckoutPage() {
                                 <span className="material-symbols-outlined text-primary">credit_card</span>
                                 الدفع الآمن
                             </h3>
-                            <button
-                                onClick={() => setShowPaymentModal(false)}
-                                className="text-slate-400 hover:text-white transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={async () => {
+                                        setIsCheckingPayment(true);
+                                        try {
+                                            if (!createdOrderId) return;
+                                            const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
+
+                                            if (data.status === 'paid') {
+                                                setShowPaymentModal(false);
+                                                clearCart();
+                                                navigate(`/order-success/${createdOrderId}`);
+                                            } else {
+                                                // Show simplified error (toast would be better but alert is quick for now or we set error state)
+                                                // Using basic alert for this modal context or just updating button text temporarily
+                                                const originalError = error;
+                                                setError('لم يتم تأكيد الدفع بعد. الرجاء المحاولة مرة أخرى أو التواصل مع الدعم.');
+                                                setTimeout(() => setError(originalError), 5000);
+                                            }
+                                        } catch (err) {
+                                            console.error('Verification failed', err);
+                                            // Handle error
+                                        } finally {
+                                            setIsCheckingPayment(false);
+                                        }
+                                    }}
+                                    disabled={isCheckingPayment}
+                                    className="text-emerald-400 hover:text-emerald-300 text-sm font-bold border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors hover:bg-emerald-500/10 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {isCheckingPayment ? (
+                                        <>
+                                            <div className="size-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                                            جاري التحقق...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-sm">sync</span>
+                                            تحقق من الدفع
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
                         </div>
                         <div className="flex-1 w-full h-full bg-white relative">
                             <iframe

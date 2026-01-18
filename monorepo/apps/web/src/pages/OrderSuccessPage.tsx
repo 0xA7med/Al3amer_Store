@@ -10,18 +10,50 @@ export function OrderSuccessPage() {
     // Frame Buster & PostMessage: 
     // 1. Force parent to reload if needed.
     // 2. Send 'PAYMOB_SUCCESS' to parent to close modal cleaner.
+    // Frame Buster & PostMessage Logic
+    // Handles both Iframe (Modal) and Popup (New Window) scenarios
     useEffect(() => {
-        const handleFrameBuster = () => {
-            // 1. Send 'PAYMOB_SUCCESS' to parent to close modal cleaner.
-            if (window.parent) {
-                window.parent.postMessage('PAYMOB_SUCCESS', '*');
+        const handlePaymentSuccess = () => {
+            const message = 'PAYMOB_SUCCESS';
+
+            // 1. Notify Parent (Iframe mode)
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, '*');
+                console.log('Sent PAYMOB_SUCCESS to parent');
             }
-            // 2. Force parent to reload if needed.
-            if (window.top && window.self !== window.top) {
-                window.top.location.href = window.location.href;
+
+            // 2. Notify Opener (Popup mode)
+            if (window.opener) {
+                window.opener.postMessage(message, '*');
+                console.log('Sent PAYMOB_SUCCESS to opener');
             }
+
+            // 3. Retry mechanism to ensure message is received
+            const interval = setInterval(() => {
+                if (window.opener) window.opener.postMessage(message, '*');
+                if (window.parent && window.parent !== window) window.parent.postMessage(message, '*');
+            }, 1000);
+
+            // 4. Handle Popup Closing / Redirection
+            // If we are in a popup (have opener) or iframe (have parent), we want to close/redirect
+            setTimeout(() => {
+                clearInterval(interval);
+
+                // If it's a popup, close it
+                if (window.opener) {
+                    window.close();
+                }
+
+                // If it's an iframe, force parent reload (fallback safety)
+                // We only do this if we haven't already navigated away via the message listener in parent
+                if (window.top && window.self !== window.top) {
+                    console.log('Frame buster: Redirecting top window to success page');
+                    window.top.location.href = window.location.href;
+                }
+            }, 3000);
         };
-        handleFrameBuster();
+
+        handlePaymentSuccess();
     }, []);
 
     return (

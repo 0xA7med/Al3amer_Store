@@ -20,6 +20,7 @@ import OffersPage from './pages/OffersPage';
 import AboutUsPage from './pages/AboutUsPage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
 import { OrderTrackingPage } from './pages/OrderTrackingPage';
+import { PaymentCallbackPage } from './pages/PaymentCallbackPage';
 
 // Admin Pages
 import DashboardOverview from './pages/admin/DashboardOverview';
@@ -68,6 +69,7 @@ function App() {
                         <Route path="/checkout" element={<CheckoutPage />} />
                         <Route path="/order-success/:id" element={<OrderSuccessPage />} />
                         <Route path="/track-order/:id" element={<OrderTrackingPage />} />
+                        <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                         <Route path="/ai-builder" element={<AIBundleBuilderPage />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route

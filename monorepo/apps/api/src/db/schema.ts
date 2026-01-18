@@ -170,6 +170,7 @@ export const orders = pgTable('orders', {
     address: text('address').notNull(),
     notes: text('notes'),
     paymentMethod: text('payment_method').notNull(), // cod | paymob
+    paymobOrderId: text('paymob_order_id'), // Store Paymob Order ID for verification
     status: text('status').default('pending'), // pending | processing | shipping | delivered
     subtotal: numeric('subtotal', { precision: 10, scale: 2 }).notNull(),
     shippingCost: numeric('shipping_cost', { precision: 10, scale: 2 }).default('0'),
