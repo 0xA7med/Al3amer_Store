@@ -44,7 +44,7 @@ export default function CategoriesManagement() {
                             {category.image ? (
                                 <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             ) : (
-                                <span className="material-symbols-outlined text-primary text-xl">
+                                <span className="material-symbols-outlined text-slate-600">
                                     {category.icon || 'category'}
                                 </span>
                             )}
