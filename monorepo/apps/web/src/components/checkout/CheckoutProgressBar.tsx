@@ -14,7 +14,7 @@ const STEPS = [
 
 export const CheckoutProgressBar: React.FC<CheckoutProgressBarProps> = ({ currentStep }) => {
     return (
-        <div className="glass-panel rounded-2xl p-6 mb-8 relative overflow-hidden">
+        <div className="glass-panel rounded-2xl p-3 md:p-6 mb-8 relative overflow-hidden">
             {/* Background Glow Effect */}
             <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0" />
 
@@ -26,9 +26,9 @@ export const CheckoutProgressBar: React.FC<CheckoutProgressBarProps> = ({ curren
 
                     return (
                         <React.Fragment key={step.id}>
-                            <div className="flex flex-col items-center gap-3 flex-shrink-0 group">
+                            <div className="flex flex-col items-center gap-1.5 md:gap-3 flex-shrink-0 group">
                                 <div
-                                    className={`size-12 rounded-full flex items-center justify-center transition-all duration-500 relative
+                                    className={`size-8 min-[400px]:size-10 md:size-12 rounded-full flex items-center justify-center transition-all duration-500 relative
                                         ${isCompleted
                                             ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                                             : isActive
@@ -41,25 +41,26 @@ export const CheckoutProgressBar: React.FC<CheckoutProgressBarProps> = ({ curren
                                     )}
 
                                     {isCompleted ? (
-                                        <Check className="w-6 h-6 animate-in zoom-in duration-300" />
+                                        <Check className="w-4 h-4 md:w-6 md:h-6 animate-in zoom-in duration-300" />
                                     ) : (
-                                        <StepIcon className={`w-5 h-5 ${isActive ? 'animate-pulse' : ''}`} />
+                                        <StepIcon className={`w-3.5 h-3.5 md:w-5 md:h-5 ${isActive ? 'animate-pulse' : ''}`} />
                                     )}
 
                                     {/* Step Number Badge */}
                                     {!isCompleted && !isActive && (
-                                        <span className="absolute -top-1 -right-1 size-5 bg-[#232f48] text-[10px] font-bold rounded-full flex items-center justify-center border border-white/5 text-gray-400">
+                                        <span className="absolute -top-1 -right-1 size-4 md:size-5 bg-[#232f48] text-[8px] md:text-[10px] font-bold rounded-full flex items-center justify-center border border-white/5 text-gray-400">
                                             {step.id}
                                         </span>
                                     )}
                                 </div>
 
-                                <span className={`text-xs md:text-sm font-bold transition-colors duration-300 whitespace-nowrap
+                                <span className={`text-[9px] md:text-sm font-bold transition-colors duration-300 text-center max-w-[60px] md:max-w-none leading-tight
                                     ${isActive
                                         ? 'text-primary'
                                         : isCompleted
                                             ? 'text-emerald-400'
-                                            : 'text-gray-500'}`}
+                                            : 'text-gray-500'}
+                                    ${isActive ? 'block' : 'hidden min-[400px]:block'}`}
                                 >
                                     {step.label}
                                 </span>
@@ -67,7 +68,7 @@ export const CheckoutProgressBar: React.FC<CheckoutProgressBarProps> = ({ curren
 
                             {/* Connector Line */}
                             {index < STEPS.length - 1 && (
-                                <div className="flex-1 mx-2 md:mx-4 relative h-1 mb-8">
+                                <div className="flex-1 mx-1 md:mx-4 relative h-0.5 md:h-1 mb-4 md:mb-8">
                                     <div className="absolute inset-0 bg-white/5 rounded-full" />
                                     <div
                                         className={`absolute inset-0 bg-gradient-to-l from-primary to-primary-light rounded-full transition-all duration-700 origin-right

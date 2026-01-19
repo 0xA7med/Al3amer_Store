@@ -399,7 +399,7 @@ export function CheckoutPage() {
             <div className="grid lg:grid-cols-3 gap-8 mt-8">
                 {/* Main Content Area */}
                 <div className="lg:col-span-2">
-                    <div className="glass-panel p-6 rounded-2xl min-h-[400px]">
+                    <div className="glass-panel p-4 md:p-6 rounded-2xl min-h-[400px]">
                         {error && <div className="bg-red-500/20 text-red-200 p-4 rounded-xl border border-red-500/20 mb-6">{error}</div>}
 
                         {/* Step 1: Shipping Information */}
@@ -750,7 +750,7 @@ export function CheckoutPage() {
 
                 {/* Summary Sidebar */}
                 <div className="lg:col-span-1">
-                    <div className="glass-panel p-6 rounded-2xl sticky top-24">
+                    <div className="glass-panel p-4 md:p-6 rounded-2xl sticky top-24">
                         <h3 className="text-lg font-bold text-white mb-4">ملخص الطلب</h3>
                         <div className="space-y-3 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                             {items.map(item => (
