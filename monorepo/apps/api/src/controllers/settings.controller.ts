@@ -146,4 +146,60 @@ export class SettingsController {
             res.status(500).json({ error: 'Failed to update settings' });
         }
     }
+
+    // POST /api/settings/test-gemini - Test Gemini API connection
+    static async testGemini(req: Request, res: Response) {
+        try {
+            const { apiKey } = req.body;
+
+            if (!apiKey) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'مفتاح API مطلوب'
+                });
+            }
+
+            // Call Gemini API with a simple test prompt
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: 'Say hello in Arabic in one word.' }]
+                        }],
+                        generationConfig: {
+                            maxOutputTokens: 10,
+                        }
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = (errorData as any)?.error?.message || 'فشل الاتصال';
+                return res.status(400).json({
+                    success: false,
+                    error: `خطأ في API: ${errorMessage}`
+                });
+            }
+
+            const data = await response.json();
+            const generatedText = (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+            res.json({
+                success: true,
+                message: 'تم الاتصال بنجاح!',
+                response: generatedText.trim()
+            });
+
+        } catch (error) {
+            console.error('Error testing Gemini connection:', error);
+            res.status(500).json({
+                success: false,
+                error: 'فشل في الاتصال بخدمة Gemini'
+            });
+        }
+    }
 }

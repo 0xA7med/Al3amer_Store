@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAdminReports } from '../../hooks/useAdminReports';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminReportsPage() {
     const [dateRange, setDateRange] = useState('month');
-    const { stats, salesByCategory, topProducts, isLoading } = useAdminReports(dateRange);
+    const { stats, salesByCategory, topProducts, dailySalesChart, isLoading } = useAdminReports(dateRange);
 
     if (isLoading || !stats) {
         return (
@@ -56,9 +57,9 @@ export default function AdminReportsPage() {
                             <div className="relative z-10">
                                 <p className="text-slate-400 text-sm font-medium">{stat.title}</p>
                                 <h3 className="text-2xl font-bold text-white mt-1">{stat.value} <span className="text-xs font-normal text-slate-500">{stat.unit}</span></h3>
-                                <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${stat.change.startsWith('+') ? 'text-emerald-400' : stat.change.startsWith('-') ? 'text-red-400' : 'text-slate-400'}`}>
                                     <span className="material-symbols-outlined text-[16px]">
-                                        {stat.change.startsWith('+') ? 'trending_up' : 'trending_down'}
+                                        {stat.change.startsWith('+') ? 'trending_up' : stat.change.startsWith('-') ? 'trending_down' : 'trending_flat'}
                                     </span>
                                     <span>{stat.change}</span>
                                     <span className="text-slate-500 font-medium mr-1">مقارنة بالفترة السابقة</span>
@@ -72,30 +73,59 @@ export default function AdminReportsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Revenue Chart */}
                     <div className="lg:col-span-2 glass-panel p-6 rounded-xl flex flex-col">
-                        <h3 className="text-lg font-bold text-white mb-6">تحليل الإيرادات</h3>
-                        <div className="flex-1 min-h-[300px] w-full relative">
-                            <svg className="w-full h-full overflow-visible" viewBox="0 0 800 300">
-                                <defs>
-                                    <linearGradient id="chartGradientReport" x1="0" x2="0" y1="0" y2="1">
-                                        <stop offset="0%" stopColor="#135bec" stopOpacity="0.5"></stop>
-                                        <stop offset="100%" stopColor="#135bec" stopOpacity="0"></stop>
-                                    </linearGradient>
-                                </defs>
-                                {/* Grid Lines */}
-                                {[0, 75, 150, 225, 300].map(y => (
-                                    <line key={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="4" strokeWidth="1" x1="0" x2="800" y1={y} y2={y}></line>
-                                ))}
-                                {/* Data Path */}
-                                <path d="M0,280 C100,200 200,250 300,150 C400,100 500,180 600,80 C700,50 750,30 800,20 V300 H0 Z" fill="url(#chartGradientReport)"></path>
-                                <path d="M0,280 C100,200 200,250 300,150 C400,100 500,180 600,80 C700,50 750,30 800,20" fill="none" stroke="#135bec" strokeLinecap="round" strokeWidth="3"></path>
-                                {/* X Axis Labels */}
-                            </svg>
-                            <div className="flex justify-between mt-4 text-xs text-slate-500 font-medium px-2">
-                                <span>الأسبوع 1</span>
-                                <span>الأسبوع 2</span>
-                                <span>الأسبوع 3</span>
-                                <span>الأسبوع 4</span>
-                            </div>
+                        <h3 className="text-lg font-bold text-white mb-6">تحليل الإيرادات (آخر 30 يوم)</h3>
+                        <div className="flex-1 min-h-[300px] w-full">
+                            {dailySalesChart.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <AreaChart data={dailySalesChart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#135bec" stopOpacity={0.4} />
+                                                <stop offset="95%" stopColor="#135bec" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis
+                                            dataKey="day"
+                                            stroke="#64748b"
+                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                            tickLine={{ stroke: '#64748b' }}
+                                            interval="preserveStartEnd"
+                                        />
+                                        <YAxis
+                                            stroke="#64748b"
+                                            tick={{ fill: '#64748b', fontSize: 11 }}
+                                            tickLine={{ stroke: '#64748b' }}
+                                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#1e232d',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: '8px',
+                                                color: '#fff'
+                                            }}
+                                            formatter={(value) => [`${(value as number || 0).toLocaleString()} ج.م`, 'الإيرادات']}
+                                            labelFormatter={(label) => `التاريخ: ${label}`}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            stroke="#135bec"
+                                            strokeWidth={2}
+                                            fillOpacity={1}
+                                            fill="url(#colorRevenue)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex items-center justify-center h-[300px] text-slate-500">
+                                    <div className="text-center">
+                                        <span className="material-symbols-outlined text-4xl mb-2 block">insights</span>
+                                        <p>لا توجد بيانات مبيعات بعد</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

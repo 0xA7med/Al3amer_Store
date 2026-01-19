@@ -133,6 +133,21 @@ export class AIBundleController {
                 exceedsBudget
             };
 
+            // Auto-save to ai_bundle_logs
+            try {
+                await db.insert(aiBundleLogs).values({
+                    userId: (req as any).user?.id || null,
+                    businessType,
+                    budget: budgetNum,
+                    selectedFeatures: Array.isArray(selectedFeatures) ? selectedFeatures : [],
+                    resultBundle: result,
+                    matchScore,
+                });
+            } catch (logError) {
+                console.error('[AI Bundle] Failed to save log:', logError);
+                // Don't fail the request if logging fails
+            }
+
             console.log(`[AI Bundle] Finished. Match: ${matchScore}%, Total: ${totalPrice}, Exceeds: ${exceedsBudget}`);
             res.json(result);
         } catch (error) {

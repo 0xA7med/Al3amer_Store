@@ -3,6 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
+// Helper to mask API key for display
+const maskApiKey = (key: string): string => {
+    if (!key || key.length < 8) return key;
+    return `${key.substring(0, 4)}....${key.slice(-4)}`;
+};
+
 export default function AdminAISettingsPage() {
     const queryClient = useQueryClient();
     const [apiKey, setApiKey] = useState('');
@@ -11,6 +17,7 @@ export default function AdminAISettingsPage() {
     const [descriptionLength, setDescriptionLength] = useState('medium');
     const [language, setLanguage] = useState('ar');
     const [tone, setTone] = useState('Marketing');
+    const [keyModified, setKeyModified] = useState(false);
 
     // Fields state
     const [fields, setFields] = useState({
@@ -33,7 +40,10 @@ export default function AdminAISettingsPage() {
     // Update local state when settings are loaded
     useEffect(() => {
         if (settings) {
-            setApiKey(settings.googleApiKey || '');
+            // Only update apiKey if not modified by user
+            if (!keyModified) {
+                setApiKey(settings.googleApiKey || '');
+            }
             setIsEnabled(settings.aiEnabled ?? true);
             setDescriptionLength(settings.aiDescriptionLength || 'medium');
             setLanguage(settings.aiLanguage || 'ar');
@@ -42,7 +52,7 @@ export default function AdminAISettingsPage() {
                 setFields(settings.aiFields);
             }
         }
-    }, [settings]);
+    }, [settings, keyModified]);
 
     // Save settings mutation
     const updateSettingsMutation = useMutation({
@@ -52,10 +62,29 @@ export default function AdminAISettingsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['settings'] });
+            setKeyModified(false);
             toast.success('تم حفظ الإعدادات بنجاح');
         },
         onError: () => {
             toast.error('حدث خطأ أثناء حفظ الإعدادات');
+        },
+    });
+
+    // Test Gemini connection mutation
+    const testGeminiMutation = useMutation({
+        mutationFn: async (key: string) => {
+            const { data } = await api.post('/settings/test-gemini', { apiKey: key });
+            return data;
+        },
+        onSuccess: (data) => {
+            if (data.success) {
+                toast.success(`✅ ${data.message} — الرد: "${data.response}"`);
+            } else {
+                toast.error(`❌ ${data.error}`);
+            }
+        },
+        onError: () => {
+            toast.error('فشل في اختبار الاتصال');
         },
     });
 
@@ -68,6 +97,19 @@ export default function AdminAISettingsPage() {
             aiTone: tone,
             aiFields: fields,
         });
+    };
+
+    const handleTestConnection = () => {
+        if (!apiKey) {
+            toast.error('يرجى إدخال مفتاح API أولاً');
+            return;
+        }
+        testGeminiMutation.mutate(apiKey);
+    };
+
+    const handleApiKeyChange = (value: string) => {
+        setApiKey(value);
+        setKeyModified(true);
     };
 
     const toggleField = (field: keyof typeof fields) => {
@@ -139,8 +181,9 @@ export default function AdminAISettingsPage() {
                                     </div>
                                     <input
                                         type={showKey ? "text" : "password"}
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
+                                        value={showKey ? apiKey : (apiKey ? maskApiKey(apiKey) : '')}
+                                        onChange={(e) => handleApiKeyChange(e.target.value)}
+                                        onFocus={() => setShowKey(true)}
                                         className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 pr-10 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder-[#555]"
                                         placeholder="أدخل مفتاح API الخاص بك هنا"
                                     />
@@ -155,8 +198,16 @@ export default function AdminAISettingsPage() {
                                 <p className="text-[#9da6b9] text-xs">يستخدم هذا المفتاح للوصول إلى خدمات Gemini AI لتوليد النصوص.</p>
                             </div>
                             <div className="flex justify-end">
-                                <button className="text-primary text-sm font-bold hover:text-blue-400 flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-primary/10 transition-colors">
-                                    <span className="material-symbols-outlined text-lg">wifi_protected_setup</span>
+                                <button
+                                    onClick={handleTestConnection}
+                                    disabled={testGeminiMutation.isPending || !apiKey}
+                                    className="text-primary text-sm font-bold hover:text-blue-400 flex items-center gap-2 py-2 px-4 rounded-lg hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {testGeminiMutation.isPending ? (
+                                        <div className="size-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                    ) : (
+                                        <span className="material-symbols-outlined text-lg">wifi_protected_setup</span>
+                                    )}
                                     اختبار الاتصال
                                 </button>
                             </div>

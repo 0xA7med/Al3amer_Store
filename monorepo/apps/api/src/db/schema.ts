@@ -224,6 +224,13 @@ export const aiBundleLogs = pgTable('ai_bundle_logs', {
     createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const aiBundleLogsRelations = relations(aiBundleLogs, ({ one }) => ({
+    user: one(users, {
+        fields: [aiBundleLogs.userId],
+        references: [users.id],
+    }),
+}));
+
 // ============= SETTINGS TABLE =============
 export const settings = pgTable('settings', {
     id: uuid('id').defaultRandom().primaryKey(),

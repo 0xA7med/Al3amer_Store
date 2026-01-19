@@ -6,6 +6,8 @@ export interface DashboardStats {
     totalOrders: number;
     averageOrderValue: number;
     newCustomers: number;
+    netProfit?: number;
+    customerGrowth?: number;
     revenueChange: number;
     ordersChange: number;
     aovChange: number;
@@ -25,14 +27,21 @@ export interface TopProduct {
     sales: number;
     revenue: number;
     stock: number;
+    imageUrl?: string;
 }
 
-
+export interface DailySalesData {
+    date: string;
+    day: string;
+    revenue: number;
+    orders: number;
+}
 
 export function useAdminReports(dateRange: string) {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [salesByCategory, setSalesByCategory] = useState<SalesByCategory[]>([]);
     const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+    const [dailySalesChart, setDailySalesChart] = useState<DailySalesData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -41,10 +50,25 @@ export function useAdminReports(dateRange: string) {
             try {
                 const response = await api.get('/admin/reports', { params: { range: dateRange } });
                 setStats(response.data.stats);
-                setSalesByCategory(response.data.salesByCategory);
-                setTopProducts(response.data.topProducts);
+                setSalesByCategory(response.data.salesByCategory || []);
+                setTopProducts(response.data.topProducts || []);
+                setDailySalesChart(response.data.dailySalesChart || []);
             } catch (err) {
                 console.error('Failed to fetch reports', err);
+                // Set empty defaults on error
+                setStats({
+                    totalRevenue: 0,
+                    totalOrders: 0,
+                    averageOrderValue: 0,
+                    newCustomers: 0,
+                    revenueChange: 0,
+                    ordersChange: 0,
+                    aovChange: 0,
+                    customersChange: 0,
+                });
+                setSalesByCategory([]);
+                setTopProducts([]);
+                setDailySalesChart([]);
             } finally {
                 setIsLoading(false);
             }
@@ -57,6 +81,7 @@ export function useAdminReports(dateRange: string) {
         stats,
         salesByCategory,
         topProducts,
+        dailySalesChart,
         isLoading
     };
 }
