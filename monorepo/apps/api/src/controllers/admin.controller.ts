@@ -74,14 +74,20 @@ export class AdminController {
     // GET /api/admin/reports - Aggregated reports
     static async getReports(req: Request, res: Response) {
         try {
-            const { range } = req.query; // week, month, year
+            const { range, startDate: customStart, endDate: customEnd } = req.query;
 
-            // Determine date range
+            // Determine date range with timezone safety (use UTC)
             const now = new Date();
             let startDate = new Date();
             let previousStartDate = new Date();
 
-            if (range === 'week') {
+            if (customStart && customEnd) {
+                // Custom date range from query params
+                startDate = new Date(customStart as string);
+                const daysDiff = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                previousStartDate = new Date(startDate);
+                previousStartDate.setDate(previousStartDate.getDate() - daysDiff);
+            } else if (range === 'week') {
                 startDate.setDate(now.getDate() - 7);
                 previousStartDate.setDate(now.getDate() - 14);
             } else if (range === 'year') {
@@ -93,46 +99,71 @@ export class AdminController {
                 previousStartDate.setMonth(now.getMonth() - 2);
             }
 
-            // Fetch orders for current period with items and product info
-            const currentOrders = await db.query.orders.findMany({
-                where: sql`${orders.createdAt} >= ${startDate}`,
-                with: {
-                    items: {
-                        with: {
-                            product: {
-                                with: {
-                                    images: true,
-                                    category: true,
+            // Reset time to start of day (UTC) for consistent date comparison
+            startDate.setUTCHours(0, 0, 0, 0);
+            previousStartDate.setUTCHours(0, 0, 0, 0);
+
+            // ============= CURRENT PERIOD ORDERS =============
+            let currentOrders: any[] = [];
+            try {
+                currentOrders = await db.query.orders.findMany({
+                    where: sql`${orders.createdAt} >= ${startDate}`,
+                    with: {
+                        items: {
+                            with: {
+                                product: {
+                                    with: {
+                                        images: true,
+                                        category: true,
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            } catch (err) {
+                console.error('Error fetching current orders:', err);
+                currentOrders = [];
+            }
 
-            // Fetch orders for previous period (for comparison)
-            const previousOrders = await db.query.orders.findMany({
-                where: sql`${orders.createdAt} >= ${previousStartDate} AND ${orders.createdAt} < ${startDate}`,
-            });
+            // ============= PREVIOUS PERIOD ORDERS =============
+            let previousOrders: any[] = [];
+            try {
+                previousOrders = await db.query.orders.findMany({
+                    where: sql`${orders.createdAt} >= ${previousStartDate} AND ${orders.createdAt} < ${startDate}`,
+                });
+            } catch (err) {
+                console.error('Error fetching previous orders:', err);
+                previousOrders = [];
+            }
 
-            // Calculate Stats with cost tracking for net profit
+            // ============= CALCULATE STATS (with safety guards) =============
             const calculateStats = (orderList: any[]) => {
+                // Guard against empty array
+                if (!orderList || orderList.length === 0) {
+                    return { totalRevenue: 0, totalOrders: 0, averageOrderValue: 0, uniqueCustomers: 0, netProfit: 0, totalCost: 0 };
+                }
+
                 let totalRevenue = 0;
                 let totalCost = 0;
 
                 for (const order of orderList) {
-                    totalRevenue += parseFloat(order.total || '0');
+                    // Only count paid/delivered orders for revenue (safety check for null total)
+                    if (order.status === 'delivered' || order.status === 'shipped') {
+                        totalRevenue += parseFloat(order.total || '0') || 0;
+                    }
                     // Calculate cost from order items if available
                     const items = order.items || [];
                     for (const item of items) {
-                        const productCost = parseFloat(item.product?.cost || '0');
+                        const productCost = parseFloat(item.product?.cost || '0') || 0;
                         totalCost += productCost * (item.quantity || 1);
                     }
                 }
 
                 const totalOrders = orderList.length;
+                // SAFETY: Prevent divide by zero
                 const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-                const uniqueCustomers = new Set(orderList.map(o => o.userId || o.email)).size;
+                const uniqueCustomers = new Set(orderList.map(o => o.userId || o.email).filter(Boolean)).size;
                 const netProfit = totalRevenue - totalCost;
 
                 return { totalRevenue, totalOrders, averageOrderValue, uniqueCustomers, netProfit, totalCost };
@@ -141,53 +172,77 @@ export class AdminController {
             const currentStats = calculateStats(currentOrders);
             const previousStats = calculateStats(previousOrders);
 
+            // Calculate change percentage (with safety guard for zero previous)
             const calculateChange = (current: number, previous: number) => {
                 if (previous === 0) return current > 0 ? 100 : 0;
                 return Math.round(((current - previous) / previous) * 100);
             };
 
-            // Get daily sales data for chart (last 30 days)
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            // ============= DAILY SALES CHART (last 30 days) =============
+            let dailySalesChart: any[] = [];
+            try {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                thirtyDaysAgo.setUTCHours(0, 0, 0, 0);
 
-            const dailySalesRaw = await db.execute(sql`
-                SELECT 
-                    DATE(created_at) as date, 
-                    COALESCE(SUM(CAST(total AS DECIMAL)), 0) as revenue,
-                    COUNT(*) as orders
-                FROM orders
-                WHERE created_at >= ${thirtyDaysAgo}
-                GROUP BY DATE(created_at)
-                ORDER BY date ASC
-            `);
+                const dailySalesRaw = await db.execute(sql`
+                    SELECT 
+                        DATE(created_at) as date, 
+                        COALESCE(SUM(CAST(total AS DECIMAL)), 0) as revenue,
+                        COUNT(*) as orders
+                    FROM orders
+                    WHERE created_at >= ${thirtyDaysAgo}
+                    GROUP BY DATE(created_at)
+                    ORDER BY date ASC
+                `);
 
-            // Format daily sales for chart (fill missing days with 0)
-            const dailySalesChart = [];
-            const salesMap = new Map(
-                (dailySalesRaw as any[]).map(row => [
-                    new Date(row.date).toISOString().split('T')[0],
-                    { revenue: parseFloat(row.revenue) || 0, orders: parseInt(row.orders) || 0 }
-                ])
-            );
+                // Format daily sales for chart (fill missing days with 0)
+                const salesMap = new Map(
+                    (dailySalesRaw as any[]).map(row => [
+                        new Date(row.date).toISOString().split('T')[0],
+                        { revenue: parseFloat(row.revenue) || 0, orders: parseInt(row.orders) || 0 }
+                    ])
+                );
 
-            for (let i = 29; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
-                const dayData = salesMap.get(dateStr) || { revenue: 0, orders: 0 };
-                dailySalesChart.push({
-                    date: dateStr,
-                    day: date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
-                    revenue: dayData.revenue,
-                    orders: dayData.orders,
-                });
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dayData = salesMap.get(dateStr) || { revenue: 0, orders: 0 };
+                    dailySalesChart.push({
+                        date: dateStr,
+                        day: date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+                        revenue: dayData.revenue,
+                        orders: dayData.orders,
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching daily sales chart:', err);
+                // Fill with empty data for 30 days
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    dailySalesChart.push({
+                        date: date.toISOString().split('T')[0],
+                        day: date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }),
+                        revenue: 0,
+                        orders: 0,
+                    });
+                }
             }
 
-            // Get new customers in last 30 days
-            const [newCustomersResult] = await db.select({ count: count() })
-                .from(users)
-                .where(sql`${users.createdAt} >= ${thirtyDaysAgo} AND ${users.role} = 'customer'`);
-            const newCustomersCount = newCustomersResult?.count || 0;
+            // ============= NEW CUSTOMERS COUNT =============
+            let newCustomersCount = 0;
+            try {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const [newCustomersResult] = await db.select({ count: count() })
+                    .from(users)
+                    .where(sql`${users.createdAt} >= ${thirtyDaysAgo} AND ${users.role} = 'customer'`);
+                newCustomersCount = newCustomersResult?.count || 0;
+            } catch (err) {
+                console.error('Error fetching new customers:', err);
+            }
 
             const stats = {
                 totalRevenue: Math.round(currentStats.totalRevenue),
@@ -202,7 +257,7 @@ export class AdminController {
                 customerGrowth: newCustomersCount,
             };
 
-            // Sales By Category & Top Products
+            // ============= SALES BY CATEGORY & TOP PRODUCTS =============
             const categoryMap = new Map<string, number>();
             const productMap = new Map<string, { name: string, category: string, sales: number, revenue: number, id: string, imageUrl: string }>();
 
@@ -212,7 +267,7 @@ export class AdminController {
                     const catName = item.product?.category?.name || 'عام';
                     const prodName = item.product?.name || item.name || 'منتج غير معروف';
                     const qty = item.quantity || 1;
-                    const price = parseFloat(item.price || '0');
+                    const price = parseFloat(item.price || '0') || 0;
                     const imageUrl = item.product?.images?.find((img: any) => img.isPrimary)?.url ||
                         item.product?.images?.[0]?.url || '';
 
@@ -236,7 +291,7 @@ export class AdminController {
                 }
             }
 
-            // Format Sales By Category
+            // Format Sales By Category (with safety guard for zero total)
             const totalCategoryRevenue = Array.from(categoryMap.values()).reduce((a, b) => a + b, 0);
             const salesByCategory = Array.from(categoryMap.entries()).map(([name, value], index) => ({
                 name,
@@ -245,30 +300,57 @@ export class AdminController {
             })).sort((a, b) => b.value - a.value).slice(0, 5);
 
             // Format Top Products with stock info
-            const topProductIds = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5).map(p => p.id);
+            let topProducts: any[] = [];
+            try {
+                const topProductIds = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5).map(p => p.id);
 
-            // Fetch current stock for top products
-            const stockData = topProductIds.length > 0
-                ? await db.query.products.findMany({
-                    where: inArray(products.id, topProductIds),
-                    columns: { id: true, stock: true }
-                })
-                : [];
-            const stockMap = new Map(stockData.map(p => [p.id, p.stock || 0]));
+                // Fetch current stock for top products (only if we have IDs)
+                const stockData = topProductIds.length > 0
+                    ? await db.query.products.findMany({
+                        where: inArray(products.id, topProductIds),
+                        columns: { id: true, stock: true }
+                    })
+                    : [];
+                const stockMap = new Map(stockData.map(p => [p.id, p.stock || 0]));
 
-            const topProducts = Array.from(productMap.values())
-                .sort((a, b) => b.revenue - a.revenue)
-                .slice(0, 5)
-                .map(p => ({
-                    ...p,
-                    stock: stockMap.get(p.id) || 0
-                }));
+                topProducts = Array.from(productMap.values())
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 5)
+                    .map(p => ({
+                        ...p,
+                        stock: stockMap.get(p.id) || 0
+                    }));
+            } catch (err) {
+                console.error('Error fetching top products stock:', err);
+                topProducts = Array.from(productMap.values())
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 5)
+                    .map(p => ({ ...p, stock: 0 }));
+            }
 
             res.json({ stats, salesByCategory, topProducts, dailySalesChart });
 
         } catch (error) {
             console.error('Error fetching reports:', error);
-            res.status(500).json({ error: 'Failed to fetch reports' });
+            // Return safe defaults instead of crashing
+            res.status(200).json({
+                stats: {
+                    totalRevenue: 0,
+                    totalOrders: 0,
+                    averageOrderValue: 0,
+                    newCustomers: 0,
+                    netProfit: 0,
+                    revenueChange: 0,
+                    ordersChange: 0,
+                    aovChange: 0,
+                    customersChange: 0,
+                    customerGrowth: 0,
+                },
+                salesByCategory: [],
+                topProducts: [],
+                dailySalesChart: [],
+                error: 'Partial data returned due to an error'
+            });
         }
     }
 

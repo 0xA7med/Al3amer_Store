@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import TimeAgo from '../../components/TimeAgo';
 
 import { useAdminOrders, useUpdateOrderStatus, useAdminProducts, type Order } from '../../hooks/useAdmin';
 import api from '../../lib/api';
@@ -250,7 +252,6 @@ export function OrdersManagement() {
                                 </tr>
                             ) : (
                                 filteredOrders.map((order) => {
-                                    const { date, time } = formatDate(order.createdAt);
                                     const productCount = order.items?.length || 0;
                                     const firstProduct = order.items?.[0];
 
@@ -260,7 +261,9 @@ export function OrdersManagement() {
                                                 <input type="checkbox" className="rounded border-slate-600 bg-transparent text-primary focus:ring-primary size-4" />
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20">#{order.orderNumber}</span>
+                                                <Link to={`/admin/orders/${order.id}`}>
+                                                    <span className="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20 hover:bg-primary/20 transition-colors">#{order.orderNumber}</span>
+                                                </Link>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -268,7 +271,13 @@ export function OrdersManagement() {
                                                         {order.user?.name?.charAt(0) || '?'}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-white font-bold hover:text-primary transition-colors cursor-pointer">{order.user?.name || order.fullName || 'أمر غير معروف'}</span>
+                                                        {order.user?.id ? (
+                                                            <Link to={`/admin/customers/${order.user.id}`} className="text-white font-bold hover:text-primary transition-colors cursor-pointer">
+                                                                {order.user?.name || order.fullName || 'أمر غير معروف'}
+                                                            </Link>
+                                                        ) : (
+                                                            <span className="text-white font-bold">{order.user?.name || order.fullName || 'أمر غير معروف'}</span>
+                                                        )}
                                                         <span className="text-xs text-slate-500 font-mono" dir="ltr">{order.user?.phone || 'N/A'}</span>
                                                     </div>
                                                 </div>
@@ -281,10 +290,7 @@ export function OrdersManagement() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400">
-                                                <div className="flex flex-col">
-                                                    <span className="text-slate-300 font-medium">{date}</span>
-                                                    <span className="text-xs text-slate-500">{time}</span>
-                                                </div>
+                                                <TimeAgo date={order.createdAt} />
                                             </td>
                                             <td className="px-6 py-4">
                                                 <StatusBadge status={order.status} orderId={order.id} />

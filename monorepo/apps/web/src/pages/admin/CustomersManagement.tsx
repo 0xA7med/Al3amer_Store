@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import TimeAgo from '../../components/TimeAgo';
 import { useCustomers } from '../../hooks/useCustomers';
 
 export function CustomersManagement() {
@@ -163,13 +164,16 @@ export function CustomersManagement() {
                             {filteredCustomers.map((customer) => (
                                 <tr key={customer.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
+                                        <Link to={`/admin/customers/${customer.id}`} className="flex items-center gap-3 group-hover:text-primary transition-colors">
                                             <div className="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" style={{ backgroundImage: `url(${customer.avatar})` }}></div>
                                             <div>
-                                                <p className="font-bold text-white">{customer.name}</p>
-                                                <p className="text-xs text-slate-500 mt-1">انضم {customer.joinDate}</p>
+                                                <p className="font-bold text-white group-hover:text-primary transition-colors">{customer.name}</p>
+                                                <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                                    <span>انضم</span>
+                                                    <TimeAgo date={customer.joinDate} />
+                                                </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">

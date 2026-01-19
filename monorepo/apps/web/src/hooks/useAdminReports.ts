@@ -37,7 +37,13 @@ export interface DailySalesData {
     orders: number;
 }
 
-export function useAdminReports(dateRange: string) {
+export interface DateParams {
+    range: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+}
+
+export function useAdminReports({ range, startDate, endDate }: DateParams) {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [salesByCategory, setSalesByCategory] = useState<SalesByCategory[]>([]);
     const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
@@ -48,7 +54,11 @@ export function useAdminReports(dateRange: string) {
         const fetchReports = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get('/admin/reports', { params: { range: dateRange } });
+                const params: any = { range };
+                if (startDate) params.startDate = startDate.toISOString();
+                if (endDate) params.endDate = endDate.toISOString();
+
+                const response = await api.get('/admin/reports', { params });
                 setStats(response.data.stats);
                 setSalesByCategory(response.data.salesByCategory || []);
                 setTopProducts(response.data.topProducts || []);
@@ -75,7 +85,7 @@ export function useAdminReports(dateRange: string) {
         };
 
         fetchReports();
-    }, [dateRange]);
+    }, [range, startDate, endDate]);
 
     return {
         stats,
