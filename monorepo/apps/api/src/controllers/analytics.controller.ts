@@ -200,7 +200,7 @@ export class AnalyticsController {
             });
 
             res.json({
-                heatmap: heatmapData.rows || heatmapData, // Drizzle execute returns full result object depending on driver
+                heatmap: heatmapData as any, // Drizzle execute returns full result object depending on driver
                 profitability: profitabilityData,
                 customerInsights: {
                     new: newCustomersCount[0]?.count || 0,

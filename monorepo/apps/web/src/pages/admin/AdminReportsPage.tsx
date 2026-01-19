@@ -202,7 +202,7 @@ export default function AdminReportsPage() {
                                             paddingAngle={5}
                                             dataKey="value"
                                         >
-                                            {customerData.map((entry, index) => (
+                                            {customerData.map((_, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>

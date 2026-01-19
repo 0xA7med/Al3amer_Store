@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useDashboardStats } from '../../hooks/useAnalytics';
 import { useUpdateOrderStatus } from '../../hooks/useAdmin';
-import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
+import { LineChart, Line, ResponsiveContainer } from 'recharts';
 
 export function DashboardOverview() {
     const { data, isLoading } = useDashboardStats();
@@ -146,7 +146,7 @@ export function DashboardOverview() {
                         {activityFeed.map((activity, index) => (
                             <div key={index} className="relative pr-6">
                                 <span className={`absolute -right-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-[#0f172a] ${activity.type === 'order' ? 'bg-blue-500' :
-                                        activity.type === 'user' ? 'bg-purple-500' : 'bg-yellow-500'
+                                    activity.type === 'user' ? 'bg-purple-500' : 'bg-yellow-500'
                                     }`}></span>
                                 <p className="text-sm text-slate-300 font-medium mb-1">{activity.message}</p>
                                 <p className="text-xs text-slate-500">{new Date(activity.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
