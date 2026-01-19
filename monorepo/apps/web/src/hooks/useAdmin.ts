@@ -48,6 +48,7 @@ export interface Order {
     address: string;
     notes: string;
     createdAt: string;
+    paymobOrderId?: string | null;
     user: {
         id: string;
         name: string;
@@ -62,6 +63,7 @@ export interface Order {
         product: {
             id: string;
             name: string;
+            sku: string;
             images: { url: string }[];
         } | null;
     }[];
@@ -101,15 +103,28 @@ export function useAdminProducts(params?: { page?: number; limit?: number; searc
     });
 }
 
-export function useAdminOrders(params?: { page?: number; limit?: number; status?: string; userId?: string }) {
+export function useAdminOrders(params: { userId?: string; status?: string; page?: string; limit?: string } = {}) {
     return useQuery({
         queryKey: ['admin-orders', params],
         queryFn: async () => {
-            const { data } = await api.get<OrdersResponse>('/orders', { params });
+            const queryParams = new URLSearchParams(params as any);
+            const { data } = await api.get<{ data: Order[]; pagination: any }>(`/orders?${queryParams.toString()}`);
             return data;
         },
     });
 }
+
+export function useAdminOrder(id: string) {
+    return useQuery({
+        queryKey: ['admin-order', id],
+        queryFn: async () => {
+            const { data } = await api.get<Order>(`/orders/${id}`);
+            return data;
+        },
+        enabled: !!id,
+    });
+}
+
 
 export function useAdminStats() {
     return useQuery({

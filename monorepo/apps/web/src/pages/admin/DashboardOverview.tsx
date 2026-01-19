@@ -1,20 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDashboardStats, useUpdateOrderStatus } from '../../hooks/useAdmin';
-import TimeAgo from '../../components/TimeAgo';
-
-// Status configuration for dropdown
-const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-    pending: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', label: 'قيد الانتظار', icon: 'pending' },
-    processing: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', label: 'قيد المعالجة', icon: 'sync' },
-    shipped: { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', label: 'جاري التوصيل', icon: 'local_shipping' },
-    delivered: { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'مكتمل', icon: 'check_circle' },
-    cancelled: { color: 'bg-red-500/10 text-red-400 border-red-500/20', label: 'ملغي', icon: 'cancel' },
-};
+import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export function DashboardOverview() {
     const { stats, isLoading, products, orders } = useDashboardStats();
     const updateStatus = useUpdateOrderStatus();
+    const navigate = useNavigate();
 
     // Get recent orders (last 5)
     const recentOrders = orders.slice(0, 5);
@@ -25,149 +19,66 @@ export function DashboardOverview() {
         topProducts.push(...products.slice(0, 3 - topProducts.length));
     }
 
-    // Notifications: New orders and low stock alerts
-    const newOrdersCount = orders.filter(o => o.status === 'pending').length;
-    const lowStockProducts = products.filter(p => p.stock < 10).slice(0, 3);
+    const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+        try {
+            await updateStatus.mutateAsync({ orderId, status: newStatus });
+            toast.success('تم تحديث الحالة بنجاح');
+        } catch (error) {
+            console.error(error);
+            toast.error('فشل تحديث الحالة');
+        }
+    };
 
-    // Quick Status Change Component
-    const StatusBadge = ({ status, orderId }: { status: string; orderId: string }) => {
+    const StatusSelect = ({ order }: { order: any }) => {
         const [isOpen, setIsOpen] = useState(false);
-        const ref = useRef<HTMLDivElement>(null);
 
-        useEffect(() => {
-            const handleClickOutside = (event: MouseEvent) => {
-                if (ref.current && !ref.current.contains(event.target as Node)) {
-                    setIsOpen(false);
-                }
-            };
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }, []);
+        const statusColors: any = {
+            pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+            processing: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+            shipped: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+            delivered: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+            cancelled: 'text-red-400 bg-red-500/10 border-red-500/20',
+        };
 
-        const currentConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-
-        const handleSelect = async (newStatus: string) => {
-            if (newStatus !== status) {
-                await updateStatus.mutateAsync({ orderId, status: newStatus });
-            }
-            setIsOpen(false);
+        const statusLabels: any = {
+            pending: 'قيد الانتظار',
+            processing: 'قيد المعالجة',
+            shipped: 'تم الشحن',
+            delivered: 'مكتمل',
+            cancelled: 'ملغي',
         };
 
         return (
-            <div className="relative" ref={ref}>
+            <div className="relative">
                 <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${currentConfig.color} hover:brightness-110`}
+                    onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${statusColors[order.status] || 'text-slate-400 border-white/10'}`}
                 >
-                    <span className={`material-symbols-outlined text-[14px] ${status === 'processing' ? 'animate-spin' : ''}`}>
-                        {currentConfig.icon}
-                    </span>
-                    {currentConfig.label}
-                    <span className="material-symbols-outlined text-[12px]">expand_more</span>
+                    <span className="truncate">{statusLabels[order.status] || order.status}</span>
+                    <span className="material-symbols-outlined text-[14px]">expand_more</span>
                 </button>
-
                 {isOpen && (
-                    <div className="absolute top-full mt-1 right-0 z-50 w-36 bg-[#1e2330] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                        {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                            <button
-                                key={key}
-                                onClick={() => handleSelect(key)}
-                                className={`w-full text-right px-3 py-2 text-xs font-medium hover:bg-white/5 flex items-center gap-2 ${status === key ? 'text-primary' : 'text-slate-300'}`}
-                            >
-                                <span className="material-symbols-outlined text-[14px]">
-                                    {config.icon}
-                                </span>
-                                {config.label}
-                            </button>
-                        ))}
-                    </div>
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
+                        <div className="absolute top-full left-0 mt-1 w-32 bg-[#1e2330] border border-white/10 rounded-lg shadow-xl z-20 py-1 overflow-hidden">
+                            {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((st) => (
+                                <button
+                                    key={st}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusUpdate(order.id, st);
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full text-right px-4 py-2 text-xs font-medium hover:bg-white/5 transition-colors ${order.status === st ? 'text-primary' : 'text-slate-300'}`}
+                                >
+                                    {statusLabels[st]}
+                                </button>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
         );
-    };
-
-    // Print AWB Handler
-    const handlePrintAWB = (order: any) => {
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        if (!printWindow) return;
-
-        const awbContent = `
-            <!DOCTYPE html>
-            <html dir="rtl" lang="ar">
-            <head>
-                <meta charset="UTF-8">
-                <title>بوليصة الشحن - طلب #${order.orderNumber}</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-                    body { padding: 20px; background: #fff; }
-                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px; }
-                    .logo { font-size: 24px; font-weight: bold; color: #135bec; }
-                    .order-num { font-size: 14px; color: #666; margin-top: 5px; }
-                    .barcode { text-align: center; padding: 20px 0; border-bottom: 2px dashed #000; margin-bottom: 15px; }
-                    .barcode-text { font-family: 'Libre Barcode 39', monospace; font-size: 48px; letter-spacing: 5px; }
-                    .barcode-id { font-size: 12px; color: #666; margin-top: 5px; }
-                    .section { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-                    .section-title { font-size: 12px; color: #666; margin-bottom: 8px; font-weight: bold; }
-                    .section-content { font-size: 14px; line-height: 1.6; }
-                    .items { background: #f5f5f5; padding: 10px; border-radius: 5px; }
-                    .item { display: flex; justify-content: space-between; padding: 5px 0; }
-                    .total { font-size: 18px; font-weight: bold; text-align: center; padding: 15px; background: #f0f0f0; border-radius: 5px; }
-                    .footer { text-align: center; font-size: 10px; color: #999; margin-top: 20px; }
-                    @media print { body { padding: 10px; } }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div class="logo">Al3amer Store</div>
-                    <div class="order-num">طلب رقم: #${order.orderNumber}</div>
-                </div>
-                
-                <div class="barcode">
-                    <div class="barcode-text">*${order.orderNumber}*</div>
-                    <div class="barcode-id">${order.orderNumber}</div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">بيانات المستلم</div>
-                    <div class="section-content">
-                        <strong>${order.user?.name || order.fullName || 'غير محدد'}</strong><br>
-                        ${order.user?.phone || order.phone || 'N/A'}<br>
-                        ${order.governorate || ''}, ${order.city || ''}<br>
-                        ${order.address || ''}
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">المنتجات</div>
-                    <div class="items">
-                        ${(order.items || []).map((item: any) => `
-                            <div class="item">
-                                <span>${item.product?.name || item.name || 'منتج'} × ${item.quantity}</span>
-                                <span>${parseFloat(item.price || '0').toLocaleString('ar-EG')} ج.م</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <div class="total">
-                    الإجمالي: ${parseFloat(order.total || '0').toLocaleString('ar-EG')} ج.م
-                    <br>
-                    <small style="color: #666;">الدفع: ${order.paymentMethod === 'cod' ? 'عند الاستلام' : 'مدفوع إلكترونياً'}</small>
-                </div>
-                
-                <div class="footer">
-                    تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')} - Al3amer Store
-                </div>
-                
-                <script>
-                    window.onload = function() { window.print(); }
-                </script>
-            </body>
-            </html>
-        `;
-
-        printWindow.document.write(awbContent);
-        printWindow.document.close();
     };
 
     if (isLoading) {
@@ -182,7 +93,7 @@ export function DashboardOverview() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto flex flex-col gap-8">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-10">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Stat 1 - Revenue */}
@@ -245,9 +156,9 @@ export function DashboardOverview() {
                 </div>
             </div>
 
-            {/* Main Content Row */}
+            {/* Main Chart Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Order Status Summary */}
+                {/* Chart Container */}
                 <div className="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
                         <div>
@@ -284,7 +195,7 @@ export function DashboardOverview() {
                     </div>
                 </div>
 
-                {/* Quick Actions & Notifications */}
+                {/* Top Selling / Quick Actions */}
                 <div className="flex flex-col gap-6">
                     {/* Quick Actions */}
                     <div className="glass-panel rounded-xl p-6">
@@ -308,56 +219,36 @@ export function DashboardOverview() {
                             </Link>
                         </div>
                     </div>
-
-                    {/* Notifications Widget */}
+                    {/* Top Product Widget */}
                     <div className="glass-panel rounded-xl p-6 flex-1">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">notifications</span>
-                            التنبيهات
-                        </h3>
-                        <div className="flex flex-col gap-3">
-                            {newOrdersCount > 0 && (
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                                    <div className="size-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                        <span className="material-symbols-outlined">shopping_bag</span>
+                        <h3 className="text-lg font-bold text-white mb-4">المنتجات المميزة</h3>
+                        <div className="flex flex-col gap-4">
+                            {topProducts.length === 0 ? (
+                                <p className="text-slate-500 text-sm text-center py-4">لا توجد منتجات مميزة</p>
+                            ) : (
+                                topProducts.map((product, index) => (
+                                    <div key={product.id || index} className="flex items-center gap-3 pb-3 border-b border-white/5 last:border-0 last:pb-0">
+                                        <div className="size-12 rounded-lg bg-white/5 flex items-center justify-center overflow-hidden">
+                                            <img
+                                                src={product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url || 'https://via.placeholder.com/100'}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-white truncate">{product.name}</p>
+                                            <p className="text-xs text-slate-400">{product.category?.name || 'غير مصنف'}</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-emerald-400">{parseFloat(product.price).toLocaleString('ar-EG')} ج.م</p>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-white text-sm font-bold">{newOrdersCount} طلبات جديدة</p>
-                                        <p className="text-slate-400 text-xs">تتطلب المراجعة</p>
-                                    </div>
-                                    <Link to="/admin/orders" className="text-blue-400 hover:text-blue-300">
-                                        <span className="material-symbols-outlined">arrow_forward</span>
-                                    </Link>
-                                </div>
-                            )}
-                            {lowStockProducts.length > 0 && (
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                                    <div className="size-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                                        <span className="material-symbols-outlined">inventory_2</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-white text-sm font-bold">{lowStockProducts.length} منتجات مخزون منخفض</p>
-                                        <p className="text-slate-400 text-xs truncate">
-                                            {lowStockProducts.map(p => p.name).join('، ')}
-                                        </p>
-                                    </div>
-                                    <Link to="/admin/products" className="text-yellow-400 hover:text-yellow-300">
-                                        <span className="material-symbols-outlined">arrow_forward</span>
-                                    </Link>
-                                </div>
-                            )}
-                            {newOrdersCount === 0 && lowStockProducts.length === 0 && (
-                                <div className="text-center py-6 text-slate-500">
-                                    <span className="material-symbols-outlined text-3xl mb-2 block">check_circle</span>
-                                    <p className="text-sm">لا توجد تنبيهات</p>
-                                </div>
+                                ))
                             )}
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Enhanced Recent Orders Table */}
+            {/* Recent Orders Table */}
             <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
                 <div className="p-6 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
                     <h3 className="text-lg font-bold text-white">الطلبات الأخيرة</h3>
@@ -370,9 +261,9 @@ export function DashboardOverview() {
                                 <th className="px-6 py-4 whitespace-nowrap">رقم الطلب</th>
                                 <th className="px-6 py-4 whitespace-nowrap">العميل</th>
                                 <th className="px-6 py-4 whitespace-nowrap">التاريخ</th>
-                                <th className="px-6 py-4 whitespace-nowrap">الإجمالي</th>
                                 <th className="px-6 py-4 whitespace-nowrap">الحالة</th>
-                                <th className="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
+                                <th className="px-6 py-4 whitespace-nowrap">الإجمالي</th>
+                                <th className="px-6 py-4 whitespace-nowrap">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-slate-300">
@@ -384,57 +275,43 @@ export function DashboardOverview() {
                                 </tr>
                             ) : (
                                 recentOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <Link
-                                                to={`/admin/orders/${order.id}`}
-                                                className="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20 hover:bg-primary/20 transition-colors"
-                                            >
-                                                #{order.orderNumber}
-                                            </Link>
+                                    <tr
+                                        key={order.id}
+                                        className="hover:bg-white/5 transition-colors group cursor-pointer"
+                                        onClick={() => navigate(`/admin/orders?id=${order.id}`)}
+                                    >
+                                        <td className="px-6 py-4 font-medium text-white hover:text-primary transition-colors">
+                                            #{order.orderNumber}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Link
-                                                to={`/admin/customers/${order.user?.id || ''}`}
-                                                className="flex items-center gap-3 hover:text-primary transition-colors"
-                                            >
+                                            <div className="flex items-center gap-3">
                                                 <div className="size-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-bold">
                                                     {order.user?.name?.charAt(0) || '?'}
                                                 </div>
-                                                <span>{order.user?.name || 'غير معروف'}</span>
-                                            </Link>
+                                                <span className="hover:text-primary transition-colors">{order.user?.name || 'غير معروف'}</span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-slate-400">
-                                            <TimeAgo date={order.createdAt} />
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-white">
-                                            {parseFloat(order.total || '0').toLocaleString('ar-EG')} ج.م
+                                            <span title={new Date(order.createdAt).toLocaleString('ar-EG')}>
+                                                {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ar })}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <StatusBadge status={order.status} orderId={order.id} />
+                                            <StatusSelect order={order} />
                                         </td>
-                                        <td className="px-6 py-4 text-left">
-                                            <div className="flex items-center justify-end gap-1">
+                                        <td className="px-6 py-4 font-bold text-white">{parseFloat(order.total || '0').toLocaleString('ar-EG')} ج.م</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => handlePrintAWB(order)}
-                                                    className="size-8 flex items-center justify-center rounded-lg hover:bg-blue-500/20 hover:text-blue-400 text-slate-400 transition-all"
-                                                    title="طباعة بوليصة الشحن"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        window.open(`/admin/orders/${order.id}/print`, '_blank');
+                                                    }}
+                                                    className="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 hover:text-primary transition-all text-slate-400"
+                                                    title="طباعة البوليصة"
                                                 >
-                                                    <span className="material-symbols-outlined text-[18px]">local_shipping</span>
+                                                    <span className="material-symbols-outlined text-[20px]">print</span>
                                                 </button>
-                                                <button
-                                                    className="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all"
-                                                    title="طباعة الفاتورة"
-                                                >
-                                                    <span className="material-symbols-outlined text-[18px]">print</span>
-                                                </button>
-                                                <Link
-                                                    to={`/admin/orders/${order.id}`}
-                                                    className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all"
-                                                    title="عرض التفاصيل"
-                                                >
-                                                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                </Link>
                                             </div>
                                         </td>
                                     </tr>
@@ -449,4 +326,3 @@ export function DashboardOverview() {
 }
 
 export default DashboardOverview;
-

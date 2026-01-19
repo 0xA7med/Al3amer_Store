@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAdminProducts, useDeleteProduct, useBulkUpdateProducts, type Product } from '../../hooks/useAdmin';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,7 @@ function getProductStatus(product: Product): string {
 }
 
 export function ProductList() {
+    const navigate = useNavigate();
     const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
     const deleteProduct = useDeleteProduct();
     const bulkUpdate = useBulkUpdateProducts();
@@ -311,8 +312,12 @@ export function ProductList() {
                                     const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url || 'https://via.placeholder.com/100';
 
                                     return (
-                                        <tr key={product.id} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-6 py-2">
+                                        <tr
+                                            key={product.id}
+                                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                                            onClick={() => navigate(`/admin/products/${product.id}`)}
+                                        >
+                                            <td className="px-6 py-2" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center">
                                                     <input
                                                         type="checkbox"

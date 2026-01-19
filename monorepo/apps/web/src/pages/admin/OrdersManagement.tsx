@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import TimeAgo from '../../components/TimeAgo';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 
 import { useAdminOrders, useUpdateOrderStatus, useAdminProducts, type Order } from '../../hooks/useAdmin';
 import api from '../../lib/api';
@@ -22,14 +21,45 @@ function formatDate(dateString: string): { date: string; time: string } {
     };
 }
 
-export function OrdersManagement() {
-    const { data: ordersData, isLoading } = useAdminOrders({ limit: 100 });
-    const updateStatus = useUpdateOrderStatus();
+export default function OrdersManagement() {
+    // Hooks
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { data: ordersData, isLoading, error } = useAdminOrders();
     const orders = ordersData?.data || [];
+    const updateStatus = useUpdateOrderStatus();
 
-    const [filterStatus, setFilterStatus] = useState('all');
+    // State
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+
+    // Effect to handle URL query param 'id' and 'userId'
+    useEffect(() => {
+        const orderId = searchParams.get('id');
+        if (orderId && orders.length > 0) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                setSelectedOrder(order);
+                setIsDetailsOpen(true);
+            }
+        }
+    }, [searchParams, orders]);
+
+    // Close handler to clear query param
+    const handleCloseDetails = () => {
+        setIsDetailsOpen(false);
+        setSelectedOrder(null);
+        setSearchParams(params => {
+            params.delete('id');
+            return params;
+        });
+    };
+
+    const handleRowClick = (order: Order) => {
+        setSearchParams({ id: order.id });
+    };
 
     // Status Badge Component
     const StatusBadge = ({ status, orderId }: { status: string, orderId: string }) => {
@@ -61,7 +91,7 @@ export function OrdersManagement() {
                     onClick={() => setIsOpen(!isOpen)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${currentConfig.color} hover:brightness-110`}
                 >
-                    <span className={`material-symbols-outlined text-[16px] ${status === 'processing' ? 'animate-spin' : ''}`}>
+                    <span className={`material-symbols-outlined text-[16px] ${status === 'processing' ? 'animate-spin' : ''} `}>
                         {currentConfig.icon}
                     </span>
                     {currentConfig.label}
@@ -74,7 +104,7 @@ export function OrdersManagement() {
                             <button
                                 key={key}
                                 onClick={() => handleSelect(key)}
-                                className={`w-full text-right px-4 py-2 text-xs font-medium hover:bg-white/5 flex items-center gap-2 ${status === key ? 'text-primary' : 'text-slate-300'}`}
+                                className={`w-full text-right px-4 py-2 text-xs font-medium hover:bg-white/5 flex items-center gap-2 ${status === key ? 'text-primary' : 'text-slate-300'} `}
                             >
                                 <span className="material-symbols-outlined text-[14px]">
                                     {config.icon}
@@ -102,9 +132,20 @@ export function OrdersManagement() {
     const completedOrders = orders.filter(o => o.status === 'delivered').length;
     const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
 
-    const filteredOrders = filterStatus === 'all'
-        ? orders
-        : orders.filter(o => o.status === filterStatus);
+    const filteredOrders = orders.filter(order => {
+        const userIdParam = searchParams.get('userId');
+        if (userIdParam && (order.user?.id !== userIdParam && (order as any).userId !== userIdParam)) {
+            return false;
+        }
+
+        const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch =
+            order.orderNumber.toLowerCase().includes(searchLower) ||
+            order.user?.name?.toLowerCase().includes(searchLower) ||
+            order.user?.email?.toLowerCase().includes(searchLower);
+        return matchesStatus && matchesSearch;
+    });
 
     if (isLoading) {
         return (
@@ -205,16 +246,18 @@ export function OrdersManagement() {
                             </div>
                             <input
                                 type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="بحث برقم الطلب، اسم العميل، الهاتف..."
                                 className="block w-full h-11 pr-10 pl-4 rounded-lg bg-[#0f1115]/50 border border-white/10 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary focus:bg-[#0f1115] transition-all shadow-inner"
                             />
                         </div>
                         <div className="flex items-center gap-1 bg-[#0f1115]/50 rounded-lg border border-white/10 p-1 overflow-x-auto max-w-full no-scrollbar">
-                            <button onClick={() => setFilterStatus('all')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'all' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>الكل</button>
-                            <button onClick={() => setFilterStatus('processing')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'processing' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>قيد المعالجة</button>
-                            <button onClick={() => setFilterStatus('shipped')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'shipped' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>جاري التوصيل</button>
-                            <button onClick={() => setFilterStatus('delivered')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'delivered' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>مكتمل</button>
-                            <button onClick={() => setFilterStatus('cancelled')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'cancelled' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>ملغي</button>
+                            <button onClick={() => setFilterStatus('all')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'all' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'} `}>الكل</button>
+                            <button onClick={() => setFilterStatus('processing')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'processing' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'} `}>قيد المعالجة</button>
+                            <button onClick={() => setFilterStatus('shipped')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'shipped' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'} `}>جاري التوصيل</button>
+                            <button onClick={() => setFilterStatus('delivered')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'delivered' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'} `}>مكتمل</button>
+                            <button onClick={() => setFilterStatus('cancelled')} className={`px-4 py-2 rounded-md text-xs font-bold transition-all whitespace-nowrap ${filterStatus === 'cancelled' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white'} `}>ملغي</button>
                         </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
@@ -234,84 +277,67 @@ export function OrdersManagement() {
                                 </th>
                                 <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">رقم الطلب</th>
                                 <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">العميل</th>
-                                <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">المنتجات</th>
                                 <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">التاريخ</th>
                                 <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الحالة</th>
-                                <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الدفع</th>
-                                <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">الإجمالي</th>
-                                <th className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-300">إجراءات</th>
+                                <th className="px-6 py-4 whitespace-nowrap font-bold text-slate-300">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5 text-slate-300">
                             {filteredOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                                         <span className="material-symbols-outlined text-4xl mb-2 block">shopping_bag</span>
                                         لا توجد طلبات تطابق البحث
                                     </td>
                                 </tr>
                             ) : (
                                 filteredOrders.map((order) => {
+                                    const { date, time } = formatDate(order.createdAt);
                                     const productCount = order.items?.length || 0;
                                     const firstProduct = order.items?.[0];
 
                                     return (
-                                        <tr key={order.id} className="hover:bg-white/5 transition-colors group relative">
+                                        <tr
+                                            key={order.id}
+                                            className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors cursor-pointer group"
+                                            onClick={() => handleRowClick(order)}
+                                        >
                                             <td className="px-6 py-4">
-                                                <input type="checkbox" className="rounded border-slate-600 bg-transparent text-primary focus:ring-primary size-4" />
+                                                <input type="checkbox" onClick={(e) => e.stopPropagation()} className="rounded border-slate-600 bg-transparent text-primary focus:ring-primary size-4" />
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <Link to={`/admin/orders/${order.id}`}>
-                                                    <span className="font-mono text-primary font-bold bg-primary/10 px-2 py-1 rounded text-xs border border-primary/20 hover:bg-primary/20 transition-colors">#{order.orderNumber}</span>
-                                                </Link>
+                                            <td className="px-6 py-4 font-medium text-white group-hover:text-primary transition-colors">
+                                                #{order.orderNumber}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="size-9 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10">
+                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">
                                                         {order.user?.name?.charAt(0) || '?'}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        {order.user?.id ? (
-                                                            <Link to={`/admin/customers/${order.user.id}`} className="text-white font-bold hover:text-primary transition-colors cursor-pointer">
-                                                                {order.user?.name || order.fullName || 'أمر غير معروف'}
-                                                            </Link>
-                                                        ) : (
-                                                            <span className="text-white font-bold">{order.user?.name || order.fullName || 'أمر غير معروف'}</span>
-                                                        )}
-                                                        <span className="text-xs text-slate-500 font-mono" dir="ltr">{order.user?.phone || 'N/A'}</span>
+                                                        <span className="text-white text-sm font-medium">{order.user?.name || 'زائر'}</span>
+                                                        <span className="text-slate-500 text-xs">{order.user?.email}</span>
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td className="px-6 py-4 text-slate-400 text-sm">
+                                                {new Date(order.createdAt).toLocaleDateString('ar-EG')}
+                                            </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs text-slate-400 font-medium">
-                                                        {firstProduct?.product?.name || 'منتج'} {productCount > 1 && `+ ${productCount - 1}`}
-                                                    </span>
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <StatusBadge status={order.status} orderId={order.id} />
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-400">
-                                                <TimeAgo date={order.createdAt} />
-                                            </td>
                                             <td className="px-6 py-4">
-                                                <StatusBadge status={order.status} orderId={order.id} />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="material-symbols-outlined text-slate-500 text-[18px]">payments</span>
-                                                    <span className="text-xs font-medium text-slate-300">{order.paymentMethod || 'غير محدد'}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 font-bold text-white font-mono text-base">{parseFloat(order.total || '0').toLocaleString('ar-EG')} ج.م</td>
-                                            <td className="px-6 py-4 text-left">
-                                                <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                    <button className="size-8 flex items-center justify-center rounded-lg hover:bg-primary/20 hover:text-primary text-slate-400 transition-all" title="تعديل">
-                                                        <span className="material-symbols-outlined text-[18px]">edit_square</span>
-                                                    </button>
+                                                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                     <button className="size-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all" title="طباعة الفاتورة">
                                                         <span className="material-symbols-outlined text-[18px]">print</span>
                                                     </button>
                                                     <button
-                                                        onClick={() => setSelectedOrder(order)}
+                                                        onClick={() => {
+                                                            setSelectedOrder(order);
+                                                            setIsDetailsOpen(true);
+                                                            setSearchParams({ id: order.id });
+                                                        }}
                                                         className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-primary hover:text-white text-slate-300 border border-white/10 transition-all shadow-sm"
                                                         title="عرض التفاصيل"
                                                     >
@@ -329,7 +355,7 @@ export function OrdersManagement() {
             </div>
 
             {/* Order Details Modal */}
-            {selectedOrder && (
+            {isDetailsOpen && selectedOrder && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="glass-panel rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header */}
@@ -342,7 +368,7 @@ export function OrdersManagement() {
                                 <p className="text-sm text-slate-500 mt-1">{formatDate(selectedOrder.createdAt).date} - {formatDate(selectedOrder.createdAt).time}</p>
                             </div>
                             <button
-                                onClick={() => setSelectedOrder(null)}
+                                onClick={handleCloseDetails}
                                 className="size-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-all"
                             >
                                 <span className="material-symbols-outlined">close</span>
@@ -418,9 +444,13 @@ export function OrdersManagement() {
 
                         {/* Footer */}
                         <div className="p-4 border-t border-white/5 flex items-center justify-end gap-3">
+                            <Link to={`/admin/orders/${selectedOrder.id}/print`} target="_blank" className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg text-sm font-bold transition-all border border-white/10 flex items-center gap-2">
+                                <span className="material-symbols-outlined">print</span>
+                                طباعة
+                            </Link>
                             <button
-                                onClick={() => setSelectedOrder(null)}
-                                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg text-sm font-bold transition-all border border-white/10"
+                                onClick={handleCloseDetails}
+                                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold transition-all"
                             >
                                 إغلاق
                             </button>
@@ -436,8 +466,6 @@ export function OrdersManagement() {
         </div>
     );
 }
-
-export default OrdersManagement;
 
 function CreateOrderModal({ onClose }: { onClose: () => void }) {
     const [customer, setCustomer] = useState({ name: '', phone: '', address: '', city: 'Cairo', governorate: 'Cairo' });

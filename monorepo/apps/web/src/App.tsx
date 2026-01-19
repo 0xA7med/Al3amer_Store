@@ -35,6 +35,7 @@ import AIBundleLogs from './pages/admin/AIBundleLogs';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import AdminAISettingsPage from './pages/admin/AdminAISettingsPage';
+import { OrderAWB } from './components/admin/OrderAWB';
 
 function App() {
   return (
@@ -90,6 +91,15 @@ function App() {
               />
 
               {/* Admin Routes - Protected with Admin Role */}
+              <Route
+                path="/admin/orders/:id/print"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <OrderAWB />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="/admin/*"
                 element={
