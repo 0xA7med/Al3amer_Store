@@ -1,18 +1,82 @@
-import { useState } from 'react';
-import { useAdminReports } from '../../hooks/useAdminReports';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useState, useMemo } from 'react';
+import { useReportsData } from '../../hooks/useAnalytics';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, Legend, PieChart, Pie, Cell
+} from 'recharts';
+
+// Helper to get date ranges
+const getDateRange = (range: string) => {
+    const end = new Date();
+    const start = new Date();
+    if (range === 'week') start.setDate(end.getDate() - 7);
+    if (range === 'month') start.setMonth(end.getMonth() - 1);
+    if (range === 'year') start.setFullYear(end.getFullYear() - 1);
+    return { startDate: start.toISOString(), endDate: end.toISOString() };
+};
 
 export default function AdminReportsPage() {
     const [dateRange, setDateRange] = useState('month');
-    const { stats, salesByCategory, topProducts, dailySalesChart, isLoading } = useAdminReports(dateRange);
+    const { startDate, endDate } = getDateRange(dateRange);
 
-    if (isLoading || !stats) {
+    // We pass date strings to the hook. Assuming hook handles fetching based on these.
+    const { data, isLoading } = useReportsData(startDate, endDate);
+
+    // Calculate totals for cards
+    const stats = useMemo(() => {
+        if (!data) return null;
+        const totalRevenue = data.profitability.reduce((sum, item) => sum + parseFloat(item.revenue as any), 0);
+        const totalProfit = data.profitability.reduce((sum, item) => sum + parseFloat(item.profit as any), 0);
+        // data.customerInsights.new is a count
+        const newCustomers = data.customerInsights.new;
+
+        return { totalRevenue, totalProfit, newCustomers };
+    }, [data]);
+
+    // Data for Inventory Bar Chart
+    const inventoryData = useMemo(() => {
+        if (!data) return [];
+        return data.inventory.map(item => ({
+            name: item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name,
+            stock: item.stock
+        }));
+    }, [data]);
+
+    // Data for Customer Pie Chart
+    const customerData = useMemo(() => {
+        if (!data) return [];
+        return [
+            { name: 'جدد', value: data.customerInsights.new },
+            { name: 'عائدون', value: data.customerInsights.returning } // Approximation logic in backend
+        ];
+    }, [data]);
+
+    const COLORS = ['#10b981', '#3b82f6'];
+
+    if (isLoading || !data || !stats) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-400">جاري تحليل البيانات...</p>
             </div>
         );
     }
+
+    const { heatmap, profitability } = data;
+
+    // Export Function
+    const handleExport = () => {
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + "Date,Revenue,Profit\n"
+            + profitability.map(e => `${e.date},${e.revenue},${e.profit}`).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "report.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-10 z-10 scroll-smooth">
@@ -22,7 +86,7 @@ export default function AdminReportsPage() {
                     <div className="flex flex-col gap-2">
                         <h1 className="text-white text-3xl font-bold leading-tight">التقارير والتحليلات</h1>
                         <p className="text-slate-400 text-base font-normal">
-                            نظرة شاملة على أداء متجرك ومبيعاتك.
+                            تحليلات متقدمة للأرباح، المخزون، والعملاء.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -35,148 +99,145 @@ export default function AdminReportsPage() {
                             <option value="month">الشهر الحالي</option>
                             <option value="year">السنة الحالية</option>
                         </select>
-                        <button className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors text-sm font-bold shadow-lg shadow-primary/20">
+                        <button
+                            onClick={handleExport}
+                            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors text-sm font-bold shadow-lg shadow-primary/20"
+                        >
                             <span className="material-symbols-outlined text-[20px]">download</span>
-                            <span>تصدير تقرير</span>
+                            <span>تصدير (CSV)</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                        { title: 'إجمالي الإيرادات', value: stats.totalRevenue.toLocaleString(), unit: 'ج.م', change: `${stats.revenueChange > 0 ? '+' : ''}${stats.revenueChange}%`, icon: 'payments', color: 'primary' },
-                        { title: 'إجمالي الطلبات', value: stats.totalOrders.toLocaleString(), unit: 'طلب', change: `${stats.ordersChange > 0 ? '+' : ''}${stats.ordersChange}%`, icon: 'shopping_cart', color: 'blue-400' },
-                        { title: 'متوسط قيمة الطلب', value: stats.averageOrderValue.toLocaleString(), unit: 'ج.م', change: `${stats.aovChange > 0 ? '+' : ''}${stats.aovChange}%`, icon: 'analytics', color: 'purple-400' },
-                        { title: 'العملاء الجدد', value: stats.newCustomers.toLocaleString(), unit: 'عميل', change: `${stats.customersChange > 0 ? '+' : ''}${stats.customersChange}%`, icon: 'group_add', color: 'emerald-400' },
-                    ].map((stat, index) => (
-                        <div key={index} className="glass-panel p-6 rounded-xl relative overflow-hidden group hover:border-white/20 transition-all">
-                            <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-${stat.color}`}>
-                                <span className="material-symbols-outlined text-6xl">{stat.icon}</span>
-                            </div>
-                            <div className="relative z-10">
-                                <p className="text-slate-400 text-sm font-medium">{stat.title}</p>
-                                <h3 className="text-2xl font-bold text-white mt-1">{stat.value} <span className="text-xs font-normal text-slate-500">{stat.unit}</span></h3>
-                                <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${stat.change.startsWith('+') ? 'text-emerald-400' : stat.change.startsWith('-') ? 'text-red-400' : 'text-slate-400'}`}>
-                                    <span className="material-symbols-outlined text-[16px]">
-                                        {stat.change.startsWith('+') ? 'trending_up' : stat.change.startsWith('-') ? 'trending_down' : 'trending_flat'}
-                                    </span>
-                                    <span>{stat.change}</span>
-                                    <span className="text-slate-500 font-medium mr-1">مقارنة بالفترة السابقة</span>
-                                </div>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-primary">
+                            <span className="material-symbols-outlined text-6xl">payments</span>
                         </div>
-                    ))}
+                        <p className="text-slate-400 text-sm font-medium">إجمالي الإيرادات</p>
+                        <h3 className="text-2xl font-bold text-white mt-1">{stats.totalRevenue.toLocaleString()} <span className="text-xs text-slate-500">ج.م</span></h3>
+                    </div>
+                    <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-400">
+                            <span className="material-symbols-outlined text-6xl">monetization_on</span>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium">صافي الربح</p>
+                        <h3 className="text-2xl font-bold text-white mt-1">{stats.totalProfit.toLocaleString()} <span className="text-xs text-slate-500">ج.م</span></h3>
+                    </div>
+                    <div className="glass-panel p-6 rounded-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-blue-400">
+                            <span className="material-symbols-outlined text-6xl">group_add</span>
+                        </div>
+                        <p className="text-slate-400 text-sm font-medium">العملاء الجدد</p>
+                        <h3 className="text-2xl font-bold text-white mt-1">{stats.newCustomers} <span className="text-xs text-slate-500">عميل</span></h3>
+                    </div>
                 </div>
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Revenue Chart */}
-                    <div className="lg:col-span-2 glass-panel p-6 rounded-xl flex flex-col">
-                        <h3 className="text-lg font-bold text-white mb-6">تحليل الإيرادات (آخر 30 يوم)</h3>
-                        <div className="flex-1 min-h-[300px] w-full">
-                            {dailySalesChart.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={dailySalesChart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#135bec" stopOpacity={0.4} />
-                                                <stop offset="95%" stopColor="#135bec" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis
-                                            dataKey="day"
-                                            stroke="#64748b"
-                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                            tickLine={{ stroke: '#64748b' }}
-                                            interval="preserveStartEnd"
-                                        />
-                                        <YAxis
-                                            stroke="#64748b"
-                                            tick={{ fill: '#64748b', fontSize: 11 }}
-                                            tickLine={{ stroke: '#64748b' }}
-                                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                                        />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: '#1e232d',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                borderRadius: '8px',
-                                                color: '#fff'
-                                            }}
-                                            formatter={(value) => [`${(value as number || 0).toLocaleString()} ج.م`, 'الإيرادات']}
-                                            labelFormatter={(label) => `التاريخ: ${label}`}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="revenue"
-                                            stroke="#135bec"
-                                            strokeWidth={2}
-                                            fillOpacity={1}
-                                            fill="url(#colorRevenue)"
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="flex items-center justify-center h-[300px] text-slate-500">
-                                    <div className="text-center">
-                                        <span className="material-symbols-outlined text-4xl mb-2 block">insights</span>
-                                        <p>لا توجد بيانات مبيعات بعد</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                {/* Profitability Chart */}
+                <div className="glass-panel p-6 rounded-xl flex flex-col">
+                    <h3 className="text-lg font-bold text-white mb-6">تحليل الربحية (الإيرادات vs الربح)</h3>
+                    <div className="h-[350px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={profitability} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="date" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} />
+                                <YAxis stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e232d', border: '1px solid #334155', color: '#fff' }}
+                                    formatter={(value: any) => parseFloat(value).toLocaleString() + ' ج.م'}
+                                />
+                                <Legend />
+                                <Area type="monotone" dataKey="revenue" name="الإيرادات" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRevenue)" />
+                                <Area type="monotone" dataKey="profit" name="صافي الربح" stroke="#10b981" fillOpacity={1} fill="url(#colorProfit)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
+                </div>
 
-                    {/* Sales by Category */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Inventory Health */}
                     <div className="glass-panel p-6 rounded-xl">
-                        <h3 className="text-lg font-bold text-white mb-6">المبيعات حسب القسم</h3>
-                        <div className="flex flex-col gap-6">
-                            {salesByCategory.map((cat, idx) => (
-                                <div key={idx} className="flex flex-col gap-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-white">{cat.name}</span>
-                                        <span className="text-slate-400">{cat.value}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                        <div className={`h-full ${cat.color} rounded-full`} style={{ width: `${cat.value}%` }}></div>
-                                    </div>
-                                </div>
-                            ))}
+                        <h3 className="text-lg font-bold text-white mb-6">صحة المخزون (أقل 10 منتجات)</h3>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={inventoryData} layout="vertical">
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                    <XAxis type="number" stroke="#64748b" />
+                                    <YAxis type="category" dataKey="name" stroke="#64748b" width={100} tick={{ fontSize: 11 }} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1e232d', border: '1px solid #334155', color: '#fff' }}
+                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                    />
+                                    <Bar dataKey="stock" name="الكمية المتبقية" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
-                </div>
 
-                {/* Top Products Table */}
-                <div className="glass-panel rounded-xl overflow-hidden">
-                    <div className="p-6 border-b border-white/5 flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-white">المنتجات الأكثر مبيعاً</h3>
-                        <button className="text-primary text-sm font-bold hover:underline">عرض الكل</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-right">
-                            <thead className="bg-white/5 text-slate-400 font-medium">
-                                <tr>
-                                    <th className="px-6 py-4">المنتج</th>
-                                    <th className="px-6 py-4">القسم</th>
-                                    <th className="px-6 py-4">عدد القطع المباعة</th>
-                                    <th className="px-6 py-4">الإيرادات</th>
-                                    <th className="px-6 py-4">المخزون المتبقي</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5 text-slate-300">
-                                {topProducts.map((product) => (
-                                    <tr key={product.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-white">{product.name}</td>
-                                        <td className="px-6 py-4">{product.category}</td>
-                                        <td className="px-6 py-4">{product.sales.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-emerald-400 font-bold">{product.revenue.toLocaleString()} ج.م</td>
-                                        <td className={`px-6 py-4 ${product.stock < 50 ? 'text-yellow-400' : 'text-emerald-400'}`}>{product.stock}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    {/* Customer Insights & Heatmap Placeholder */}
+                    <div className="flex flex-col gap-6">
+                        {/* Customers */}
+                        <div className="glass-panel p-6 rounded-xl flex-1">
+                            <h3 className="text-lg font-bold text-white mb-4">العملاء (الجدد vs العائدون)</h3>
+                            <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={customerData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {customerData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ backgroundColor: '#1e232d', border: 'none', color: '#fff' }} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Heatmap (Simplified Visual) */}
+                        <div className="glass-panel p-6 rounded-xl">
+                            <h3 className="text-lg font-bold text-white mb-2">أوقات الذروة</h3>
+                            <p className="text-xs text-slate-400 mb-4">توزيع الطلبات حسب الساعة (آخر 24 ساعة)</p>
+                            <div className="grid grid-cols-12 gap-1 h-24">
+                                {/* Visual representation of hours 0-23. Using heatmap data if available, else random opacity for effect */}
+                                {Array.from({ length: 24 }).map((_, i) => {
+                                    // Find count for this hour from heatmap data (simplified: sum count for hour across all days)
+                                    const count = heatmap.filter(h => h.hour_of_day === i).reduce((acc, curr) => acc + parseInt(curr.count as any), 0);
+                                    const max = Math.max(...heatmap.map(h => parseInt(h.count as any))) || 1;
+                                    const opacity = (count / max) * 0.8 + 0.2; // Min 0.2 opacity
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="rounded bg-primary flex items-end justify-center pb-1 text-[8px] text-white/70"
+                                            style={{ opacity: count > 0 ? opacity : 0.1 }}
+                                            title={`Hour: ${i}:00 - Orders: ${count}`}
+                                        >
+                                            {i}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
