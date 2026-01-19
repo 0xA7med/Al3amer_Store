@@ -4,7 +4,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function AdminReportsPage() {
     const [dateRange, setDateRange] = useState('month');
-    const { stats, salesByCategory, topProducts, dailySalesChart, isLoading } = useAdminReports(dateRange);
+    const [customDates, setCustomDates] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
+    const { stats, salesByCategory, topProducts, dailySalesChart, isLoading } = useAdminReports(dateRange, customDates);
 
     if (isLoading || !stats) {
         return (
@@ -34,8 +35,43 @@ export default function AdminReportsPage() {
                             <option value="week">آخر 7 أيام</option>
                             <option value="month">الشهر الحالي</option>
                             <option value="year">السنة الحالية</option>
+                            <option value="custom">فترة مخصصة</option>
                         </select>
-                        <button className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors text-sm font-bold shadow-lg shadow-primary/20">
+
+                        {dateRange === 'custom' && (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    className="bg-[#1e232d] border border-white/10 text-white text-sm rounded-lg px-2 py-2 focus:ring-1 focus:ring-primary outline-none"
+                                    onChange={(e) => setCustomDates(prev => ({ ...prev, start: e.target.valueAsDate }))}
+                                />
+                                <span className="text-white">-</span>
+                                <input
+                                    type="date"
+                                    className="bg-[#1e232d] border border-white/10 text-white text-sm rounded-lg px-2 py-2 focus:ring-1 focus:ring-primary outline-none"
+                                    onChange={(e) => setCustomDates(prev => ({ ...prev, end: e.target.valueAsDate }))}
+                                />
+                            </div>
+                        )}
+                        <button
+                            onClick={() => {
+                                if (!stats || !dailySalesChart.length) return;
+                                const csvContent = [
+                                    ['Date', 'Orders', 'Revenue'],
+                                    ...dailySalesChart.map(d => [d.date, d.orders, d.revenue])
+                                ].map(e => e.join(",")).join("\n");
+
+                                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                const link = document.createElement("a");
+                                const url = URL.createObjectURL(blob);
+                                link.setAttribute("href", url);
+                                link.setAttribute("download", `report_${dateRange}.csv`);
+                                link.style.visibility = 'hidden';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }}
+                            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors text-sm font-bold shadow-lg shadow-primary/20">
                             <span className="material-symbols-outlined text-[20px]">download</span>
                             <span>تصدير تقرير</span>
                         </button>

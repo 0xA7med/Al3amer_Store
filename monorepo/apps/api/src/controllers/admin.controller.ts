@@ -96,6 +96,18 @@ export class AdminController {
                 startDate.setFullYear(now.getFullYear() - 1);
                 previousStartDate.setFullYear(now.getFullYear() - 2);
                 previousEndDate.setFullYear(now.getFullYear() - 1);
+            } else if (range === 'custom') {
+                const { startDate: qStart, endDate: qEnd } = req.query;
+                if (qStart && qEnd) {
+                    startDate.setTime(new Date(qStart as string).getTime());
+                    // End date is usually inclusive, so set to end of that day or use simple logic
+                    // Here we assume startDate is dynamic.
+
+                    // Logic for custom comparison: Compare with previous period of same length
+                    const duration = new Date(qEnd as string).getTime() - startDate.getTime();
+                    previousStartDate.setTime(startDate.getTime() - duration);
+                    previousEndDate.setTime(startDate.getTime());
+                }
             } else {
                 // Default month (Last 30 days)
                 startDate.setDate(now.getDate() - 30);

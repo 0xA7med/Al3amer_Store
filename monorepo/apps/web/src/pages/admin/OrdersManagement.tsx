@@ -24,7 +24,7 @@ function formatDate(dateString: string): { date: string; time: string } {
 export default function OrdersManagement() {
     // Hooks
     const [searchParams, setSearchParams] = useSearchParams();
-    const { data: ordersData, isLoading, error } = useAdminOrders();
+    const { data: ordersData, isLoading } = useAdminOrders();
     const orders = ordersData?.data || [];
     const updateStatus = useUpdateOrderStatus();
 
@@ -292,9 +292,9 @@ export default function OrdersManagement() {
                                 </tr>
                             ) : (
                                 filteredOrders.map((order) => {
-                                    const { date, time } = formatDate(order.createdAt);
-                                    const productCount = order.items?.length || 0;
-                                    const firstProduct = order.items?.[0];
+                                    // const { date, time } = formatDate(order.createdAt);
+                                    // const productCount = order.items?.length || 0;
+                                    // const firstProduct = order.items?.[0];
 
                                     return (
                                         <tr
