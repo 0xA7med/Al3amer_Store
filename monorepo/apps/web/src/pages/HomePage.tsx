@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import { ProductCard } from '../components/products';
 
 import { useFeaturedProducts, useCategories } from '../hooks/useProducts';
@@ -46,10 +47,13 @@ export function HomePage() {
                                     <span className="material-symbols-outlined">shopping_bag</span>
                                     <span>تسوق العروض</span>
                                 </Link>
-                                <button className="flex items-center justify-center gap-2 bg-[#1e293b]/60 hover:bg-[#1e293b] border border-gray-600 text-white px-8 py-4 rounded-xl text-base font-bold transition-all backdrop-blur-md">
-                                    <span>تواصل مع المبيعات</span>
-                                    <span className="material-symbols-outlined rtl:rotate-180">arrow_right_alt</span>
-                                </button>
+                                <Link
+                                    to="/ai-builder"
+                                    className="flex items-center justify-center gap-2 bg-[#1e293b]/60 hover:bg-[#1e293b] border border-gray-600 hover:border-primary/50 text-white px-8 py-4 rounded-xl text-base font-bold transition-all backdrop-blur-md group"
+                                >
+                                    <span>صمم كاشيرك بالذكاء الاصطناعي</span>
+                                    <Sparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 animate-pulse" />
+                                </Link>
                             </div>
                             <div className="flex items-center gap-6 pt-8 border-t border-white/10 mt-4">
                                 <div className="flex items-center gap-2 text-gray-400">
