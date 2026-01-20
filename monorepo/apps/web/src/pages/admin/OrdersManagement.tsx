@@ -320,7 +320,10 @@ export default function OrdersManagement() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-slate-400 text-sm">
-                                                {new Date(order.createdAt).toLocaleDateString('ar-EG')}
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-white">{new Date(order.createdAt).toLocaleDateString('ar-EG')}</span>
+                                                    <span className="text-xs text-slate-500">{new Date(order.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div onClick={(e) => e.stopPropagation()}>

@@ -204,10 +204,15 @@ export function AccountPage() {
                                         {orders.slice(0, 3).map((order) => (
                                             <tr key={order.id} className="hover:bg-white/5 transition-colors">
                                                 <td className="px-6 py-4">
-                                                    <span className="text-white font-medium">{order.orderNumber}</span>
+                                                    <Link
+                                                        to={`/track-order/${order.id}`}
+                                                        className="text-white font-medium hover:text-primary transition-colors underline decoration-white/20 underline-offset-4"
+                                                    >
+                                                        {order.orderNumber}
+                                                    </Link>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-400 text-sm">
-                                                    {new Date(order.createdAt).toLocaleDateString('ar-EG')}
+                                                    {new Date(order.createdAt).toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[order.status]?.color || 'text-gray-400'}`}>
@@ -250,9 +255,16 @@ export function AccountPage() {
                                 <tbody className="divide-y divide-white/5">
                                     {orders.map((order) => (
                                         <tr key={order.id} className="hover:bg-white/5 transition-colors">
-                                            <td className="px-6 py-4 text-primary font-bold">{order.orderNumber}</td>
+                                            <td className="px-6 py-4">
+                                                <Link
+                                                    to={`/track-order/${order.id}`}
+                                                    className="text-primary font-bold hover:text-primary-dark transition-colors hover:underline underline-offset-4"
+                                                >
+                                                    {order.orderNumber}
+                                                </Link>
+                                            </td>
                                             <td className="px-6 py-4 text-gray-400 text-sm">
-                                                {new Date(order.createdAt).toLocaleDateString('ar-EG')}
+                                                {new Date(order.createdAt).toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[order.status]?.color || 'text-gray-400'}`}>
@@ -261,15 +273,22 @@ export function AccountPage() {
                                             </td>
                                             <td className="px-6 py-4 text-white font-bold">{Number(order.total).toLocaleString()} ج.م</td>
                                             <td className="px-6 py-4">
-                                                <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => setSelectedOrder(order)}
-                                                        className="text-gray-400 hover:text-primary transition-colors"
+                                                        className="text-gray-400 hover:text-primary transition-colors p-1"
                                                         title="عرض التفاصيل"
                                                     >
                                                         <span className="material-symbols-outlined">visibility</span>
                                                     </button>
-                                                </td>
+                                                    <Link
+                                                        to={`/track-order/${order.id}`}
+                                                        className="text-gray-400 hover:text-emerald-400 transition-colors p-1"
+                                                        title="تتبع الطلب"
+                                                    >
+                                                        <span className="material-symbols-outlined">local_shipping</span>
+                                                    </Link>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

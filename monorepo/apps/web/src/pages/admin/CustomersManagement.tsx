@@ -171,7 +171,7 @@ export function CustomersManagement() {
                                             <div className="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" style={{ backgroundImage: `url(${customer.avatar})` }}></div>
                                             <div>
                                                 <p className="font-bold text-white">{customer.name}</p>
-                                                <p className="text-xs text-slate-500 mt-1">انضم {customer.joinDate}</p>
+                                                <p className="text-xs text-slate-500 mt-1 font-mono dir-ltr">{new Date(customer.joinDate).toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                                             </div>
                                         </div>
                                     </td>

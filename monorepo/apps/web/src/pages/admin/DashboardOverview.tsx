@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useDashboardStats, useUpdateOrderStatus } from '../../hooks/useAdmin';
-import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
+
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -291,10 +290,8 @@ export function DashboardOverview() {
                                                 <span className="hover:text-primary transition-colors">{order.user?.name || 'غير معروف'}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-400">
-                                            <span title={new Date(order.createdAt).toLocaleString('ar-EG')}>
-                                                {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ar })}
-                                            </span>
+                                        <td className="px-6 py-4 text-slate-400 font-mono text-xs dir-ltr text-right">
+                                            {new Date(order.createdAt).toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </td>
                                         <td className="px-6 py-4">
                                             <StatusSelect order={order} />
