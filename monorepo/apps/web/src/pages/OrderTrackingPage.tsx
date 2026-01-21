@@ -90,8 +90,8 @@ export function OrderTrackingPage() {
                 </Link>
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2">تتبع الطلب</h1>
-                        <p className="text-gray-400 font-mono">#{order.orderNumber || id?.slice(-8).toUpperCase()}</p>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">تتبع الطلب</h1>
+                        <p className="text-gray-400 font-mono text-sm md:text-base">#{order.orderNumber || id?.slice(-8).toUpperCase()}</p>
                     </div>
                     {isCancelled ? (
                         <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg font-bold">
@@ -114,7 +114,7 @@ export function OrderTrackingPage() {
                             <div className="relative">
                                 {/* Connecting Line */}
                                 <div className="absolute top-6 right-0 left-0 h-1 bg-white/5 -z-10 hidden md:block" />
-                                <div className="absolute right-6 bottom-0 top-0 w-1 bg-white/5 -z-10 md:hidden" />
+                                <div className="absolute right-5 bottom-0 top-0 w-1 bg-white/5 -z-10 md:hidden" />
 
                                 <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-4">
                                     {STATUS_STEPS.map((step, index) => {
@@ -143,14 +143,14 @@ export function OrderTrackingPage() {
 
                                                 {/* Text */}
                                                 <div className="md:text-center md:mt-4 pt-1 md:pt-0">
-                                                    <h3 className={`font-bold mb-1 ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                                                    <h3 className={`font-bold mb-1 text-sm md:text-base ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
                                                         {step.label}
                                                     </h3>
-                                                    <p className="text-sm text-gray-500 max-w-[150px] mx-auto hidden md:block">
+                                                    <p className="text-xs md:text-sm text-gray-500 max-w-[150px] mx-auto hidden md:block">
                                                         {step.description}
                                                     </p>
                                                     {/* Mobile Description */}
-                                                    <p className="text-sm text-gray-500 md:hidden">
+                                                    <p className="text-xs text-gray-500 md:hidden leading-snug">
                                                         {step.description}
                                                     </p>
                                                 </div>
@@ -175,8 +175,8 @@ export function OrderTrackingPage() {
                         <h3 className="text-xl font-bold text-white mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
                         <div className="space-y-4">
                             {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex gap-4 items-center bg-white/5 p-3 rounded-xl">
-                                    <div className="size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl">
+                                    <div className="size-16 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
                                         {item.product?.images?.[0]?.url ? (
                                             <img src={item.product.images[0].url} alt={item.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -186,8 +186,8 @@ export function OrderTrackingPage() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="text-white font-bold mb-1">{item.name}</h4>
-                                        <p className="text-primary font-bold">{Number(item.price).toLocaleString()} ج.م</p>
+                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base truncate">{item.name}</h4>
+                                        <p className="text-primary font-bold text-sm md:text-base">{Number(item.price).toLocaleString()} ج.م</p>
                                     </div>
                                     <div className="text-right">
                                         <span className="text-gray-400 text-sm">الكمية</span>
