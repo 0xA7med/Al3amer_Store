@@ -171,12 +171,12 @@ export function OrderTrackingPage() {
                     </div>
 
                     {/* Order Items */}
-                    <div className="glass-panel p-3 md:p-6 rounded-2xl w-full max-w-full">
+                    <div className="glass-panel p-3 sm:p-6 rounded-2xl w-full max-w-full">
                         <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
                         <div className="space-y-4">
                             {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl w-full max-w-full">
-                                    <div className="size-14 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                <div key={item.id} className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center sm:text-right text-center bg-white/5 p-3 rounded-xl w-full max-w-full">
+                                    <div className="size-16 sm:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
                                         {item.product?.images?.[0]?.url ? (
                                             <img src={item.product.images[0].url} alt={item.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -185,12 +185,12 @@ export function OrderTrackingPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base truncate max-w-full">{item.name}</h4>
+                                    <div className="flex-1 min-w-0 w-full">
+                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base break-words max-w-full">{item.name}</h4>
                                         <p className="text-primary font-bold text-sm md:text-base">{Number(item.price).toLocaleString()} ج.م</p>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-gray-400 text-sm">الكمية</span>
+                                    <div className="sm:text-right text-center flex flex-col items-center sm:items-end">
+                                        <span className="text-gray-400 text-xs sm:text-sm">الكمية</span>
                                         <div className="text-white font-bold">{item.quantity}</div>
                                     </div>
                                 </div>
@@ -217,9 +217,9 @@ export function OrderTrackingPage() {
                                     <span>{Number(order.extraFee).toLocaleString()} ج.م</span>
                                 </div>
                             )}
-                            <div className="flex justify-between items-center pt-3 border-t border-white/5">
-                                <span className="text-lg text-white font-bold">الإجمالي</span>
-                                <span className="text-2xl font-bold text-primary">{Number(order.total).toLocaleString()} ج.م</span>
+                            <div className="flex justify-between items-center pt-3 border-t border-white/5 gap-2 w-full">
+                                <span className="text-base sm:text-lg text-white font-bold shrink-0">الإجمالي</span>
+                                <span className="text-xl sm:text-2xl font-bold text-primary break-words text-left">{Number(order.total).toLocaleString()} ج.م</span>
                             </div>
                         </div>
                     </div>
@@ -228,7 +228,7 @@ export function OrderTrackingPage() {
                 {/* Sidebar */}
                 <div className="lg:col-span-1 space-y-6 w-full max-w-full">
                     {/* Shipping Address */}
-                    <div className="glass-panel p-3 md:p-6 rounded-2xl w-full max-w-full">
+                    <div className="glass-panel p-3 sm:p-6 rounded-2xl w-full max-w-full">
                         <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                             <MapPin className="size-5 text-primary shrink-0" />
                             عنوان التوصيل
@@ -242,7 +242,7 @@ export function OrderTrackingPage() {
                     </div>
 
                     {/* Need Help? */}
-                    <div className="glass-panel p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
+                    <div className="glass-panel p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent border-primary/20">
                         <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary">support_agent</span>
                             تحتاج مساعدة؟
@@ -272,7 +272,7 @@ export function OrderTrackingPage() {
 
                     {/* Suggested Products Sidebar */}
                     {suggestedProducts.length > 0 && (
-                        <div className="glass-panel p-6 rounded-2xl">
+                        <div className="glass-panel p-4 sm:p-6 rounded-2xl">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-bold text-white flex items-center gap-2">
                                     <ShoppingBag className="size-5 text-accent-red" />
