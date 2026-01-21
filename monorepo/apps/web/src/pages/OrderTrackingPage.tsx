@@ -109,7 +109,7 @@ export function OrderTrackingPage() {
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Status Timeline */}
-                    <div className="glass-panel p-6 md:p-8 rounded-2xl">
+                    <div className="glass-panel p-4 md:p-8 rounded-2xl">
                         {!isCancelled ? (
                             <div className="relative">
                                 {/* Connecting Line */}
@@ -133,7 +133,7 @@ export function OrderTrackingPage() {
 
                                                 {/* Icon Circle */}
                                                 <div
-                                                    className={`size-12 rounded-full border-4 flex items-center justify-center shrink-0 transition-all duration-500 z-10 ${isCompleted
+                                                    className={`size-10 md:size-12 rounded-full border-4 flex items-center justify-center shrink-0 transition-all duration-500 z-10 ${isCompleted
                                                         ? 'bg-primary border-primary text-white shadow-[0_0_20px_rgba(37,244,238,0.3)]'
                                                         : 'bg-[#181a20] border-white/10 text-gray-500'
                                                         } ${isCurrent ? 'animate-pulse ring-4 ring-primary/20' : ''}`}
@@ -143,14 +143,14 @@ export function OrderTrackingPage() {
 
                                                 {/* Text */}
                                                 <div className="md:text-center md:mt-4 pt-1 md:pt-0">
-                                                    <h3 className={`font-bold mb-1 ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                                                    <h3 className={`font-bold mb-1 text-sm md:text-base ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
                                                         {step.label}
                                                     </h3>
-                                                    <p className="text-sm text-gray-500 max-w-[150px] mx-auto hidden md:block">
+                                                    <p className="text-xs md:text-sm text-gray-500 max-w-[150px] mx-auto hidden md:block">
                                                         {step.description}
                                                     </p>
                                                     {/* Mobile Description */}
-                                                    <p className="text-sm text-gray-500 md:hidden">
+                                                    <p className="text-xs text-gray-500 md:hidden">
                                                         {step.description}
                                                     </p>
                                                 </div>
@@ -171,12 +171,12 @@ export function OrderTrackingPage() {
                     </div>
 
                     {/* Order Items */}
-                    <div className="glass-panel p-6 rounded-2xl">
+                    <div className="glass-panel p-4 md:p-6 rounded-2xl">
                         <h3 className="text-xl font-bold text-white mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
                         <div className="space-y-4">
                             {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex gap-4 items-center bg-white/5 p-3 rounded-xl">
-                                    <div className="size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl">
+                                    <div className="size-16 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
                                         {item.product?.images?.[0]?.url ? (
                                             <img src={item.product.images[0].url} alt={item.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -189,8 +189,8 @@ export function OrderTrackingPage() {
                                         <h4 className="text-white font-bold mb-1">{item.name}</h4>
                                         <p className="text-primary font-bold">{Number(item.price).toLocaleString()} ج.م</p>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-gray-400 text-sm">الكمية</span>
+                                    <div className="text-right shrink-0">
+                                        <span className="text-gray-400 text-xs md:text-sm">الكمية</span>
                                         <div className="text-white font-bold">{item.quantity}</div>
                                     </div>
                                 </div>
