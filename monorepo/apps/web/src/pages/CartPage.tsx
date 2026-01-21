@@ -24,7 +24,7 @@ export function CartPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
             {/* Progress Steps */}
             <CheckoutProgressBar currentStep={1} />
 
@@ -60,7 +60,7 @@ export function CartPage() {
                         {cartItems.map((item) => (
                             <div key={item.id} className="glass-panel rounded-2xl p-4 flex gap-4 items-center group hover:border-primary/30 transition-colors">
                                 {/* Image */}
-                                <Link to={`/product/${item.id}`} className="size-24 md:size-28 rounded-xl bg-[#181a20] border border-white/5 overflow-hidden flex-shrink-0">
+                                <Link to={`/product/${item.id}`} className="size-20 md:size-28 rounded-xl bg-[#181a20] border border-white/5 overflow-hidden flex-shrink-0">
                                     <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('${item.image}')` }} />
                                 </Link>
 
@@ -70,7 +70,7 @@ export function CartPage() {
                                         <div>
                                             {/* Brand removed as not in context yet, or allow optional */}
                                             <Link to={`/product/${item.id}`}>
-                                                <h3 className="text-white font-bold text-base md:text-lg hover:text-primary transition-colors">{item.name}</h3>
+                                                <h3 className="text-white font-bold text-sm md:text-lg hover:text-primary transition-colors line-clamp-2">{item.name}</h3>
                                             </Link>
                                         </div>
                                         <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-accent-red transition-colors p-1">

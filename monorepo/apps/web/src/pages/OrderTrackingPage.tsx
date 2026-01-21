@@ -81,7 +81,7 @@ export function OrderTrackingPage() {
     );
 
     return (
-        <div className="container mx-auto px-4 py-6 md:py-12 max-w-5xl">
+        <div className="container mx-auto px-3 md:px-4 py-4 md:py-12 max-w-5xl">
             {/* Header */}
             <div className="mb-8">
                 <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors">
@@ -109,7 +109,7 @@ export function OrderTrackingPage() {
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Status Timeline */}
-                    <div className="glass-panel p-6 md:p-8 rounded-2xl">
+                    <div className="glass-panel p-4 md:p-8 rounded-2xl">
                         {!isCancelled ? (
                             <div className="relative">
                                 {/* Connecting Line */}
@@ -171,12 +171,12 @@ export function OrderTrackingPage() {
                     </div>
 
                     {/* Order Items */}
-                    <div className="glass-panel p-6 rounded-2xl">
-                        <h3 className="text-xl font-bold text-white mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
+                    <div className="glass-panel p-4 md:p-6 rounded-2xl">
+                        <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
                         <div className="space-y-4">
                             {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex gap-3 md:gap-4 items-start bg-white/5 p-3 rounded-xl">
-                                    <div className="size-16 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl">
+                                    <div className="size-14 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
                                         {item.product?.images?.[0]?.url ? (
                                             <img src={item.product.images[0].url} alt={item.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -185,15 +185,13 @@ export function OrderTrackingPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch">
-                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base line-clamp-2 leading-snug">{item.name}</h4>
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <p className="text-primary font-bold text-sm md:text-base">{Number(item.price).toLocaleString()} ج.م</p>
-                                            <div className="flex items-center gap-1 text-xs text-gray-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                                                <span>الكمية:</span>
-                                                <span className="text-white font-bold">{item.quantity}</span>
-                                            </div>
-                                        </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base truncate">{item.name}</h4>
+                                        <p className="text-primary font-bold text-sm md:text-base">{Number(item.price).toLocaleString()} ج.م</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-gray-400 text-sm">الكمية</span>
+                                        <div className="text-white font-bold">{item.quantity}</div>
                                     </div>
                                 </div>
                             ))}
