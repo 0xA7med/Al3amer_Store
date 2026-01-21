@@ -78,7 +78,7 @@ export function CartPage() {
                                         </button>
                                     </div>
 
-                                    <div className="flex items-center justify-between mt-auto">
+                                    <div className="flex flex-wrap items-center justify-between gap-y-2 mt-auto">
                                         {/* Quantity */}
                                         <div className="flex items-center gap-1 bg-[#181a20] rounded-lg border border-white/10 h-10 px-1">
                                             <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
