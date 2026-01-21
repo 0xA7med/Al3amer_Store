@@ -56,9 +56,9 @@ export function CartPage() {
             ) : (
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Cart Items */}
-                    <div className="lg:col-span-2 flex flex-col gap-4">
+                    <div className="lg:col-span-2 flex flex-col gap-4 w-full max-w-full overflow-hidden">
                         {cartItems.map((item) => (
-                            <div key={item.id} className="glass-panel rounded-2xl p-4 flex gap-4 items-center group hover:border-primary/30 transition-colors">
+                            <div key={item.id} className="glass-panel rounded-2xl p-3 sm:p-4 flex gap-3 sm:gap-4 items-center group hover:border-primary/30 transition-colors">
                                 {/* Image */}
                                 <Link to={`/product/${item.id}`} className="size-20 md:size-28 rounded-xl bg-[#181a20] border border-white/5 overflow-hidden flex-shrink-0">
                                     <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url('${item.image}')` }} />
@@ -125,9 +125,9 @@ export function CartPage() {
                                     <span className="material-symbols-outlined text-red-500">favorite</span>
                                     من قائمة المفضلة لديك
                                 </h3>
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                                     {suggestedItems.map(item => (
-                                        <div key={item.id} className="glass-panel p-3 rounded-xl flex flex-col gap-3 group border border-white/5 hover:border-primary/30 transition-all">
+                                        <div key={item.id} className="glass-panel p-2 sm:p-3 rounded-xl flex flex-col gap-3 group border border-white/5 hover:border-primary/30 transition-all">
                                             <Link to={`/product/${item.product.slug}`} className="aspect-square bg-[#181a20] rounded-lg overflow-hidden relative">
                                                 {item.product.images?.[0]?.url ? (
                                                     <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -165,8 +165,8 @@ export function CartPage() {
                     </div>
 
                     {/* Order Summary */}
-                    <div className="lg:col-span-1">
-                        <div className="glass-panel rounded-2xl p-6 sticky top-24">
+                    <div className="lg:col-span-1 w-full max-w-full">
+                        <div className="glass-panel rounded-2xl p-4 sm:p-6 sticky top-24">
                             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">receipt_long</span>
                                 ملخص الطلب

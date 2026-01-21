@@ -104,7 +104,7 @@ export function ProductCard({
             {/* Image Section */}
             <Link
                 to={`/product/${slug || id}`}
-                className="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-6 flex items-center justify-center overflow-hidden"
+                className="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-3 sm:p-6 flex items-center justify-center overflow-hidden"
             >
                 {/* Image Glow */}
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
@@ -115,7 +115,7 @@ export function ProductCard({
             </Link>
 
             {/* Content Section */}
-            <div className="p-5 flex flex-col flex-1 border-t border-white/5 bg-[#1e293b]/40 backdrop-blur-sm">
+            <div className="p-3 sm:p-5 flex flex-col flex-1 border-t border-white/5 bg-[#1e293b]/40 backdrop-blur-sm">
                 <div className="mb-3">
                     <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[10px] font-bold text-primary uppercase tracking-widest">{brand}</span>

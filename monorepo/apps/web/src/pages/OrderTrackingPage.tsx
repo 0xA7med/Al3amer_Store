@@ -81,7 +81,7 @@ export function OrderTrackingPage() {
     );
 
     return (
-        <div className="container mx-auto px-3 md:px-4 py-4 md:py-12 max-w-5xl">
+        <div className="container mx-auto px-3 py-4 md:py-12 max-w-5xl w-full max-w-full overflow-hidden">
             {/* Header */}
             <div className="mb-8">
                 <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors">
@@ -109,7 +109,7 @@ export function OrderTrackingPage() {
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Status Timeline */}
-                    <div className="glass-panel p-4 md:p-8 rounded-2xl">
+                    <div className="glass-panel p-3 md:p-8 rounded-2xl w-full max-w-full">
                         {!isCancelled ? (
                             <div className="relative">
                                 {/* Connecting Line */}
@@ -142,15 +142,15 @@ export function OrderTrackingPage() {
                                                 </div>
 
                                                 {/* Text */}
-                                                <div className="md:text-center md:mt-4 pt-1 md:pt-0">
-                                                    <h3 className={`font-bold mb-1 text-sm md:text-base ${isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                                                <div className="md:text-center md:mt-4 pt-1 md:pt-0 min-w-0 flex-1 md:flex-none">
+                                                    <h3 className={`font-bold mb-1 text-sm md:text-base ${isCompleted ? 'text-white' : 'text-gray-500'} break-words`}>
                                                         {step.label}
                                                     </h3>
                                                     <p className="text-xs md:text-sm text-gray-500 max-w-[150px] mx-auto hidden md:block">
                                                         {step.description}
                                                     </p>
                                                     {/* Mobile Description */}
-                                                    <p className="text-xs text-gray-500 md:hidden leading-snug">
+                                                    <p className="text-xs text-gray-500 md:hidden leading-snug break-words">
                                                         {step.description}
                                                     </p>
                                                 </div>
@@ -171,11 +171,11 @@ export function OrderTrackingPage() {
                     </div>
 
                     {/* Order Items */}
-                    <div className="glass-panel p-4 md:p-6 rounded-2xl">
+                    <div className="glass-panel p-3 md:p-6 rounded-2xl w-full max-w-full">
                         <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6 border-b border-white/5 pb-4">محتويات الطلب</h3>
                         <div className="space-y-4">
                             {order.items?.map((item: any) => (
-                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl">
+                                <div key={item.id} className="flex gap-3 md:gap-4 items-center bg-white/5 p-3 rounded-xl w-full max-w-full">
                                     <div className="size-14 md:size-20 bg-[#181a20] rounded-lg overflow-hidden border border-white/10 shrink-0">
                                         {item.product?.images?.[0]?.url ? (
                                             <img src={item.product.images[0].url} alt={item.name} className="w-full h-full object-cover" />
@@ -186,7 +186,7 @@ export function OrderTrackingPage() {
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base truncate">{item.name}</h4>
+                                        <h4 className="text-white font-bold mb-1 text-sm md:text-base truncate max-w-full">{item.name}</h4>
                                         <p className="text-primary font-bold text-sm md:text-base">{Number(item.price).toLocaleString()} ج.م</p>
                                     </div>
                                     <div className="text-right">
@@ -226,17 +226,17 @@ export function OrderTrackingPage() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="lg:col-span-1 space-y-6 w-full max-w-full">
                     {/* Shipping Address */}
-                    <div className="glass-panel p-6 rounded-2xl">
+                    <div className="glass-panel p-3 md:p-6 rounded-2xl w-full max-w-full">
                         <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                            <MapPin className="size-5 text-primary" />
+                            <MapPin className="size-5 text-primary shrink-0" />
                             عنوان التوصيل
                         </h3>
-                        <div className="space-y-1 text-gray-300">
-                            <p className="text-white font-medium">{order.fullName}</p>
-                            <p>{order.address}</p>
-                            <p>{order.city}، {order.governorate}</p>
+                        <div className="space-y-1 text-gray-300 break-words">
+                            <p className="text-white font-medium break-words">{order.fullName}</p>
+                            <p className="break-words">{order.address}</p>
+                            <p className="break-words">{order.city}، {order.governorate}</p>
                             <p className="dir-ltr text-right mt-2 text-primary">{order.phone}</p>
                         </div>
                     </div>

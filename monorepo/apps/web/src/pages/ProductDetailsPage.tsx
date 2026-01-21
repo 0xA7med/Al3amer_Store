@@ -174,7 +174,7 @@ export const ProductDetailsPage = () => {
                             </span>
                         </div>
                         <div
-                            className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-8 transition-transform duration-500 cursor-zoom-in"
+                            className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in"
                             onClick={() => setIsZoomOpen(true)}
                         >
                             <img
@@ -298,7 +298,7 @@ export const ProductDetailsPage = () => {
                         {product.description || 'وصف المنتج غير متاح حالياً، يرجى مراجعة المواصفات الفنية.'}
                     </p>
 
-                    <div className="glass-panel p-6 rounded-2xl flex flex-col gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
+                    <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-col gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red via-primary to-brand-red opacity-50"></div>
 
                         <div className="flex items-end gap-3 flex-wrap relative z-10">
@@ -308,11 +308,11 @@ export const ProductDetailsPage = () => {
                                         {price.toLocaleString('ar-EG')} ج.م
                                     </span>
                                 )}
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl md:text-5xl font-extrabold text-brand-red tracking-tight">
+                                <div className="flex items-baseline gap-1 flex-wrap">
+                                    <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-brand-red tracking-tight">
                                         {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
                                     </span>
-                                    <span className="text-xl font-medium text-slate-300">جنية مصري</span>
+                                    <span className="text-lg sm:text-xl font-medium text-slate-300">جنية مصري</span>
                                 </div>
                             </div>
                             {hasDiscount && (
@@ -448,7 +448,7 @@ export const ProductDetailsPage = () => {
                                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors"></span>
                                                 {displayLabelMap[spec.key.toLowerCase()] || spec.key}
                                             </span>
-                                            <span className="text-white font-medium mt-1 md:mt-0 md:col-span-2">{spec.value}</span>
+                                            <span className="text-white font-medium mt-1 md:mt-0 md:col-span-2 break-words">{spec.value}</span>
                                         </div>
                                     )) : (
                                         <div className="p-8 text-center text-slate-500 italic">لا توجد مواصفات فنية لهذا المنتج حالياً.</div>
@@ -472,8 +472,8 @@ export const ProductDetailsPage = () => {
 
                         {activeTab === 'reviews' && (
                             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="glass-panel p-6 rounded-2xl flex flex-wrap gap-8 items-center bg-gradient-to-br from-surface-dark to-transparent">
-                                    <div className="flex flex-col items-center justify-center gap-1 min-w-[140px] border-l border-white/5 pl-8">
+                                <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-wrap gap-4 sm:gap-8 items-center bg-gradient-to-br from-surface-dark to-transparent">
+                                    <div className="flex flex-col items-center justify-center gap-1 min-w-[120px] sm:min-w-[140px] border-l border-white/5 pl-4 sm:pl-8">
                                         <span className="text-6xl font-extrabold text-white tracking-tighter">{product.averageRating || 0}</span>
                                         <div className="flex text-yellow-400 gap-0.5 my-1">
                                             {Array.from({ length: 5 }).map((_, i) => (
