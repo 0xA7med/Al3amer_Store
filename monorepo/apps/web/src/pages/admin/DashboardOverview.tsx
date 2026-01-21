@@ -339,12 +339,17 @@ export function DashboardOverview() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-bold ring-1 ring-primary/20">
-                                                    {order.user?.name?.charAt(0) || '?'}
+                                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-bold ring-1 ring-primary/20 flex-shrink-0">
+                                                    {(order.user?.name || order.fullName || '?').charAt(0)}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-white leading-tight">{order.user?.name || 'غير معروف'}</span>
-                                                    <span className="text-[10px] text-slate-500">{order.user?.phone || 'بدون هاتف'}</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-white leading-tight truncate">{order.user?.name || order.fullName || 'غير معروف'}</span>
+                                                        {!order.user && (
+                                                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400 font-bold uppercase">زائر</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-500">{order.user?.phone || order.phone || 'بدون هاتف'}</span>
                                                 </div>
                                             </div>
                                         </td>

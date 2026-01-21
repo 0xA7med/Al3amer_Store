@@ -143,7 +143,9 @@ export default function OrdersManagement() {
         const matchesSearch =
             order.orderNumber.toLowerCase().includes(searchLower) ||
             order.user?.name?.toLowerCase().includes(searchLower) ||
-            order.user?.email?.toLowerCase().includes(searchLower);
+            order.fullName?.toLowerCase().includes(searchLower) ||
+            order.phone?.toLowerCase().includes(searchLower) ||
+            order.user?.phone?.toLowerCase().includes(searchLower);
         return matchesStatus && matchesSearch;
     });
 
@@ -310,12 +312,17 @@ export default function OrdersManagement() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white">
-                                                        {order.user?.name?.charAt(0) || '?'}
+                                                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                                        {(order.user?.name || order.fullName || '?').charAt(0)}
                                                     </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-white text-sm font-medium">{order.user?.name || 'زائر'}</span>
-                                                        <span className="text-slate-500 text-xs">{order.user?.email}</span>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-white text-sm font-bold truncate">{order.user?.name || order.fullName || 'غير معروف'}</span>
+                                                            {!order.user && (
+                                                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400 font-bold uppercase">زائر</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-slate-500 text-[10px]">{order.user?.phone || order.phone || 'بدون هاتف'}</span>
                                                     </div>
                                                 </div>
                                             </td>
