@@ -4,6 +4,7 @@ import { useAdminProducts, useDeleteProduct, useBulkUpdateProducts, type Product
 import toast from 'react-hot-toast';
 
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import InventorySyncModal from '../../components/admin/InventorySyncModal';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
     active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle' },
@@ -17,7 +18,8 @@ function getProductStatus(product: Product): string {
 
 export function ProductList() {
     const navigate = useNavigate();
-    const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
+    const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 100 });
+    const [syncModalOpen, setSyncModalOpen] = useState(false);
     const deleteProduct = useDeleteProduct();
     const bulkUpdate = useBulkUpdateProducts();
     const products = productsData?.data || [];
@@ -267,6 +269,13 @@ export function ProductList() {
                             <span>حذف المختار ({selectedIds.size})</span>
                         </button>
                     )}
+                    <button
+                        onClick={() => setSyncModalOpen(true)}
+                        className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold border border-emerald-500/20 transition-all"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">sync</span>
+                        <span>تحديث المخزون (Excel)</span>
+                    </button>
                     <Link to="/admin/products/add" className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all w-full md:w-auto">
                         <span className="material-symbols-outlined text-[20px]">add</span>
                         <span>إضافة منتج</span>
@@ -488,6 +497,13 @@ export function ProductList() {
                     </div>
                 </div>
             )}
+
+            {/* Inventory Sync Modal */}
+            <InventorySyncModal
+                isOpen={syncModalOpen}
+                onClose={() => setSyncModalOpen(false)}
+                onSuccess={() => refetch()}
+            />
         </div>
     );
 }

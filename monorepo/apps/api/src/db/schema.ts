@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, numeric, integer, boolean, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, numeric, integer, boolean, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ============= USERS TABLE =============
@@ -104,6 +104,7 @@ export const brandsRelations = relations(brands, ({ many }) => ({
 // ============= PRODUCTS TABLE =============
 export const products = pgTable('products', {
     id: uuid('id').defaultRandom().primaryKey(),
+    externalId: text('external_id').unique(), // Maps to Pro_ID from accounting software
     name: text('name').notNull(),
     description: text('description'),
     price: numeric('price', { precision: 10, scale: 2 }).notNull(),
