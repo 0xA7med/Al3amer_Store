@@ -12,9 +12,10 @@ export class AIService {
 
     // Prioritized list of models to try
     private static MODELS = [
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-1.0-pro"
+        "gemini-pro",           // Priority 1: The stable alias (Safest)
+        "gemini-1.5-flash",     // Priority 2: Fast model
+        "gemini-1.5-flash-001", // Priority 3: Specific version
+        "gemini-1.0-pro"        // Priority 4: Legacy
     ];
 
     constructor(apiKey: string) {
@@ -52,6 +53,8 @@ export class AIService {
         // Loop through models with fallback strategy
         for (const modelName of AIService.MODELS) {
             try {
+                console.log("Attempting to connect using model:", modelName);
+
                 // Initialize model instance for the current iteration
                 const model = this.genAI.getGenerativeModel({ model: modelName });
 
@@ -64,7 +67,8 @@ export class AIService {
 
                 return JSON.parse(cleanText);
             } catch (error: any) {
-                console.warn(`Model ${modelName} failed. Trying next...`);
+                console.warn(`Model ${modelName} failed. Error:`, error.message || error);
+
                 // Check if it's a 400 or Not Found error to give a hint
                 if (error.toString().includes('400') || error.toString().toLowerCase().includes('not found')) {
                     console.error("Gemini Error. If 'Not Found', please ensure SDK is latest version.");
