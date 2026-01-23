@@ -384,4 +384,32 @@ export class AdminController {
             res.status(500).json({ error: 'Failed to fetch AI logs' });
         }
     }
+
+    // GET /api/admin/debug-models - List actually available models for the configured API key
+    static async debugModels(_req: Request, res: Response) {
+        try {
+            const appSettings = await db.query.settings.findFirst();
+            const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+
+            if (!apiKey) {
+                return res.status(400).json({ error: 'Google API Key is not configured' });
+            }
+
+            // Using direct fetch to Google API for maximum reliability in debugging
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                return res.status(response.status).json({
+                    error: 'Failed to fetch models from Google API',
+                    details: data
+                });
+            }
+
+            res.json(data);
+        } catch (error: any) {
+            console.error('Error in debugModels:', error);
+            res.status(500).json({ error: 'Failed to debug models', details: error.message });
+        }
+    }
 }

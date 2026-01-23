@@ -9,7 +9,12 @@ interface AIProductDetails {
 
 export class AIService {
     private client: GoogleGenAI;
-    private static MODEL_NAME = "gemini-1.5-flash";
+    private static MODELS_TO_TRY = [
+        "gemini-1.5-flash",      // Try first (Fastest)
+        "gemini-1.5-pro",        // Try second
+        "gemini-pro",            // Try third (The classic stable alias - MOST LIKELY TO WORK)
+        "gemini-1.0-pro"         // Fallback
+    ];
 
     constructor(apiKey: string) {
         this.client = new GoogleGenAI({
@@ -44,30 +49,39 @@ export class AIService {
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
 
-        try {
-            // ✅ Correct usage of @google/genai SDK (API v1)
-            const response = await this.client.models.generateContent({
-                model: AIService.MODEL_NAME,
-                contents: prompt
-            });
+        let lastError = null;
 
-            const text = response.text;
-            if (!text) {
-                throw new Error('Empty response from AI model');
-            }
-
-            // Clean up potentially md formatted text
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
+        for (const modelName of AIService.MODELS_TO_TRY) {
             try {
-                return JSON.parse(cleanText);
-            } catch (parseError) {
-                console.error('Failed to parse AI response as JSON:', cleanText);
-                throw new Error('AI returned invalid JSON format');
+                console.log(`🤖 AI: Attempting content generation with model: ${modelName}`);
+
+                const response = await this.client.models.generateContent({
+                    model: modelName,
+                    contents: prompt
+                });
+
+                const text = response.text;
+                if (!text) {
+                    throw new Error(`Empty response from model: ${modelName}`);
+                }
+
+                // Clean up potentially md formatted text
+                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                try {
+                    return JSON.parse(cleanText);
+                } catch (parseError) {
+                    console.error(`AI JSON Parse Error with model ${modelName}:`, cleanText);
+                    throw new Error('AI returned invalid JSON format');
+                }
+            } catch (error: any) {
+                lastError = error;
+                console.warn(`⚠️ Model ${modelName} failed: ${error.message}. Trying next...`);
+                continue;
             }
-        } catch (error: any) {
-            console.error('AI Generation Critical Failure:', error);
-            throw new Error(`Failed to generate content: ${error.message}`);
         }
+
+        console.error('❌ AI Generation Critical Failure: All models failed.');
+        throw new Error(`All AI models are unavailable. Last error: ${lastError?.message}`);
     }
 }
