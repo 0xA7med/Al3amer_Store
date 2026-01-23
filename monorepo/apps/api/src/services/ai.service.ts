@@ -10,10 +10,11 @@ interface AIProductDetails {
 export class AIService {
     private client: GoogleGenAI;
     private static MODELS_TO_TRY = [
-        "gemini-pro",            // Try first (The classic stable alias - MOST LIKELY TO WORK)
-        "gemini-1.5-flash",      // Try second (Fastest if available)
-        "gemini-1.5-pro",        // Try third
-        "gemini-1.0-pro"         // Fallback
+        "gemini-2.0-flash",      // Verified available and fast
+        "gemini-pro",            // Stable fallback
+        "gemini-1.5-flash",      // Secondary fallback
+        "gemini-1.5-pro",
+        "gemini-1.0-pro"
     ];
 
     constructor(apiKey: string) {
@@ -50,9 +51,9 @@ export class AIService {
         `;
 
         let lastError = null;
-        const forcedModel = "gemini-pro";
+        const forcedModel = "gemini-2.0-flash";
 
-        console.log(`🤖 AI: Using forced stable model: ${forcedModel}`);
+        console.log(`🤖 AI: Using verified stable model: ${forcedModel}`);
 
         try {
             const response = await this.client.models.generateContent({
