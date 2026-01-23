@@ -186,11 +186,14 @@ export class SettingsController {
                 response: response.text.trim()
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error testing Gemini connection:', error);
             res.status(500).json({
                 success: false,
-                error: 'فشل في الاتصال بخدمة Gemini'
+                error: 'فشل في الاتصال بخدمة Gemini',
+                details: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+                rawError: JSON.stringify(error, Object.getOwnPropertyNames(error))
             });
         }
     }
