@@ -211,6 +211,28 @@ export class SettingsController {
             }
 
             if (!successResponse) {
+                // Diagnostic step: Try to list available models
+                try {
+                    console.log('Attempting to list available models for diagnosis...');
+                    const modelsResponse = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`
+                    );
+
+                    if (modelsResponse.ok) {
+                        const modelsData = await modelsResponse.json() as any;
+                        const availableModels = (modelsData.models || [])
+                            .map((m: any) => m.name.replace('models/', ''))
+                            .filter((n: string) => n.includes('gemini'));
+
+                        return res.status(400).json({
+                            success: false,
+                            error: `فشل الاتصال بالنماذج المطلوبة. النماذج المتاحة لمفتاحك هي: ${availableModels.join(', ') || 'لا يوجد نماذج متاحة'}`
+                        });
+                    }
+                } catch (diagError) {
+                    console.error('Diagnostic check failed:', diagError);
+                }
+
                 const errorData = lastError as any;
                 const errorMessage = errorData?.error?.message || 'فشل الاتصال بجميع نماذج Gemini المتاحة';
                 const errorStatus = errorData?.error?.status || 'UNKNOWN';
