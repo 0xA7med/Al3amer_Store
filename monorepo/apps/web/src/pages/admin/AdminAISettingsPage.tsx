@@ -65,8 +65,9 @@ export default function AdminAISettingsPage() {
             setKeyModified(false);
             toast.success('تم حفظ الإعدادات بنجاح');
         },
-        onError: () => {
-            toast.error('حدث خطأ أثناء حفظ الإعدادات');
+        onError: (error: any) => {
+            const message = error?.response?.data?.error || 'حدث خطأ أثناء حفظ الإعدادات';
+            toast.error(message);
         },
     });
 
@@ -83,8 +84,9 @@ export default function AdminAISettingsPage() {
                 toast.error(`❌ ${data.error}`);
             }
         },
-        onError: () => {
-            toast.error('فشل في اختبار الاتصال');
+        onError: (error: any) => {
+            const message = error?.response?.data?.error || 'فشل في اختبار الاتصال';
+            toast.error(`❌ ${message}`);
         },
     });
 
