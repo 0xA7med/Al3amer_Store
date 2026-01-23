@@ -10,11 +10,11 @@ interface AIProductDetails {
 export class AIService {
     private client: GoogleGenAI;
     private static MODELS_TO_TRY = [
-        "gemini-2.0-flash",      // Priority 1: Newest
-        "gemini-1.5-flash",      // Priority 2: Standard Flash
-        "gemini-flash-latest",   // Priority 3: From debug list
-        "gemini-pro",            // Priority 4: Stable Legacy (The Fail-Safe)
-        "gemini-1.0-pro"         // Priority 5: Hard Legacy
+        "gemini-2.0-flash-lite-preview-02-05", // Priority 1: Lite version (Likely Free)
+        "gemini-2.0-flash-exp",                 // Priority 2: Experimental (Likely Free)
+        "gemini-2.0-flash",                     // Priority 3: Standard 2.0
+        "gemini-pro-latest",                    // Priority 4: Latest Pro alias
+        "gemini-1.5-flash-latest"               // Priority 5: Latest Flash alias
     ];
 
     constructor(apiKey: string) {
