@@ -10,7 +10,8 @@ interface AIProductDetails {
 export class AIService {
     private client: GoogleGenAI;
     private static MODELS_TO_TRY = [
-        "gemini-2.0-flash",      // Verified available and fast
+        "gemini-1.5-flash-latest", // Available and usually has better free tier quota
+        "gemini-2.0-flash",       // Newest (might hit quota)
         "gemini-pro",            // Stable fallback
     ];
 
@@ -48,7 +49,7 @@ export class AIService {
         `;
 
         let lastError = null;
-        const forcedModel = "gemini-2.0-flash";
+        const forcedModel = "gemini-1.5-flash-latest";
 
         console.log(`🤖 AI: Using verified stable model: ${forcedModel}`);
 

@@ -168,10 +168,10 @@ export class SettingsController {
                 apiVersion: 'v1'
             });
 
-            console.log("🧪 AI: Testing connection with model: gemini-2.0-flash");
+            console.log("🧪 AI: Testing connection with model: gemini-1.5-flash-latest");
 
             const response = await client.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-1.5-flash-latest',
                 contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
                 config: {
                     maxOutputTokens: 10,
