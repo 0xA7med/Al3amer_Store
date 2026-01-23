@@ -162,35 +162,53 @@ export class SettingsController {
 
             const cleanKey = apiKey.trim();
 
-            // ✅ Use the verified stable model
+            // ✅ Step 1: Try the Flash model (Fastest/Cheapest/Free Tier supported)
+            let currentModel = "gemini-flash-latest";
             const client = new GoogleGenAI({
                 apiKey: cleanKey,
                 apiVersion: 'v1'
             });
 
-            console.log("🧪 AI: Testing connection with model: gemini-1.5-flash-latest");
+            try {
+                console.log(`🧪 AI: Testing connection with model: ${currentModel}`);
+                const response = await client.models.generateContent({
+                    model: currentModel,
+                    contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
+                });
 
-            const response = await client.models.generateContent({
-                model: 'gemini-1.5-flash-latest',
-                contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
-                config: {
-                    maxOutputTokens: 10,
+                if (!response.text) {
+                    throw new Error('Empty response');
                 }
-            });
 
-            if (!response.text) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'لم يتم استلام أي نص من Gemini'
+                return res.json({
+                    success: true,
+                    message: 'تم الاتصال بنجاح!',
+                    model: currentModel,
+                    response: response.text.trim()
+                });
+            } catch (flashError: any) {
+                console.warn(`⚠️ ${currentModel} failed, falling back to gemini-pro... Error: ${flashError.message}`);
+
+                // ✅ Step 2: Fallback to the most stable model (Legacy but guaranteed)
+                currentModel = "gemini-pro";
+                console.log(`🧪 AI: Testing fallback connection with model: ${currentModel}`);
+
+                const response = await client.models.generateContent({
+                    model: currentModel,
+                    contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
+                });
+
+                if (!response.text) {
+                    throw new Error('Fallback model returned no text');
+                }
+
+                return res.json({
+                    success: true,
+                    message: 'تم الاتصال بنجاح (باستخدام الموديل الاحتياطي)!',
+                    model: currentModel,
+                    response: response.text.trim()
                 });
             }
-
-            res.json({
-                success: true,
-                message: 'تم الاتصال بنجاح!',
-                response: response.text.trim()
-            });
-
         } catch (error: any) {
             console.error('Error testing Gemini connection:', error);
             res.status(500).json({
