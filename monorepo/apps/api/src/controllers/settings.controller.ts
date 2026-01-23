@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { settings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { GoogleGenAI } from '@google/genai';
 
 export class SettingsController {
     // GET /api/settings - Fetch global settings
@@ -161,41 +162,28 @@ export class SettingsController {
 
             const cleanKey = apiKey.trim();
 
-            // Call Gemini API with a simple test prompt (using stable v1 and gemini-1.5-flash)
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${cleanKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: 'Say hello in Arabic in one word.' }]
-                        }],
-                        generationConfig: {
-                            maxOutputTokens: 10,
-                        }
-                    }),
+            // ✅ Use the new @google/genai SDK (API v1)
+            const client = new GoogleGenAI({ apiKey: cleanKey });
+
+            const response = await client.models.generateContent({
+                model: 'gemini-1.5-flash',
+                contents: [{ role: 'user', parts: [{ text: 'Say hello in Arabic in one word.' }] }],
+                config: {
+                    maxOutputTokens: 10,
                 }
-            );
+            });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('Gemini API Error:', JSON.stringify(errorData, null, 2));
-
-                const errorMessage = (errorData as any)?.error?.message || 'فشل الاتصال بخوادم Google';
+            if (!response.text) {
                 return res.status(400).json({
                     success: false,
-                    error: `خطأ من Google: ${errorMessage}`
+                    error: 'لم يتم استلام أي نص من Gemini'
                 });
             }
-
-            const data = await response.json();
-            const generatedText = (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
             res.json({
                 success: true,
                 message: 'تم الاتصال بنجاح!',
-                response: generatedText.trim()
+                response: response.text.trim()
             });
 
         } catch (error) {

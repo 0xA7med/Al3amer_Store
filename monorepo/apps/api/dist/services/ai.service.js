@@ -28,17 +28,24 @@ export class AIService {
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
         try {
-            // In @google/genai, it's often models.generateContent directly or similar
-            // Looking at the grep, we see GoogleGenAI class.
-            const model = this.client.models;
-            const result = await model.generateContent({
+            // ✅ Correct usage of @google/genai SDK (API v1)
+            const response = await this.client.models.generateContent({
                 model: AIService.MODEL_NAME,
                 contents: prompt
             });
-            const text = result.text || '';
+            const text = response.text;
+            if (!text) {
+                throw new Error('Empty response from AI model');
+            }
             // Clean up potentially md formatted text
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            return JSON.parse(cleanText);
+            try {
+                return JSON.parse(cleanText);
+            }
+            catch (parseError) {
+                console.error('Failed to parse AI response as JSON:', cleanText);
+                throw new Error('AI returned invalid JSON format');
+            }
         }
         catch (error) {
             console.error('AI Generation Critical Failure:', error);
