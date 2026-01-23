@@ -14,6 +14,7 @@ export class AIService {
     constructor(apiKey: string) {
         this.client = new GoogleGenAI({
             apiKey: apiKey,
+            apiVersion: 'v1',
         });
     }
 
