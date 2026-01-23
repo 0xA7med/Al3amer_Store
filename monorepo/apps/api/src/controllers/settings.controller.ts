@@ -161,62 +161,64 @@ export class SettingsController {
             }
 
             const cleanKey = apiKey.trim();
-
-            // ✅ Step 1: Try the Flash model (Fastest/Cheapest/Free Tier supported)
-            let currentModel = "gemini-flash-latest";
             const client = new GoogleGenAI({
                 apiKey: cleanKey,
                 apiVersion: 'v1'
             });
 
-            try {
-                console.log(`🧪 AI: Testing connection with model: ${currentModel}`);
-                const response = await client.models.generateContent({
-                    model: currentModel,
-                    contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
-                });
+            const CANDIDATE_MODELS = [
+                "gemini-2.0-flash",      // Priority 1: Newest
+                "gemini-1.5-flash",      // Priority 2: Standard Flash
+                "gemini-flash-latest",   // Priority 3: From debug list
+                "gemini-pro",            // Priority 4: Stable Legacy (The Fail-Safe)
+                "gemini-1.0-pro"         // Priority 5: Hard Legacy
+            ];
 
-                if (!response.text) {
-                    throw new Error('Empty response');
+            const errorLogs: string[] = [];
+
+            console.log("🚀 Starting Multi-Model Waterfall Test...");
+
+            for (const modelName of CANDIDATE_MODELS) {
+                try {
+                    console.log(`🧪 Testing model: ${modelName}`);
+
+                    const response = await client.models.generateContent({
+                        model: modelName,
+                        contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
+                    });
+
+                    if (response.text) {
+                        console.log(`✅ Success with model: ${modelName}`);
+                        return res.json({
+                            success: true,
+                            message: 'تم الاتصال بنجاح!',
+                            modelUsed: modelName,
+                            response: response.text.trim()
+                        });
+                    }
+
+                    errorLogs.push(`${modelName}: Empty response received`);
+                } catch (err: any) {
+                    const errorMsg = err.message || 'Unknown error';
+                    console.warn(`❌ ${modelName} failed: ${errorMsg}`);
+                    errorLogs.push(`${modelName}: ${errorMsg}`);
                 }
-
-                return res.json({
-                    success: true,
-                    message: 'تم الاتصال بنجاح!',
-                    model: currentModel,
-                    response: response.text.trim()
-                });
-            } catch (flashError: any) {
-                console.warn(`⚠️ ${currentModel} failed, falling back to gemini-pro... Error: ${flashError.message}`);
-
-                // ✅ Step 2: Fallback to the most stable model (Legacy but guaranteed)
-                currentModel = "gemini-pro";
-                console.log(`🧪 AI: Testing fallback connection with model: ${currentModel}`);
-
-                const response = await client.models.generateContent({
-                    model: currentModel,
-                    contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
-                });
-
-                if (!response.text) {
-                    throw new Error('Fallback model returned no text');
-                }
-
-                return res.json({
-                    success: true,
-                    message: 'تم الاتصال بنجاح (باستخدام الموديل الاحتياطي)!',
-                    model: currentModel,
-                    response: response.text.trim()
-                });
             }
+
+            // If we are here, all models failed
+            console.error("❌ All models in waterfall failed.");
+            return res.status(500).json({
+                success: false,
+                error: 'فشلت جميع المحاولات للاتصال بخدمة Gemini',
+                details: errorLogs
+            });
+
         } catch (error: any) {
-            console.error('Error testing Gemini connection:', error);
+            console.error('Critical failure in testGemini controller:', error);
             res.status(500).json({
                 success: false,
-                error: 'فشل في الاتصال بخدمة Gemini',
-                details: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-                rawError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+                error: 'خطأ داخلي أثناء اختبار الاتصال',
+                details: [error.message]
             });
         }
     }

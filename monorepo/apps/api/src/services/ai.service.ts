@@ -10,8 +10,11 @@ interface AIProductDetails {
 export class AIService {
     private client: GoogleGenAI;
     private static MODELS_TO_TRY = [
-        "gemini-flash-latest", // Verified available and fast (Index 20 in your list)
-        "gemini-pro",            // Stable fallback
+        "gemini-2.0-flash",      // Priority 1: Newest
+        "gemini-1.5-flash",      // Priority 2: Standard Flash
+        "gemini-flash-latest",   // Priority 3: From debug list
+        "gemini-pro",            // Priority 4: Stable Legacy (The Fail-Safe)
+        "gemini-1.0-pro"         // Priority 5: Hard Legacy
     ];
 
     constructor(apiKey: string) {
@@ -48,9 +51,9 @@ export class AIService {
         `;
 
         let lastError = null;
-        const forcedModel = "gemini-flash-latest";
+        const forcedModel = AIService.MODELS_TO_TRY[0];
 
-        console.log(`🤖 AI: Using verified stable model: ${forcedModel}`);
+        console.log(`🤖 AI: Starting generation with primary model: ${forcedModel}`);
 
         try {
             const response = await this.client.models.generateContent({
@@ -73,33 +76,30 @@ export class AIService {
                 throw new Error('AI returned invalid JSON format');
             }
         } catch (error: any) {
-            console.warn(`⚠️ Forced model ${forcedModel} failed: ${error.message}.`);
+            console.warn(`⚠️ Primary model ${forcedModel} failed: ${error.message}. Entering waterfall...`);
 
-            // Fallback to the retry loop as a safety measure if forced fails
+            // Waterfall through remaining models
             for (const modelName of AIService.MODELS_TO_TRY) {
                 if (modelName === forcedModel) continue;
                 try {
-                    console.log(`🤖 AI: Attempting safety fallback with model: ${modelName}`);
+                    console.log(`🤖 AI: Attempting fallback with model: ${modelName}`);
 
                     const response = await this.client.models.generateContent({
                         model: modelName,
                         contents: prompt
                     });
 
-                    const text = response.text;
-                    if (!text) {
-                        throw new Error(`Empty response from model: ${modelName}`);
+                    if (response.text) {
+                        const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+                        return JSON.parse(cleanText);
                     }
-
-                    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                    return JSON.parse(cleanText);
                 } catch (fallbackError: any) {
                     lastError = fallbackError;
                     console.warn(`⚠️ Fallback ${modelName} failed: ${fallbackError.message}`);
                     continue;
                 }
             }
-            throw new Error(`All AI models are unavailable. Last error: ${error.message}`);
+            throw new Error(`All AI models are unavailable (Waterfall fail). Last error: ${error.message}`);
         }
     }
 }
