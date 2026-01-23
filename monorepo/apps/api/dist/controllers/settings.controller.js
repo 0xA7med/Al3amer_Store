@@ -140,14 +140,15 @@ export class SettingsController {
     static async testGemini(req, res) {
         try {
             const { apiKey } = req.body;
-            if (!apiKey) {
+            if (!apiKey || !apiKey.trim()) {
                 return res.status(400).json({
                     success: false,
                     error: 'مفتاح API مطلوب'
                 });
             }
-            // Call Gemini API with a simple test prompt
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const cleanKey = apiKey.trim();
+            // Call Gemini API with a simple test prompt (using stable v1 and gemini-1.5-flash)
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${cleanKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -161,10 +162,11 @@ export class SettingsController {
             });
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData?.error?.message || 'فشل الاتصال';
+                console.error('Gemini API Error:', JSON.stringify(errorData, null, 2));
+                const errorMessage = errorData?.error?.message || 'فشل الاتصال بخوادم Google';
                 return res.status(400).json({
                     success: false,
-                    error: `خطأ في API: ${errorMessage}`
+                    error: `خطأ من Google: ${errorMessage}`
                 });
             }
             const data = await response.json();

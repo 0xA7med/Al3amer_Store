@@ -14,7 +14,6 @@ import reviewsRouter from './routes/reviews.js';
 import addressesRouter from './routes/addresses.js';
 import wishlistRouter from './routes/wishlist.js';
 import webhookRouter from './routes/webhook.js';
-import { analyticsRoutes } from './routes/analytics.routes.js';
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,7 +35,6 @@ app.use('/api/reviews', reviewsRouter);
 app.use('/api/addresses', addressesRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/webhook', webhookRouter);
-app.use('/api/analytics', analyticsRoutes);
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', message: 'Al3amer API is running' });

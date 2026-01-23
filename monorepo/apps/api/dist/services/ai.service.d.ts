@@ -5,8 +5,8 @@ interface AIProductDetails {
     features: string[];
 }
 export declare class AIService {
-    private genAI;
-    private model;
+    private client;
+    private static MODEL_NAME;
     constructor(apiKey: string);
     generateProductDetails(productName: string, language?: string, tone?: string, length?: string): Promise<AIProductDetails>;
 }

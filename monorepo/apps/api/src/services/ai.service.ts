@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 interface AIProductDetails {
     description: string;
@@ -8,11 +8,11 @@ interface AIProductDetails {
 }
 
 export class AIService {
-    private client: GoogleGenerativeAI;
+    private client: GoogleGenAI;
     private static MODEL_NAME = "gemini-1.5-flash";
 
     constructor(apiKey: string) {
-        this.client = new GoogleGenerativeAI({
+        this.client = new GoogleGenAI({
             apiKey: apiKey,
         });
     }
@@ -44,10 +44,16 @@ export class AIService {
         `;
 
         try {
-            const model = this.client.getGenerativeModel({ model: AIService.MODEL_NAME });
+            // In @google/genai, it's often models.generateContent directly or similar
+            // Looking at the grep, we see GoogleGenAI class.
+            const model = this.client.models;
 
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
+            const result = await model.generateContent({
+                model: AIService.MODEL_NAME,
+                contents: prompt
+            });
+
+            const text = result.text || '';
 
             // Clean up potentially md formatted text
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();

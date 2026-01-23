@@ -1,10 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
 export class AIService {
-    genAI;
-    model;
+    client;
+    static MODEL_NAME = "gemini-1.5-flash";
     constructor(apiKey) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+        this.client = new GoogleGenAI({
+            apiKey: apiKey,
+        });
     }
     async generateProductDetails(productName, language = 'ar', tone = 'Marketing', length = 'medium') {
         const prompt = `
@@ -27,16 +28,21 @@ export class AIService {
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
         try {
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+            // In @google/genai, it's often models.generateContent directly or similar
+            // Looking at the grep, we see GoogleGenAI class.
+            const model = this.client.models;
+            const result = await model.generateContent({
+                model: AIService.MODEL_NAME,
+                contents: prompt
+            });
+            const text = result.text || '';
             // Clean up potentially md formatted text
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleanText);
         }
         catch (error) {
-            console.error('AI Generation Error:', error);
-            throw new Error('Failed to generate content from AI');
+            console.error('AI Generation Critical Failure:', error);
+            throw new Error(`Failed to generate content: ${error.message}`);
         }
     }
 }
