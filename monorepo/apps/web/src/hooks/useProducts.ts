@@ -9,6 +9,7 @@ export interface Product {
     discountPrice?: string | null;
     stock: number;
     sku?: string;
+    external_id?: string | null; // Pro_ID for inventory sync
     barcode?: string;
     isActive: boolean;
     isFeatured: boolean;

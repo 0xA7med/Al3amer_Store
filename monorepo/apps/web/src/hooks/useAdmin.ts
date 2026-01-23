@@ -7,6 +7,7 @@ export interface Product {
     id: string;
     name: string;
     sku: string;
+    external_id?: string | null; // Pro_ID for inventory sync
     price: string;
     discountPrice: string | null;
     stock: number;
