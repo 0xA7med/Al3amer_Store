@@ -50,38 +50,58 @@ export class AIService {
         `;
 
         let lastError = null;
+        const forcedModel = "gemini-pro";
 
-        for (const modelName of AIService.MODELS_TO_TRY) {
-            try {
-                console.log(`🤖 AI: Attempting content generation with model: ${modelName}`);
+        console.log(`🤖 AI: Using forced stable model: ${forcedModel}`);
 
-                const response = await this.client.models.generateContent({
-                    model: modelName,
-                    contents: prompt
-                });
+        try {
+            const response = await this.client.models.generateContent({
+                model: forcedModel,
+                contents: prompt
+            });
 
-                const text = response.text;
-                if (!text) {
-                    throw new Error(`Empty response from model: ${modelName}`);
-                }
-
-                // Clean up potentially md formatted text
-                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-                try {
-                    return JSON.parse(cleanText);
-                } catch (parseError) {
-                    console.error(`AI JSON Parse Error with model ${modelName}:`, cleanText);
-                    throw new Error('AI returned invalid JSON format');
-                }
-            } catch (error: any) {
-                lastError = error;
-                console.warn(`⚠️ Model ${modelName} failed: ${error.message}. Trying next...`);
-                continue;
+            const text = response.text;
+            if (!text) {
+                throw new Error(`Empty response from model: ${forcedModel}`);
             }
-        }
 
-        console.error('❌ AI Generation Critical Failure: All models failed.');
-        throw new Error(`All AI models are unavailable. Last error: ${lastError?.message}`);
+            // Clean up potentially md formatted text
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+            try {
+                return JSON.parse(cleanText);
+            } catch (parseError) {
+                console.error(`AI JSON Parse Error with model ${forcedModel}:`, cleanText);
+                throw new Error('AI returned invalid JSON format');
+            }
+        } catch (error: any) {
+            console.warn(`⚠️ Forced model ${forcedModel} failed: ${error.message}.`);
+
+            // Fallback to the retry loop as a safety measure if forced fails
+            for (const modelName of AIService.MODELS_TO_TRY) {
+                if (modelName === forcedModel) continue;
+                try {
+                    console.log(`🤖 AI: Attempting safety fallback with model: ${modelName}`);
+
+                    const response = await this.client.models.generateContent({
+                        model: modelName,
+                        contents: prompt
+                    });
+
+                    const text = response.text;
+                    if (!text) {
+                        throw new Error(`Empty response from model: ${modelName}`);
+                    }
+
+                    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return JSON.parse(cleanText);
+                } catch (fallbackError: any) {
+                    lastError = fallbackError;
+                    console.warn(`⚠️ Fallback ${modelName} failed: ${fallbackError.message}`);
+                    continue;
+                }
+            }
+            throw new Error(`All AI models are unavailable. Last error: ${error.message}`);
+        }
     }
 }
