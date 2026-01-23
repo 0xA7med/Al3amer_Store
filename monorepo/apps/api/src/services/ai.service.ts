@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/genai";
 
 interface AIProductDetails {
     description: string;
@@ -8,12 +8,13 @@ interface AIProductDetails {
 }
 
 export class AIService {
-    private genAI: GoogleGenerativeAI;
-
-    private static MODEL_NAME = "gemini-1.0-pro";
+    private client: GoogleGenerativeAI;
+    private static MODEL_NAME = "gemini-1.5-flash";
 
     constructor(apiKey: string) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
+        this.client = new GoogleGenerativeAI({
+            apiKey: apiKey,
+        });
     }
 
     async generateProductDetails(
@@ -43,11 +44,10 @@ export class AIService {
         `;
 
         try {
-            const model = this.genAI.getGenerativeModel({ model: AIService.MODEL_NAME });
+            const model = this.client.getGenerativeModel({ model: AIService.MODEL_NAME });
 
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+            const text = result.response.text();
 
             // Clean up potentially md formatted text
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
