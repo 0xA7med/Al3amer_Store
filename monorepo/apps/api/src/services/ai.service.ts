@@ -12,10 +12,9 @@ export class AIService {
 
     // Prioritized list of models to try
     private static MODELS = [
-        "gemini-1.5-flash", // Priority 1: Fastest & Cheapest
-        "gemini-1.5-pro",   // Priority 2: Smarter
-        "gemini-2.0-flash", // Priority 3: Bleeding Edge (if available)
-        "gemini-pro"        // Priority 4: Legacy alias
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-1.0-pro"
     ];
 
     constructor(apiKey: string) {
@@ -65,7 +64,11 @@ export class AIService {
 
                 return JSON.parse(cleanText);
             } catch (error: any) {
-                console.warn(`Model ${modelName} failed: ${error.message || error}. Trying next...`);
+                console.warn(`Model ${modelName} failed. Trying next...`);
+                // Check if it's a 400 or Not Found error to give a hint
+                if (error.toString().includes('400') || error.toString().toLowerCase().includes('not found')) {
+                    console.error("Gemini Error. If 'Not Found', please ensure SDK is latest version.");
+                }
                 lastError = error;
                 // Continue to next model
             }
