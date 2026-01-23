@@ -161,63 +161,71 @@ export class SettingsController {
             }
 
             const cleanKey = apiKey.trim();
-            const client = new GoogleGenAI({
-                apiKey: cleanKey,
-                apiVersion: 'v1'
-            });
-
             const CANDIDATE_MODELS = [
-                "gemini-2.0-flash-lite-preview-02-05", // Priority 1: Lite version (Likely Free)
-                "gemini-2.0-flash-exp",                 // Priority 2: Experimental (Likely Free)
-                "gemini-2.0-flash",                     // Priority 3: Standard 2.0
-                "gemini-pro-latest",                    // Priority 4: Latest Pro alias
-                "gemini-1.5-flash-latest"               // Priority 5: Latest Flash alias
+                "gemini-1.5-flash",      // Priority 1: Best free tier on v1beta
+                "gemini-2.0-flash-exp",   // Priority 2: Experimental
+                "gemini-1.5-pro",        // Priority 3: Pro
+                "gemini-pro"             // Priority 4: Legacy
             ];
 
             const errorLogs: string[] = [];
 
-            console.log("🚀 Starting Multi-Model Waterfall Test...");
+            console.log("🚀 Starting v1beta REST Waterfall Test...");
 
             for (const modelName of CANDIDATE_MODELS) {
                 try {
-                    console.log(`🧪 Testing model: ${modelName}`);
+                    console.log(`🧪 Testing model (REST v1beta): ${modelName}`);
 
-                    const response = await client.models.generateContent({
-                        model: modelName,
-                        contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }]
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }]
+                            }]
+                        })
                     });
 
-                    if (response.text) {
+                    const data: any = await response.json();
+
+                    if (response.ok) {
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                         console.log(`✅ Success with model: ${modelName}`);
                         return res.json({
                             success: true,
-                            message: 'تم الاتصال بنجاح!',
+                            message: 'تم الاتصال بنجاح عبر REST v1beta!',
                             modelUsed: modelName,
-                            response: response.text.trim()
+                            response: text?.trim() || 'No text content'
                         });
                     }
 
-                    errorLogs.push(`${modelName}: Empty response received`);
+                    const errorMsg = data.error?.message || response.statusText;
+                    console.warn(`❌ ${modelName} failed (${response.status}): ${errorMsg}`);
+                    errorLogs.push(`${modelName} (${response.status}): ${errorMsg}`);
                 } catch (err: any) {
-                    const errorMsg = err.message || 'Unknown error';
-                    console.warn(`❌ ${modelName} failed: ${errorMsg}`);
+                    const errorMsg = err.message || 'Network error';
+                    console.warn(`❌ ${modelName} encountered an error: ${errorMsg}`);
                     errorLogs.push(`${modelName}: ${errorMsg}`);
                 }
             }
 
             // If we are here, all models failed
-            console.error("❌ All models in waterfall failed.");
+            console.error("❌ All v1beta models failed.");
             return res.status(500).json({
                 success: false,
-                error: 'فشلت جميع المحاولات للاتصال بخدمة Gemini',
+                error: 'فشلت جميع محاولات REST v1beta للاتصال',
                 details: errorLogs
             });
 
         } catch (error: any) {
-            console.error('Critical failure in testGemini controller:', error);
+            console.error('Critical failure in testGemini controller (REST):', error);
             res.status(500).json({
                 success: false,
-                error: 'خطأ داخلي أثناء اختبار الاتصال',
+                error: 'خطأ داخلي أثناء اختبار الاتصال (REST)',
                 details: [error.message]
             });
         }
