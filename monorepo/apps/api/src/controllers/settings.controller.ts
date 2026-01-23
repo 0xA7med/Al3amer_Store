@@ -162,15 +162,17 @@ export class SettingsController {
 
             const cleanKey = apiKey.trim();
 
-            // ✅ Use the new @google/genai SDK (API v1)
+            // ✅ Use the verified stable model
             const client = new GoogleGenAI({
                 apiKey: cleanKey,
                 apiVersion: 'v1'
             });
 
+            console.log("🧪 AI: Testing connection with model: gemini-2.0-flash");
+
             const response = await client.models.generateContent({
                 model: 'gemini-2.0-flash',
-                contents: [{ role: 'user', parts: [{ text: 'Say hello in Arabic in one word.' }] }],
+                contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
                 config: {
                     maxOutputTokens: 10,
                 }
