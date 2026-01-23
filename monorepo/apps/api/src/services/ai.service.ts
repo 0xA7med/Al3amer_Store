@@ -10,16 +10,51 @@ interface AIProductDetails {
 export class AIService {
     private genAI: GoogleGenerativeAI;
 
-    // Prioritized list of models to try
-    private static MODELS = [
-        "gemini-pro",           // Priority 1: The stable alias (Safest)
-        "gemini-1.5-flash",     // Priority 2: Fast model
-        "gemini-1.5-flash-001", // Priority 3: Specific version
-        "gemini-1.0-pro"        // Priority 4: Legacy
+    // Comprehensive list of candidates for auto-discovery
+    private static CANDIDATES = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-pro",
+        "gemini-1.5-pro-latest",
+        "gemini-1.0-pro",
+        "gemini-pro",
+        "gemini-flash"
     ];
+
+    private static workingModelName: string | null = null;
 
     constructor(apiKey: string) {
         this.genAI = new GoogleGenerativeAI(apiKey);
+    }
+
+    // specific method to find a working model
+    private async getWorkingModel(): Promise<any> {
+        // Return cached model if available
+        if (AIService.workingModelName) {
+            return this.genAI.getGenerativeModel({ model: AIService.workingModelName });
+        }
+
+        console.log("Starting AI Model Auto-Discovery...");
+
+        for (const modelName of AIService.CANDIDATES) {
+            try {
+                console.log(`Testing model candidate: ${modelName}`);
+                const model = this.genAI.getGenerativeModel({ model: modelName });
+
+                // Test generation with a minimal prompt
+                await model.generateContent("Hello");
+
+                // If successful, cache and return
+                console.log(`✅ Selected Working Model: ${modelName}`);
+                AIService.workingModelName = modelName;
+                return model;
+            } catch (error: any) {
+                console.warn(`❌ Model ${modelName} failed. Error: ${error.message || error}`);
+                // Continue to next candidate
+            }
+        }
+
+        throw new Error("No compatible Gemini model found for this API Key after checking all candidates.");
     }
 
     async generateProductDetails(
@@ -48,37 +83,21 @@ export class AIService {
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
 
-        let lastError: any = null;
+        try {
+            // Get the best available model
+            const model = await this.getWorkingModel();
 
-        // Loop through models with fallback strategy
-        for (const modelName of AIService.MODELS) {
-            try {
-                console.log("Attempting to connect using model:", modelName);
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
 
-                // Initialize model instance for the current iteration
-                const model = this.genAI.getGenerativeModel({ model: modelName });
+            // Clean up potentially md formatted text
+            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-                const result = await model.generateContent(prompt);
-                const response = await result.response;
-                const text = response.text();
-
-                // Clean up potentially md formatted text
-                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-                return JSON.parse(cleanText);
-            } catch (error: any) {
-                console.warn(`Model ${modelName} failed. Error:`, error.message || error);
-
-                // Check if it's a 400 or Not Found error to give a hint
-                if (error.toString().includes('400') || error.toString().toLowerCase().includes('not found')) {
-                    console.error("Gemini Error. If 'Not Found', please ensure SDK is latest version.");
-                }
-                lastError = error;
-                // Continue to next model
-            }
+            return JSON.parse(cleanText);
+        } catch (error: any) {
+            console.error('AI Generation Critical Failure:', error);
+            throw new Error(`Failed to generate content: ${error.message}`);
         }
-
-        console.error('All AI models failed. Last error:', lastError);
-        throw new Error('All AI models are currently unavailable.');
     }
 }
