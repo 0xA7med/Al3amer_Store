@@ -12,9 +12,6 @@ export class AIService {
     private static MODELS_TO_TRY = [
         "gemini-2.0-flash",      // Verified available and fast
         "gemini-pro",            // Stable fallback
-        "gemini-1.5-flash",      // Secondary fallback
-        "gemini-1.5-pro",
-        "gemini-1.0-pro"
     ];
 
     constructor(apiKey: string) {
