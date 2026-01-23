@@ -163,7 +163,10 @@ export class SettingsController {
             const cleanKey = apiKey.trim();
 
             // ✅ Use the new @google/genai SDK (API v1)
-            const client = new GoogleGenAI({ apiKey: cleanKey });
+            const client = new GoogleGenAI({
+                apiKey: cleanKey,
+                apiVersion: 'v1'
+            });
 
             const response = await client.models.generateContent({
                 model: 'gemini-1.5-flash',
