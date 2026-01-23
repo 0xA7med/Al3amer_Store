@@ -9,11 +9,17 @@ interface AIProductDetails {
 
 export class AIService {
     private genAI: GoogleGenerativeAI;
-    private model: any;
+
+    // Prioritized list of models to try
+    private static MODELS = [
+        "gemini-1.5-flash", // Priority 1: Fastest & Cheapest
+        "gemini-1.5-pro",   // Priority 2: Smarter
+        "gemini-2.0-flash", // Priority 3: Bleeding Edge (if available)
+        "gemini-pro"        // Priority 4: Legacy alias
+    ];
 
     constructor(apiKey: string) {
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
     }
 
     async generateProductDetails(
@@ -42,18 +48,30 @@ export class AIService {
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
 
-        try {
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
+        let lastError: any = null;
 
-            // Clean up potentially md formatted text
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        // Loop through models with fallback strategy
+        for (const modelName of AIService.MODELS) {
+            try {
+                // Initialize model instance for the current iteration
+                const model = this.genAI.getGenerativeModel({ model: modelName });
 
-            return JSON.parse(cleanText);
-        } catch (error) {
-            console.error('AI Generation Error:', error);
-            throw new Error('Failed to generate content from AI');
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+
+                // Clean up potentially md formatted text
+                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                return JSON.parse(cleanText);
+            } catch (error: any) {
+                console.warn(`Model ${modelName} failed: ${error.message || error}. Trying next...`);
+                lastError = error;
+                // Continue to next model
+            }
         }
+
+        console.error('All AI models failed. Last error:', lastError);
+        throw new Error('All AI models are currently unavailable.');
     }
 }
