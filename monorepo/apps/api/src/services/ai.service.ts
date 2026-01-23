@@ -10,9 +10,9 @@ interface AIProductDetails {
 export class AIService {
     private client: GoogleGenAI;
     private static MODELS_TO_TRY = [
-        "gemini-1.5-flash",      // Try first (Fastest)
-        "gemini-1.5-pro",        // Try second
-        "gemini-pro",            // Try third (The classic stable alias - MOST LIKELY TO WORK)
+        "gemini-pro",            // Try first (The classic stable alias - MOST LIKELY TO WORK)
+        "gemini-1.5-flash",      // Try second (Fastest if available)
+        "gemini-1.5-pro",        // Try third
         "gemini-1.0-pro"         // Fallback
     ];
 
