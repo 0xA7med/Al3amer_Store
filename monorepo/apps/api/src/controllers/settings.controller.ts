@@ -161,9 +161,9 @@ export class SettingsController {
 
             const cleanKey = apiKey.trim();
 
-            // Call Gemini API with a simple test prompt
+            // Call Gemini API with a simple test prompt (using stable gemini-1.0-pro)
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${cleanKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

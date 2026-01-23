@@ -10,51 +10,10 @@ interface AIProductDetails {
 export class AIService {
     private genAI: GoogleGenerativeAI;
 
-    // Comprehensive list of candidates for auto-discovery
-    private static CANDIDATES = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro",
-        "gemini-1.5-pro-latest",
-        "gemini-1.0-pro",
-        "gemini-pro",
-        "gemini-flash"
-    ];
-
-    private static workingModelName: string | null = null;
+    private static MODEL_NAME = "gemini-1.0-pro";
 
     constructor(apiKey: string) {
         this.genAI = new GoogleGenerativeAI(apiKey);
-    }
-
-    // specific method to find a working model
-    private async getWorkingModel(): Promise<any> {
-        // Return cached model if available
-        if (AIService.workingModelName) {
-            return this.genAI.getGenerativeModel({ model: AIService.workingModelName });
-        }
-
-        console.log("Starting AI Model Auto-Discovery...");
-
-        for (const modelName of AIService.CANDIDATES) {
-            try {
-                console.log(`Testing model candidate: ${modelName}`);
-                const model = this.genAI.getGenerativeModel({ model: modelName });
-
-                // Test generation with a minimal prompt
-                await model.generateContent("Hello");
-
-                // If successful, cache and return
-                console.log(`✅ Selected Working Model: ${modelName}`);
-                AIService.workingModelName = modelName;
-                return model;
-            } catch (error: any) {
-                console.warn(`❌ Model ${modelName} failed. Error: ${error.message || error}`);
-                // Continue to next candidate
-            }
-        }
-
-        throw new Error("No compatible Gemini model found for this API Key after checking all candidates.");
     }
 
     async generateProductDetails(
@@ -84,8 +43,7 @@ export class AIService {
         `;
 
         try {
-            // Get the best available model
-            const model = await this.getWorkingModel();
+            const model = this.genAI.getGenerativeModel({ model: AIService.MODEL_NAME });
 
             const result = await model.generateContent(prompt);
             const response = await result.response;
