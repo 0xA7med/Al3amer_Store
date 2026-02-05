@@ -9,9 +9,9 @@ export class OrdersController {
             const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, walletNumber, } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
             // Relaxed validation - Log what is missing but don't crash hard if optional stuff like phone_2 is weird
-            if (!fullName || !items || items.length === 0) {
-                console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0 });
-                return res.status(400).json({ error: 'Missing required fields' });
+            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
+                console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0, governorate, city, address });
+                return res.status(400).json({ error: 'Missing required fields: fullName, items, governorate, city, address' });
             }
             // Ensure phone is a string
             const safePhone = phone ? String(phone) : '0000000000';
@@ -19,11 +19,15 @@ export class OrdersController {
             let subtotal = 0;
             console.log('Calculating subtotal for items:', JSON.stringify(items));
             for (const item of items) {
-                const price = parseFloat(item.price);
+                // Ensure price is a number
+                const price = typeof item.price === 'string' ? parseFloat(item.price) : Number(item.price);
                 if (isNaN(price)) {
-                    throw new Error(`Invalid price for item ${item.name}: ${item.price}`);
+                    console.error(`Invalid price for item: ${JSON.stringify(item)}`);
+                    return res.status(400).json({ error: `Invalid price for item ${item.name || 'Unknown'}: ${item.price}` });
                 }
-                subtotal += price * item.quantity;
+                // Update item price to be string if it was number, for consistency if needed downstream, 
+                // but local calculation uses number.
+                subtotal += price * Number(item.quantity);
             }
             // Calculate discount if coupon provided
             let discountAmount = 0;
@@ -72,7 +76,7 @@ export class OrdersController {
             // Create order
             const [order] = await db.insert(orders).values({
                 orderNumber,
-                userId: userId || null,
+                userId: userId ? String(userId) : null, // Ensure valid type or null
                 fullName,
                 phone: safePhone,
                 email,
@@ -173,8 +177,13 @@ export class OrdersController {
             res.status(201).json(completeOrder);
         }
         catch (error) {
-            console.error('Error creating order:', error);
-            res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to create order' });
+            console.error('SERVER ERROR: Create Order Failed:', error);
+            console.error('Stack Trace:', error.stack);
+            res.status(500).json({
+                message: 'Failed to create order',
+                error: error.message || 'Unknown error',
+                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
         }
     }
     // GET /api/orders - List orders

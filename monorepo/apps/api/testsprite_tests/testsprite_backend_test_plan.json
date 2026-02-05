@@ -1,0 +1,17 @@
+[
+  {
+    "id": "TC001",
+    "title": "products api should list and search products correctly",
+    "description": "Verify that the Products API endpoints correctly list all products and support search functionality with appropriate filters, returning HTTP 200 status and accurate product data."
+  },
+  {
+    "id": "TC002",
+    "title": "authentication api should handle user registration and login securely",
+    "description": "Test the Authentication API for user registration and login flows using JWT and social login, ensuring secure token issuance and profile retrieval with proper validation and error handling."
+  },
+  {
+    "id": "TC003",
+    "title": "orders api should create and update orders with correct calculations",
+    "description": "Validate the Orders API for order creation, ensuring subtotal, shipping, and discounts are calculated correctly, and test order status updates including secure webhook callbacks with HMAC signature validation."
+  }
+]

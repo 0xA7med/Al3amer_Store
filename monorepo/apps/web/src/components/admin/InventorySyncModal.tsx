@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useInventorySync } from '../../hooks/useInventorySync';
 import type { DiffItem } from '../../hooks/useInventorySync';
 import toast from 'react-hot-toast';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 interface InventorySyncModalProps {
     isOpen: boolean;
@@ -15,6 +16,11 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
     const [step, setStep] = useState<Step>('upload');
     const [diffItems, setDiffItems] = useState<DiffItem[]>([]);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [editedValues, setEditedValues] = useState<Map<string, {
+        price?: number;
+        stock?: number;
+        cost?: number;
+    }>>(new Map());
     const [summary, setSummary] = useState({ total: 0, new: 0, updates: 0, unchanged: 0 });
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +31,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
         setStep('upload');
         setDiffItems([]);
         setSelectedIds(new Set());
+        setEditedValues(new Map());
         setSummary({ total: 0, new: 0, updates: 0, unchanged: 0 });
     }, []);
 
@@ -95,8 +102,55 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
         }
     };
 
+    const handleValueChange = (externalId: string, field: 'price' | 'stock' | 'cost', value: number) => {
+        setEditedValues(prev => {
+            const newMap = new Map(prev);
+            const current = newMap.get(externalId) || {};
+            newMap.set(externalId, { ...current, [field]: value });
+            return newMap;
+        });
+    };
+
+    const getEffectiveValue = (item: DiffItem, field: 'price' | 'stock' | 'cost'): number => {
+        const edited = editedValues.get(item.externalId)?.[field];
+        if (edited !== undefined) return edited;
+
+        if (item.status === 'new') {
+            return item.newData?.[field] || 0;
+        }
+        return item.changes?.[field]?.new || 0;
+    };
+
     const handleExecute = async () => {
-        const itemsToExecute = diffItems.filter(item => selectedIds.has(item.externalId));
+        const itemsToExecute = diffItems
+            .filter(item => selectedIds.has(item.externalId))
+            .map(item => {
+                const edited = editedValues.get(item.externalId);
+
+                // Apply edited values to the item
+                if (item.status === 'new' && item.newData) {
+                    return {
+                        ...item,
+                        newData: {
+                            ...item.newData,
+                            price: edited?.price ?? item.newData.price,
+                            stock: edited?.stock ?? item.newData.stock,
+                            cost: edited?.cost ?? item.newData.cost,
+                        }
+                    };
+                } else if (item.status === 'update' && item.changes) {
+                    return {
+                        ...item,
+                        changes: {
+                            price: edited?.price !== undefined ? { old: item.changes.price?.old || 0, new: edited.price } : item.changes.price,
+                            stock: edited?.stock !== undefined ? { old: item.changes.stock?.old || 0, new: edited.stock } : item.changes.stock,
+                            cost: edited?.cost !== undefined ? { old: item.changes.cost?.old || 0, new: edited.cost } : item.changes.cost,
+                        }
+                    };
+                }
+                return item;
+            });
+
         if (itemsToExecute.length === 0) {
             toast.error('يرجى اختيار عنصر واحد على الأقل');
             return;
@@ -173,6 +227,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                     <button
                         onClick={handleClose}
                         className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                        title="إغلاق"
                     >
                         <span className="material-symbols-rounded text-slate-400">close</span>
                     </button>
@@ -254,7 +309,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
 
                             {diffItems.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <span className="material-symbols-rounded text-6xl text-emerald-400 mb-4">check_circle</span>
+                                    <CheckCircle className="w-16 h-16 text-emerald-400 mb-4 mx-auto" />
                                     <h3 className="text-xl font-semibold text-white mb-2">لا توجد تغييرات!</h3>
                                     <p className="text-slate-400">جميع المنتجات محدثة بالفعل</p>
                                 </div>
@@ -275,82 +330,127 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                         </label>
                                     </div>
 
-                                    {/* Table */}
-                                    <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
-                                        <table className="w-full">
-                                            <thead>
-                                                <tr className="border-b border-slate-700">
-                                                    <th className="p-4 text-right text-xs font-medium text-slate-400 w-12"></th>
-                                                    <th className="p-4 text-right text-xs font-medium text-slate-400">المنتج</th>
-                                                    <th className="p-4 text-center text-xs font-medium text-slate-400">السعر</th>
-                                                    <th className="p-4 text-center text-xs font-medium text-slate-400">الكمية</th>
-                                                    <th className="p-4 text-center text-xs font-medium text-slate-400">الحالة</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-700/50">
-                                                {diffItems.map((item) => (
-                                                    <tr
-                                                        key={item.externalId}
-                                                        className={`hover:bg-slate-800/50 transition-colors ${selectedIds.has(item.externalId) ? 'bg-slate-800/30' : ''
+                                    {/* Table Header */}
+                                    <div className="grid grid-cols-12 gap-4 p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-xl text-xs font-medium text-slate-400">
+                                        <div className="col-span-4 text-right flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.size === diffItems.length}
+                                                onChange={toggleAll}
+                                                className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500/20"
+                                            />
+                                            <span>المنتج</span>
+                                        </div>
+                                        <div className="col-span-2 text-center">السعر</div>
+                                        <div className="col-span-2 text-center">الكمية</div>
+                                        <div className="col-span-2 text-center">التكلفة</div>
+                                        <div className="col-span-2 text-center">الحالة</div>
+                                    </div>
+
+                                    {/* Table Body */}
+                                    <div className="divide-y divide-slate-700/50 bg-slate-800/20 max-h-[500px] overflow-y-auto">
+                                        {diffItems.map((item) => (
+                                            <div
+                                                key={item.externalId}
+                                                className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-slate-800/50 transition-colors ${selectedIds.has(item.externalId) ? 'bg-slate-800/30' : ''
+                                                    }`}
+                                            >
+                                                {/* Product Name & Checkbox */}
+                                                <div className="col-span-4 flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(item.externalId)}
+                                                        onChange={() => toggleItem(item.externalId)}
+                                                        className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500/20 shrink-0"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <div className="font-medium text-white truncate" title={item.name}>{item.name}</div>
+                                                        <div className="text-xs text-slate-500">#{item.externalId}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Price Column */}
+                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                    {item.changes?.price ? (
+                                                        <div className="flex items-center gap-1 opacity-70">
+                                                            <span className="text-slate-400 line-through text-xs">
+                                                                {item.changes.price.old.toLocaleString()}
+                                                            </span>
+                                                            <ArrowLeft className="w-3 h-3 text-slate-500" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-4"></div> // Spacer to keep alignment
+                                                    )}
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <input
+                                                            type="number"
+                                                            value={String(getEffectiveValue(item, 'price'))}
+                                                            onChange={(e) => handleValueChange(item.externalId, 'price', parseFloat(e.target.value) || 0)}
+                                                            className={`w-full px-2 py-1.5 bg-slate-700 border rounded font-bold text-center focus:ring-1 text-sm ${item.changes?.price
+                                                                ? 'border-emerald-500/50 text-emerald-400 focus:border-emerald-500'
+                                                                : 'border-slate-600 text-white focus:border-slate-500'
+                                                                }`}
+                                                            step="0.01"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Stock Column */}
+                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                    {item.changes?.stock ? (
+                                                        <div className="flex items-center gap-1 opacity-70">
+                                                            <span className="text-slate-400 line-through text-xs">
+                                                                {item.changes.stock.old}
+                                                            </span>
+                                                            <ArrowLeft className="w-3 h-3 text-slate-500" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-4"></div> // Spacer
+                                                    )}
+                                                    <input
+                                                        type="number"
+                                                        value={String(getEffectiveValue(item, 'stock'))}
+                                                        onChange={(e) => handleValueChange(item.externalId, 'stock', parseInt(e.target.value) || 0)}
+                                                        className={`w-full px-2 py-1.5 bg-slate-700 border rounded font-bold text-center focus:ring-1 text-sm ${item.changes?.stock
+                                                            ? 'border-emerald-500/50 text-emerald-400 focus:border-emerald-500'
+                                                            : 'border-slate-600 text-white focus:border-slate-500'
                                                             }`}
-                                                    >
-                                                        <td className="p-4">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedIds.has(item.externalId)}
-                                                                onChange={() => toggleItem(item.externalId)}
-                                                                className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500/20"
-                                                            />
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <div className="font-medium text-white">{item.name}</div>
-                                                            <div className="text-xs text-slate-500">#{item.externalId}</div>
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            {item.status === 'new' ? (
-                                                                <span className="text-emerald-400 font-medium">
-                                                                    {item.newData?.price?.toLocaleString()} ج.م
-                                                                </span>
-                                                            ) : item.changes?.price ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <span className="text-slate-500 line-through text-sm">
-                                                                        {item.changes.price.old.toLocaleString()}
-                                                                    </span>
-                                                                    <span className="material-symbols-rounded text-amber-400 text-sm">arrow_forward</span>
-                                                                    <span className="text-amber-400 font-medium">
-                                                                        {item.changes.price.new.toLocaleString()}
-                                                                    </span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-slate-500">—</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            {item.status === 'new' ? (
-                                                                <span className="text-emerald-400 font-medium">
-                                                                    {item.newData?.stock}
-                                                                </span>
-                                                            ) : item.changes?.stock ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <span className="text-slate-500 line-through text-sm">
-                                                                        {item.changes.stock.old}
-                                                                    </span>
-                                                                    <span className="material-symbols-rounded text-blue-400 text-sm">arrow_forward</span>
-                                                                    <span className="text-blue-400 font-medium">
-                                                                        {item.changes.stock.new}
-                                                                    </span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-slate-500">—</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="p-4 text-center">
-                                                            {getStatusBadge(item)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                        step="1"
+                                                    />
+                                                </div>
+
+                                                {/* Cost Column */}
+                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                    {item.changes?.cost ? (
+                                                        <div className="flex items-center gap-1 opacity-70">
+                                                            <span className="text-slate-400 line-through text-xs">
+                                                                {item.changes.cost.old.toLocaleString()}
+                                                            </span>
+                                                            <ArrowLeft className="w-3 h-3 text-slate-500" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-4"></div> // Spacer
+                                                    )}
+                                                    <div className="flex items-center gap-1 w-full">
+                                                        <input
+                                                            type="number"
+                                                            value={String(getEffectiveValue(item, 'cost'))}
+                                                            onChange={(e) => handleValueChange(item.externalId, 'cost', parseFloat(e.target.value) || 0)}
+                                                            className={`w-full px-2 py-1.5 bg-slate-700 border rounded font-bold text-center focus:ring-1 text-sm ${item.changes?.cost
+                                                                ? 'border-emerald-500/50 text-emerald-400 focus:border-emerald-500'
+                                                                : 'border-slate-600 text-white focus:border-slate-500'
+                                                                }`}
+                                                            step="0.01"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Status Column */}
+                                                <div className="col-span-2 flex justify-center">
+                                                    {getStatusBadge(item)}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </>
                             )}
@@ -375,14 +475,17 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                             onClick={resetModal}
                             className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
                         >
-                            ← رجوع للرفع
+                            <span className="flex items-center gap-2">
+                                <ArrowLeft className="w-4 h-4" />
+                                رجوع للرفع
+                            </span>
                         </button>
                         <button
                             onClick={handleExecute}
                             disabled={selectedIds.size === 0 || execute.isPending}
                             className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
                         >
-                            <span className="material-symbols-rounded">check_circle</span>
+                            <CheckCircle className="w-5 h-5" />
                             تأكيد التحديث ({selectedIds.size} عنصر)
                         </button>
                     </div>

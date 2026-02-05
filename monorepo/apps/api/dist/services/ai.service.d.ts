@@ -6,7 +6,7 @@ interface AIProductDetails {
 }
 export declare class AIService {
     private client;
-    private static MODEL_NAME;
+    private static MODELS_TO_TRY;
     constructor(apiKey: string);
     generateProductDetails(productName: string, language?: string, tone?: string, length?: string): Promise<AIProductDetails>;
 }

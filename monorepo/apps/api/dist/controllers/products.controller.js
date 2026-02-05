@@ -191,7 +191,7 @@ export class ProductsController {
     // POST /api/products - Create new product
     static async create(req, res) {
         try {
-            const { name, description, price, discountPrice, cost, sku, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images: imageUrls, slug: manualSlug, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images: imageUrls, slug: manualSlug, } = req.body;
             // Insert the product
             const [newProduct] = await db.insert(products).values({
                 name,
@@ -200,6 +200,7 @@ export class ProductsController {
                 discountPrice,
                 cost,
                 sku,
+                externalId: external_id || null,
                 stock: stock || 0,
                 barcode,
                 categoryId,
@@ -258,7 +259,7 @@ export class ProductsController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const { name, description, price, discountPrice, cost, sku, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images, slug: manualSlug, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images, slug: manualSlug, } = req.body;
             const updateData = {
                 name,
                 description,
@@ -266,6 +267,7 @@ export class ProductsController {
                 discountPrice: discountPrice || null,
                 cost: cost || null,
                 sku,
+                externalId: external_id !== undefined ? (external_id || null) : undefined,
                 stock: stock !== undefined ? Number(stock) : undefined,
                 barcode,
                 categoryId: categoryId || null,

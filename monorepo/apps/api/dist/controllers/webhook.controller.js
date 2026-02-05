@@ -10,12 +10,14 @@ export class WebhookController {
     static async handlePaymobWebhook(req, res) {
         try {
             console.log('🔔 [PAYMOB WEBHOOK] Received Event');
+            console.log('Webhook Query:', req.query);
+            console.log('Webhook Body:', JSON.stringify(req.body, null, 2));
             const hmac = req.query.hmac;
             const data = req.body;
             const obj = data.obj;
             if (!hmac || !obj) {
-                console.warn('⚠️ [PAYMOB WEBHOOK] Missing HMAC or Payload');
-                return res.status(400).send('Bad Request');
+                console.warn('⚠️ [PAYMOB WEBHOOK] Missing HMAC or Payload', { hmac: !!hmac, obj: !!obj });
+                return res.status(400).json({ error: 'Bad Request', missing: { hmac: !hmac, obj: !obj }, receivedBody: req.body });
             }
             // 1. HMAC Verification
             const secret = process.env.PAYMOB_HMAC_SECRET;

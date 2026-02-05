@@ -1,0 +1,36 @@
+{
+    "tech_stack": [
+        "TypeScript",
+        "Node.js",
+        "Express",
+        "PostgreSQL",
+        "Drizzle ORM",
+        "JWT"
+    ],
+    "features": [
+        {
+            "name": "Products API",
+            "description": "Manage products including listing, searching, creating, and updating.",
+            "files": [
+                "src/routes/products.ts",
+                "src/controllers/products.controller.ts"
+            ]
+        },
+        {
+            "name": "Authentication API",
+            "description": "User registration, login, and profile retrieval using JWT.",
+            "files": [
+                "src/routes/auth.ts",
+                "src/controllers/auth.controller.ts"
+            ]
+        },
+        {
+            "name": "Orders API",
+            "description": "Order creation, status updates, and retrieval.",
+            "files": [
+                "src/routes/orders.ts",
+                "src/controllers/orders.controller.ts"
+            ]
+        }
+    ]
+}

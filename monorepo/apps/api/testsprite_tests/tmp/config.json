@@ -1,0 +1,18 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3001/api",
+  "backendAuthType": "Bearer token",
+  "backendCredential": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MjQ1MGY1My00ZjBmLTRjYTUtODZhYi1iNTVhODUyZmQ4MmYiLCJlbWFpbCI6ImFkbWluQGFsM2FtZXIuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzY5ODEwNTk0LCJleHAiOjE3NzA0MTUzOTR9.5vI7sno3XTFNl1l82SWOlxmVD_5dBiUhu8cQrvir_gQ",
+  "executionArgs": {
+    "projectName": "api",
+    "projectPath": "f:\\Ai Local\\mshre3\\Al3amer Store\\AL3amer_Dark_UX\\monorepo\\apps\\api",
+    "testIds": [],
+    "additionalInstruction": "Critical Flows: Auth (Login/Register), Products (List/Details), Orders (Create).",
+    "envs": {
+      "API_KEY": "sk-user-9LljJTcvCuGZ6KrAAHcjBu4EbqEe70tzdoeVFSqP9k4twmTI0nETOL1WievI6tJINmaxp5w74YH9y66wstoBflQjB-KUzlBXoZOzUsi7-CA7Hj04A2B3ftQdQ8zwJmNaGJw"
+    }
+  },
+  "proxy": "http://fb3467bf-5e03-4a98-8f69-56cb6ff07b83:vVbqZ7ycTN5NpJz0sJRurGwsNHkSl24v@tun.testsprite.com:8080"
+}

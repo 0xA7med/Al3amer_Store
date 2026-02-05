@@ -1,7 +1,7 @@
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { db } from '../db/index.js';
-import { products } from '../db/schema.js';
+import { products, categories } from '../db/schema.js';
 import { eq, inArray } from 'drizzle-orm';
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -30,7 +30,40 @@ const COLUMN_MAP = {
     'سعر البيع': 'price',
     'اخر سعر شراء': 'cost',
 };
+/**
+ * Convert Arabic numerals (٠١٢٣...) to English numerals (0123...)
+ */
+function convertArabicToEnglishNumbers(str) {
+    if (!str)
+        return str;
+    const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    let result = str.toString();
+    for (let i = 0; i < arabicNumbers.length; i++) {
+        result = result.replace(new RegExp(arabicNumbers[i], 'g'), englishNumbers[i]);
+    }
+    return result;
+}
 export class InventorySyncController {
+    /**
+     * Get or create "Uncategorized" category for imported products
+     */
+    static async getDefaultCategory(tx) {
+        // Query using db instead of tx to avoid nested transaction issues
+        const uncategorized = await db.query.categories.findFirst({
+            where: eq(categories.slug, 'uncategorized')
+        });
+        if (uncategorized) {
+            return uncategorized.id;
+        }
+        // Create if doesn't exist using db
+        const [newCategory] = await db.insert(categories).values({
+            name: 'غير مصنف',
+            slug: 'uncategorized',
+            isActive: true
+        }).returning();
+        return newCategory.id;
+    }
     /**
      * POST /api/products/import/preview
      * Parse Excel and compare with database, return diff report
@@ -53,8 +86,15 @@ export class InventorySyncController {
                 const mapped = {};
                 for (const [excelHeader, dbField] of Object.entries(COLUMN_MAP)) {
                     const value = row[excelHeader];
-                    if (dbField === 'stock' || dbField === 'price' || dbField === 'cost') {
+                    if (dbField === 'stock') {
+                        mapped[dbField] = parseInt(value) || 0;
+                    }
+                    else if (dbField === 'price' || dbField === 'cost') {
                         mapped[dbField] = parseFloat(value) || 0;
+                    }
+                    else if (dbField === 'externalId') {
+                        // Convert Arabic numerals to English for external_id
+                        mapped[dbField] = convertArabicToEnglishNumbers(value?.toString()?.trim() || '');
                     }
                     else {
                         mapped[dbField] = value?.toString()?.trim() || '';
@@ -81,6 +121,11 @@ export class InventorySyncController {
                     cost: true,
                 }
             });
+            console.log('🔍 [INVENTORY SYNC] Existing Products found:', existingProducts.length);
+            // Log first 3 existing products for debugging
+            if (existingProducts.length > 0) {
+                console.log('🔍 [INVENTORY SYNC] Sample Existing Data:', JSON.stringify(existingProducts.slice(0, 3), null, 2));
+            }
             // Create a map for quick lookup
             const productMap = new Map(existingProducts.map(p => [p.externalId, p]));
             // Compare and generate diff
@@ -108,6 +153,7 @@ export class InventorySyncController {
                 else {
                     // Existing product - check for changes
                     const changes = {};
+                    // Ensure we handle null/undefined from DB as 0
                     const existingPrice = parseFloat(existing.price?.toString() || '0');
                     const existingStock = existing.stock || 0;
                     const existingCost = parseFloat(existing.cost?.toString() || '0');
@@ -181,56 +227,91 @@ export class InventorySyncController {
                 errors: [],
             };
             // Use transaction for atomicity
-            await db.transaction(async (tx) => {
-                for (const item of items) {
-                    try {
-                        if (item.status === 'update' && item.existingProductId && item.changes) {
-                            // Update existing product
-                            const updateData = {
-                                updatedAt: new Date(),
-                            };
-                            if (item.changes.price) {
-                                updateData.price = item.changes.price.new.toString();
+            try {
+                await db.transaction(async (tx) => {
+                    for (const item of items) {
+                        try {
+                            if (item.status === 'update' && item.existingProductId && item.changes) {
+                                // Verify product exists before updating
+                                const existing = await tx.query.products.findFirst({
+                                    where: eq(products.id, item.existingProductId)
+                                });
+                                if (!existing) {
+                                    throw new Error(`Product with ID ${item.existingProductId} (external_id: ${item.externalId}) not found in database`);
+                                }
+                                // Update existing product
+                                const updateData = {
+                                    updatedAt: new Date(),
+                                };
+                                if (item.changes.price !== undefined && item.changes.price !== null) {
+                                    updateData.price = item.changes.price.new.toString();
+                                }
+                                if (item.changes.stock !== undefined && item.changes.stock !== null) {
+                                    updateData.stock = item.changes.stock.new;
+                                }
+                                if (item.changes.cost !== undefined && item.changes.cost !== null) {
+                                    updateData.cost = item.changes.cost.new.toString();
+                                }
+                                await tx.update(products)
+                                    .set(updateData)
+                                    .where(eq(products.id, item.existingProductId));
+                                results.updated++;
                             }
-                            if (item.changes.stock !== undefined) {
-                                updateData.stock = item.changes.stock.new;
+                            else if (item.status === 'new' && item.newData) {
+                                // Get default category for imported products
+                                const defaultCategoryId = await InventorySyncController.getDefaultCategory(tx);
+                                // Generate unique slug
+                                const baseSlug = item.newData.name
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/\s+/g, '-')
+                                    .replace(/[^\w\u0621-\u064A-]+/g, '')
+                                    .replace(/--+/g, '-');
+                                const slug = `${baseSlug}-${Date.now().toString(36)}`;
+                                // Insert new product with all required defaults
+                                await tx.insert(products).values({
+                                    externalId: item.externalId,
+                                    name: item.newData.name,
+                                    description: 'مستورد من ملف Excel', // Default description
+                                    price: item.newData.price.toString(),
+                                    stock: item.newData.stock || 0,
+                                    cost: item.newData.cost?.toString() || '0',
+                                    slug: slug,
+                                    categoryId: defaultCategoryId,
+                                    status: 'draft', // Requires admin review before publishing
+                                    isFeatured: false,
+                                });
+                                results.created++;
                             }
-                            if (item.changes.cost) {
-                                updateData.cost = item.changes.cost.new.toString();
-                            }
-                            await tx.update(products)
-                                .set(updateData)
-                                .where(eq(products.id, item.existingProductId));
-                            results.updated++;
                         }
-                        else if (item.status === 'new' && item.newData) {
-                            // Insert new product with draft status
-                            const slug = item.newData.name
-                                .toLowerCase()
-                                .trim()
-                                .replace(/\s+/g, '-')
-                                .replace(/[^\w\u0621-\u064A-]+/g, '')
-                                .replace(/--+/g, '-')
-                                + '-' + Date.now().toString(36);
-                            await tx.insert(products).values({
+                        catch (itemError) {
+                            let errorMsg = `Error processing ${item.externalId} (${item.name}): `;
+                            // Handle specific database errors
+                            if (itemError.code === '23505') { // PostgreSQL unique violation
+                                errorMsg += 'Duplicate product ID or slug';
+                            }
+                            else if (itemError.code === '23503') { // Foreign key violation
+                                errorMsg += 'Invalid category or brand reference';
+                            }
+                            else {
+                                errorMsg += itemError instanceof Error ? itemError.message : 'Unknown';
+                            }
+                            console.error('❌ [INVENTORY SYNC] Item Error:', {
                                 externalId: item.externalId,
-                                name: item.newData.name,
-                                price: item.newData.price.toString(),
-                                stock: item.newData.stock,
-                                cost: item.newData.cost.toString(),
-                                slug: slug,
-                                status: 'draft', // New products are drafts so admin can add images
+                                name: item.name,
+                                status: item.status,
+                                errorCode: itemError.code,
+                                error: itemError instanceof Error ? itemError.stack : itemError
                             });
-                            results.created++;
+                            results.errors.push(errorMsg);
                         }
                     }
-                    catch (itemError) {
-                        const errorMsg = `Error processing ${item.externalId}: ${itemError instanceof Error ? itemError.message : 'Unknown'}`;
-                        results.errors.push(errorMsg);
-                        console.error(errorMsg);
-                    }
-                }
-            });
+                });
+            }
+            catch (transactionError) {
+                console.error('❌ [INVENTORY SYNC] Transaction failed:', transactionError);
+                throw transactionError; // Re-throw to be caught by outer handler
+            }
             return res.json({
                 success: true,
                 message: `تم تحديث ${results.updated} منتج وإضافة ${results.created} منتج جديد`,

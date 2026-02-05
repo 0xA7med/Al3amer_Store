@@ -88,6 +88,8 @@ export interface DashboardStats {
     cancelledOrders: number;
     totalRevenue: number;
     lowStockProducts: number;
+    activeProducts: number;
+    inactiveProducts: number;
     totalCustomers: number;
     recentOrders: Order[];
 }
@@ -150,6 +152,8 @@ export function useDashboardStats() {
         cancelledOrders: 0,
         totalRevenue: 0,
         lowStockProducts: 0,
+        activeProducts: 0,
+        inactiveProducts: 0,
         totalCustomers: 0,
         recentOrders: [],
     };

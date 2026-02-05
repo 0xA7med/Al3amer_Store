@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAdminProducts, useDeleteProduct, useBulkUpdateProducts, type Product } from '../../hooks/useAdmin';
+import { useAdminProducts, useAdminStats, useDeleteProduct, useBulkUpdateProducts, type Product } from '../../hooks/useAdmin';
 import toast from 'react-hot-toast';
 
 import { CustomSelect } from '../../components/ui/CustomSelect';
@@ -16,9 +16,121 @@ function getProductStatus(product: Product): string {
     return product.status || 'active';
 }
 
-export function ProductList() {
+interface ProductRowProps {
+    product: Product;
+    editedValue: { price?: string; stock?: number } | undefined;
+    onEditChange: (id: string, field: 'price' | 'stock', value: string) => void;
+    onDelete: (product: Product) => void;
+    selected: boolean;
+    onToggleSelect: (id: string) => void;
+}
+
+const ProductRow = memo(({
+    product,
+    editedValue,
+    onEditChange,
+    onDelete,
+    selected,
+    onToggleSelect
+}: ProductRowProps) => {
     const navigate = useNavigate();
+    const status = getProductStatus(product);
+    const [imageError, setImageError] = useState(false);
+    const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url;
+
+    return (
+        <tr className="hover:bg-white/5 transition-colors group">
+            <td className="px-6 py-2">
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => onToggleSelect(product.id)}
+                        className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer"
+                    />
+                </div>
+            </td>
+            <td className="px-6 py-2">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
+                        {imageUrl && !imageError ? (
+                            <img
+                                src={imageUrl}
+                                alt={product.name}
+                                className="w-full h-full object-cover rounded"
+                                onError={() => setImageError(true)}
+                                loading="lazy"
+                            />
+                        ) : (
+                            <span className="material-symbols-outlined text-slate-600 text-[24px]">image_not_supported</span>
+                        )}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-white text-base">{product.name}</span>
+                        <span className="text-slate-500 text-xs">SKU: {product.sku || 'N/A'}</span>
+                    </div>
+                </div>
+            </td>
+            <td className="px-6 py-2 text-slate-400">{product.category?.name || 'غير مصنف'}</td>
+            <td className="px-6 py-2">
+                <div className="flex justify-center">
+                    <span
+                        className={`material-symbols-outlined text-[20px] ${STATUS_CONFIG[status]?.color || STATUS_CONFIG.active.color}`}
+                        title={STATUS_CONFIG[status]?.label || 'نشط'}
+                    >
+                        {STATUS_CONFIG[status]?.icon || STATUS_CONFIG.active.icon}
+                    </span>
+                </div>
+            </td>
+            <td className="px-6 py-2">
+                <div className="relative group/input min-w-[100px] max-w-[140px]">
+                    <input
+                        type="text"
+                        value={editedValue?.price ?? product.price}
+                        onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
+                        className={`w-full bg-white/5 border ${editedValue?.price !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-3 py-2 pl-9 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
+                    />
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-bold pointer-events-none bg-white/5 px-1 rounded">ج.م</span>
+                </div>
+            </td>
+            <td className="px-6 py-2">
+                <div className="max-w-[80px]">
+                    <input
+                        type="number"
+                        value={editedValue?.stock ?? product.stock}
+                        onChange={(e) => onEditChange(product.id, 'stock', e.target.value)}
+                        className={`w-full bg-white/5 border ${editedValue?.stock !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-2 py-1 text-sm font-bold ${product.stock === 0 ? 'text-red-500' : (product.stock < 10 ? 'text-yellow-400' : 'text-emerald-400')} transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
+                    />
+                </div>
+            </td>
+            <td className="px-6 py-2 text-left">
+                <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => onDelete(product)}
+                        className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors"
+                        title="حذف"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                    <button
+                        onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                        className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors"
+                        title="تعديل"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">edit_square</span>
+                    </button>
+                    <Link to={`/product/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
+                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                    </Link>
+                </div>
+            </td>
+        </tr>
+    );
+});
+
+export function ProductList() {
     const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 100 });
+    const { data: statsData } = useAdminStats();
     const [syncModalOpen, setSyncModalOpen] = useState(false);
     const deleteProduct = useDeleteProduct();
     const bulkUpdate = useBulkUpdateProducts();
@@ -36,7 +148,7 @@ export function ProductList() {
 
     const hasChanges = Object.keys(editedProducts).length > 0;
 
-    const handleEditChange = (id: string, field: 'price' | 'stock', value: string) => {
+    const handleEditChange = useCallback((id: string, field: 'price' | 'stock', value: string) => {
         setEditedProducts(prev => {
             const current = prev[id] || {};
             return {
@@ -47,7 +159,7 @@ export function ProductList() {
                 }
             };
         });
-    };
+    }, []);
 
     const handleSaveAll = async () => {
         const updates = Object.entries(editedProducts).map(([id, data]) => ({
@@ -85,15 +197,21 @@ export function ProductList() {
         }
     };
 
-    const toggleSelect = (id: string) => {
-        const newSelected = new Set(selectedIds);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedIds(newSelected);
-    };
+    const toggleSelect = useCallback((id: string) => {
+        setSelectedIds(prev => {
+            const newSelected = new Set(prev);
+            if (newSelected.has(id)) {
+                newSelected.delete(id);
+            } else {
+                newSelected.add(id);
+            }
+            return newSelected;
+        });
+    }, []);
+
+    const handleDeleteClick = useCallback((product: Product) => {
+        setDeleteConfirm({ show: true, product });
+    }, []);
 
     const handleBulkDelete = async () => {
         if (window.confirm(`هل أنت متأكد من حذف ${selectedIds.size} منتجات؟`)) {
@@ -178,14 +296,36 @@ export function ProductList() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
                     <div className="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                         <span className="material-symbols-outlined text-[28px]">inventory</span>
                     </div>
                     <div>
                         <p className="text-slate-400 text-xs font-bold">إجمالي المنتجات</p>
-                        <h3 className="text-xl font-bold text-white">{totalProducts} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
+                        <h3 className="text-xl font-bold text-white">{statsData?.totalProducts || totalProducts} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
+                    </div>
+                </div>
+
+                {/* Visible Products */}
+                <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
+                    <div className="size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                        <span className="material-symbols-outlined text-[28px]">visibility</span>
+                    </div>
+                    <div>
+                        <p className="text-slate-400 text-xs font-bold">منتجات ظاهرة</p>
+                        <h3 className="text-xl font-bold text-white">{statsData?.activeProducts || 0} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
+                    </div>
+                </div>
+
+                {/* Hidden Products */}
+                <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
+                    <div className="size-12 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-400">
+                        <span className="material-symbols-outlined text-[28px]">visibility_off</span>
+                    </div>
+                    <div>
+                        <p className="text-slate-400 text-xs font-bold">منتجات مخفية</p>
+                        <h3 className="text-xl font-bold text-white">{statsData?.inactiveProducts || 0} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
                     </div>
                 </div>
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
@@ -286,7 +426,7 @@ export function ProductList() {
             {/* Products Table */}
             <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-right">
+                    <table className="w-full min-w-[1000px] text-sm text-right">
                         <thead className="bg-white/5 text-slate-400 font-medium border-b border-white/5">
                             <tr>
                                 <th className="px-6 py-3 w-10">
@@ -316,89 +456,17 @@ export function ProductList() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredProducts.map((product: Product) => {
-                                    const status = getProductStatus(product);
-                                    const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url || 'https://via.placeholder.com/100';
-
-                                    return (
-                                        <tr
-                                            key={product.id}
-                                            className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                            onClick={() => navigate(`/admin/products/${product.id}`)}
-                                        >
-                                            <td className="px-6 py-2" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedIds.has(product.id)}
-                                                        onChange={() => toggleSelect(product.id)}
-                                                        className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer"
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
-                                                        <img src={imageUrl} alt={product.name} className="w-full h-full object-cover rounded" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-white text-base">{product.name}</span>
-                                                        <span className="text-slate-500 text-xs">SKU: {product.sku || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2 text-slate-400">{product.category?.name || 'غير مصنف'}</td>
-                                            <td className="px-6 py-2">
-                                                <div className="flex justify-center">
-                                                    <span
-                                                        className={`material-symbols-outlined text-[20px] ${STATUS_CONFIG[status]?.color || STATUS_CONFIG.active.color}`}
-                                                        title={STATUS_CONFIG[status]?.label || 'نشط'}
-                                                    >
-                                                        {STATUS_CONFIG[status]?.icon || STATUS_CONFIG.active.icon}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2">
-                                                <div className="relative group/input max-w-[120px]">
-                                                    <input
-                                                        type="text"
-                                                        value={editedProducts[product.id]?.price ?? product.price}
-                                                        onChange={(e) => handleEditChange(product.id, 'price', e.target.value)}
-                                                        className={`w-full bg-white/5 border ${editedProducts[product.id]?.price !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-2 py-1 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
-                                                    />
-                                                    <span className="absolute left-2 top-1.5 text-[10px] text-slate-500 font-bold pointer-events-none">ج.م</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2">
-                                                <div className="max-w-[80px]">
-                                                    <input
-                                                        type="number"
-                                                        value={editedProducts[product.id]?.stock ?? product.stock}
-                                                        onChange={(e) => handleEditChange(product.id, 'stock', e.target.value)}
-                                                        className={`w-full bg-white/5 border ${editedProducts[product.id]?.stock !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-2 py-1 text-sm font-bold ${product.stock === 0 ? 'text-red-500' : (product.stock < 10 ? 'text-yellow-400' : 'text-emerald-400')} transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
-                                                    />
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-2 text-left">
-                                                <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setDeleteConfirm({ show: true, product })}
-                                                        className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors"
-                                                        title="حذف"
-                                                    >
-                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                                                    </button>
-                                                    <Link to={`/admin/products/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="تعديل">
-                                                        <span className="material-symbols-outlined text-[18px]">edit_square</span>
-                                                    </Link>
-                                                    <Link to={`/product/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
-                                                        <span className="material-symbols-outlined text-[18px]">visibility</span>
-                                                    </Link>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
+                                filteredProducts.map((product: Product) => (
+                                    <ProductRow
+                                        key={product.id}
+                                        product={product}
+                                        editedValue={editedProducts[product.id]}
+                                        onEditChange={handleEditChange}
+                                        onDelete={handleDeleteClick}
+                                        selected={selectedIds.has(product.id)}
+                                        onToggleSelect={toggleSelect}
+                                    />
+                                ))
                             )}
                         </tbody>
                     </table>

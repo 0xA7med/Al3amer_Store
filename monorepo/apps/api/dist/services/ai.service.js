@@ -1,10 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 export class AIService {
     client;
-    static MODEL_NAME = "gemini-1.5-flash";
+    static MODELS_TO_TRY = [
+        "gemini-2.0-flash-lite-preview-02-05", // Priority 1: Lite version (Likely Free)
+        "gemini-2.0-flash-exp", // Priority 2: Experimental (Likely Free)
+        "gemini-2.0-flash", // Priority 3: Standard 2.0
+        "gemini-pro-latest", // Priority 4: Latest Pro alias
+        "gemini-1.5-flash-latest" // Priority 5: Latest Flash alias
+    ];
     constructor(apiKey) {
         this.client = new GoogleGenAI({
             apiKey: apiKey,
+            apiVersion: 'v1',
         });
     }
     async generateProductDetails(productName, language = 'ar', tone = 'Marketing', length = 'medium') {
@@ -27,15 +34,17 @@ export class AIService {
         
         Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
         `;
+        let lastError = null;
+        const forcedModel = AIService.MODELS_TO_TRY[0];
+        console.log(`🤖 AI: Starting generation with primary model: ${forcedModel}`);
         try {
-            // ✅ Correct usage of @google/genai SDK (API v1)
             const response = await this.client.models.generateContent({
-                model: AIService.MODEL_NAME,
+                model: forcedModel,
                 contents: prompt
             });
             const text = response.text;
             if (!text) {
-                throw new Error('Empty response from AI model');
+                throw new Error(`Empty response from model: ${forcedModel}`);
             }
             // Clean up potentially md formatted text
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -43,13 +52,34 @@ export class AIService {
                 return JSON.parse(cleanText);
             }
             catch (parseError) {
-                console.error('Failed to parse AI response as JSON:', cleanText);
+                console.error(`AI JSON Parse Error with model ${forcedModel}:`, cleanText);
                 throw new Error('AI returned invalid JSON format');
             }
         }
         catch (error) {
-            console.error('AI Generation Critical Failure:', error);
-            throw new Error(`Failed to generate content: ${error.message}`);
+            console.warn(`⚠️ Primary model ${forcedModel} failed: ${error.message}. Entering waterfall...`);
+            // Waterfall through remaining models
+            for (const modelName of AIService.MODELS_TO_TRY) {
+                if (modelName === forcedModel)
+                    continue;
+                try {
+                    console.log(`🤖 AI: Attempting fallback with model: ${modelName}`);
+                    const response = await this.client.models.generateContent({
+                        model: modelName,
+                        contents: prompt
+                    });
+                    if (response.text) {
+                        const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+                        return JSON.parse(cleanText);
+                    }
+                }
+                catch (fallbackError) {
+                    lastError = fallbackError;
+                    console.warn(`⚠️ Fallback ${modelName} failed: ${fallbackError.message}`);
+                    continue;
+                }
+            }
+            throw new Error(`All AI models are unavailable (Waterfall fail). Last error: ${error.message}`);
         }
     }
 }

@@ -10,7 +10,7 @@ export interface DiffChange {
 export interface DiffItem {
     externalId: string;
     name: string;
-    status: 'new' | 'update' | 'match';
+    status: 'new' | 'update' | 'match' | 'existing';
     existingProductId?: string;
     changes?: {
         price?: DiffChange;

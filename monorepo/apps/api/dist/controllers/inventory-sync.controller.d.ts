@@ -3,6 +3,10 @@ import multer from 'multer';
 export declare const upload: multer.Multer;
 export declare class InventorySyncController {
     /**
+     * Get or create "Uncategorized" category for imported products
+     */
+    private static getDefaultCategory;
+    /**
      * POST /api/products/import/preview
      * Parse Excel and compare with database, return diff report
      */

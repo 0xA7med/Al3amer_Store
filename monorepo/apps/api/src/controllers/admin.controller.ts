@@ -23,6 +23,22 @@ export class AdminController {
                 .where(eq(users.role, 'customer'));
             const totalCustomers = customersResult?.count || 0;
 
+            // Get active products count
+            const [activeProductsResult] = await db.select({ count: count() })
+                .from(products)
+                .where(eq(products.status, 'active'));
+            const activeProducts = activeProductsResult?.count || 0;
+
+            // Get inactive products count (draft, archived, etc.)
+            const [inactiveProductsResult] = await db.select({ count: count() })
+                .from(products)
+                .where(or(eq(products.status, 'draft'), eq(products.status, 'archived'))); // Or just not equal to 'active' if we want to catch potential others, but specific is safer for now. actually 'draft' is the main one. Let's use ne(products.status, 'active') might be better if we have more statuses. 
+            // Re-reading logic: standard is active/draft/archived. So (count total) - active = inactive is simpler OR explicit query.
+            // Let's do explicit for draft + archived to be sure.
+            // Actually, let's just use total - active for 'inactive' to ensure numbers sum up perfectly or do explicit. 
+            // Explicit is better for clarity.
+            const inactiveProducts = totalProducts - activeProducts; // Simple math is fastest given we have total and active.
+
             // Get orders stats via SQL Aggregation
             const [ordersStats] = await db.select({
                 totalOrders: count(),
@@ -57,6 +73,8 @@ export class AdminController {
             res.json({
                 totalProducts,
                 lowStockProducts,
+                activeProducts,
+                inactiveProducts,
                 totalCustomers,
                 totalOrders,
                 pendingOrders,

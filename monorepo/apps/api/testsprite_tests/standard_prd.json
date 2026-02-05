@@ -1,0 +1,78 @@
+{
+  "meta": {
+    "project": "Al3amer Store",
+    "date": "2026-01-29",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "Al3amer Store is a comprehensive full-stack e-commerce platform tailored for the Egyptian market specializing in POS systems and hardware sales. It offers both public-facing storefront APIs for customers and a robust Admin Dashboard for business management with integrated payment and AI features.",
+  "core_goals": [
+    "Provide seamless product browsing with detailed listings and search capabilities.",
+    "Enable secure and flexible user authentication via social login and JWT.",
+    "Facilitate smooth order processing including creation, validation, and status tracking.",
+    "Integrate Paymob for card and mobile wallet payments with secure webhook callbacks.",
+    "Offer a protected Admin Dashboard for analytics, inventory management, and AI-driven product description generation.",
+    "Ensure data consistency and synchronization with bulk import features.",
+    "Deliver comprehensive error handling and API health for reliability."
+  ],
+  "key_features": [
+    "Public Storefront APIs for products, categories, cart, orders, and public settings.",
+    "Authentication system supporting social login (Firebase) and secure admin authentication using Bearer tokens.",
+    "Payment gateway integration with Paymob supporting multiple payment methods and secure webhook handling.",
+    "Admin Dashboard APIs providing sales analytics, inventory import via Excel, AI-generated product descriptions using Gemini, and complete CRUD operations for products, orders, customers, and coupons.",
+    "Use of PostgreSQL with Drizzle ORM for robust database management.",
+    "Comprehensive backend built with Node.js and Express focusing on API health and business logic correctness."
+  ],
+  "user_flow_summary": [
+    "User browses products with filters and views product details via public APIs.",
+    "User registers or logs in using social authentication syncing Firebase with backend database.",
+    "User places orders capturing accurate subtotal, shipping, and discount calculations, then completes payment via Paymob.",
+    "System updates order status asynchronously via secured Paymob webhook callbacks.",
+    "Admin logs into the dashboard with bearer token authentication to access reports, manage inventory, and generate AI-assisted product descriptions.",
+    "Admin performs bulk inventory updates by importing Excel files through the API endpoints."
+  ],
+  "validation_criteria": [
+    "All public GET endpoints must return HTTP 200 OK status.",
+    "Invalid API requests with bad or missing IDs should respond with HTTP 400 or 404 appropriately.",
+    "Order creation logic must correctly calculate totals including subtotal, shipping costs, and applicable discounts.",
+    "Webhook endpoints must validate HMAC signatures to ensure secure updates from Paymob.",
+    "Admin routes require proper bearer token validation to restrict access.",
+    "Bulk data import must correctly update inventory without data corruption.",
+    "AI-generated product descriptions should be relevant and accurately linked to products in the database."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "Node.js",
+      "Express",
+      "PostgreSQL",
+      "Drizzle ORM",
+      "JWT"
+    ],
+    "features": [
+      {
+        "name": "Products API",
+        "description": "Manage products including listing, searching, creating, and updating.",
+        "files": [
+          "src/routes/products.ts",
+          "src/controllers/products.controller.ts"
+        ]
+      },
+      {
+        "name": "Authentication API",
+        "description": "User registration, login, and profile retrieval using JWT.",
+        "files": [
+          "src/routes/auth.ts",
+          "src/controllers/auth.controller.ts"
+        ]
+      },
+      {
+        "name": "Orders API",
+        "description": "Order creation, status updates, and retrieval.",
+        "files": [
+          "src/routes/orders.ts",
+          "src/controllers/orders.controller.ts"
+        ]
+      }
+    ]
+  }
+}
