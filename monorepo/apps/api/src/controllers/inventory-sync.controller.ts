@@ -73,6 +73,11 @@ interface DiffItem {
         stock: number;
         cost: number;
     };
+    currentData?: {
+        price: number;
+        stock: number;
+        cost: number;
+    };
 }
 
 export class InventorySyncController {
@@ -221,6 +226,11 @@ export class InventorySyncController {
                             status: 'update',
                             existingProductId: existing.id,
                             changes,
+                            currentData: {
+                                price: existingPrice,
+                                stock: existingStock,
+                                cost: existingCost,
+                            }
                         });
                         updateCount++;
                     } else {

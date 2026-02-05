@@ -42,10 +42,13 @@ export class CategoriesController {
 
     async create(req: Request, res: Response) {
         try {
-            const { name, parentId, image, icon, isActive } = req.body;
+            const { name, parentId, image, icon, isActive, isFeatured, slug: customSlug } = req.body;
 
-            // simple slug generation
-            const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF\-]+/g, '') + '-' + Date.now();
+            // Use custom slug if provided, otherwise generate one
+            let slug = customSlug;
+            if (!slug) {
+                slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF\-]+/g, '') + '-' + Date.now();
+            }
 
             const [newCategory] = await db.insert(categories).values({
                 name,
@@ -54,6 +57,7 @@ export class CategoriesController {
                 image,
                 icon,
                 isActive: isActive ?? true,
+                isFeatured: isFeatured ?? false,
             }).returning();
 
             res.status(201).json(newCategory);
@@ -66,16 +70,17 @@ export class CategoriesController {
     async update(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, parentId, image, icon, isActive } = req.body;
+            const { name, parentId, image, icon, isActive, isFeatured, slug } = req.body;
 
             const [updatedCategory] = await db.update(categories)
                 .set({
                     name,
+                    slug, // Allow updating slug
                     parentId: parentId || null,
                     image,
                     icon,
                     isActive,
-                    // optionally update slug if name changes, but usually slugs are permanent. Let's keep slug stable.
+                    isFeatured,
                 })
                 .where(eq(categories.id, id))
                 .returning();

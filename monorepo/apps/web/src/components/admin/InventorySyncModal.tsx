@@ -118,7 +118,14 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
         if (item.status === 'new') {
             return item.newData?.[field] || 0;
         }
-        return item.changes?.[field]?.new || 0;
+
+        // If there's a change, return the new value
+        if (item.changes?.[field]) {
+            return item.changes[field]!.new;
+        }
+
+        // Otherwise return the current existing value
+        return item.currentData?.[field] || 0;
     };
 
     const handleExecute = async () => {
@@ -373,7 +380,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                 <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
                                                     {item.changes?.price ? (
                                                         <div className="flex items-center gap-1 opacity-70">
-                                                            <span className="text-slate-400 line-through text-xs">
+                                                            <span className="text-red-500 text-xs">
                                                                 {item.changes.price.old.toLocaleString()}
                                                             </span>
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />
@@ -399,7 +406,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                 <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
                                                     {item.changes?.stock ? (
                                                         <div className="flex items-center gap-1 opacity-70">
-                                                            <span className="text-slate-400 line-through text-xs">
+                                                            <span className="text-red-500 text-xs">
                                                                 {item.changes.stock.old}
                                                             </span>
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />
@@ -423,7 +430,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                 <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
                                                     {item.changes?.cost ? (
                                                         <div className="flex items-center gap-1 opacity-70">
-                                                            <span className="text-slate-400 line-through text-xs">
+                                                            <span className="text-red-500 text-xs">
                                                                 {item.changes.cost.old.toLocaleString()}
                                                             </span>
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />

@@ -27,9 +27,9 @@ export default function CategoriesManagement() {
                     flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/5 transition-colors
                     ${level > 0 ? 'bg-white/[0.02]' : ''}
                 `} style={{ paddingRight: `${level * 2 + 1.5}rem` }}>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-1">
                         {/* Expand Button or Spacer */}
-                        <div className="w-6 flex justify-center">
+                        <div className="w-6 flex justify-center shrink-0">
                             {hasChildren && (
                                 <button onClick={() => toggleExpand(category.id)} className="text-slate-400 hover:text-white transition-colors">
                                     <span className="material-symbols-outlined text-[20px]">
@@ -59,19 +59,23 @@ export default function CategoriesManagement() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-4">
-                        <span className="px-3 py-1 rounded-md bg-white/5 text-slate-300 font-medium text-xs border border-white/5 whitespace-nowrap">
-                            {category.productCount || 0} منتج
-                        </span>
+                        <div className="w-20 text-center">
+                            <span className="px-3 py-1 rounded-md bg-white/5 text-slate-300 font-medium text-xs border border-white/5 whitespace-nowrap">
+                                {category.productCount || 0}
+                            </span>
+                        </div>
 
                         {/* Status Toggle */}
-                        <button
-                            onClick={() => updateCategory({ id: category.id, data: { isActive: !category.isActive } })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${category.isActive ? 'bg-primary' : 'bg-slate-700'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${category.isActive ? '-translate-x-1' : '-translate-x-6'}`}></span>
-                        </button>
+                        <div className="w-20 flex justify-center">
+                            <button
+                                onClick={() => updateCategory({ id: category.id, data: { isActive: !category.isActive } })}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${category.isActive ? 'bg-primary' : 'bg-slate-700'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${category.isActive ? '-translate-x-1' : '-translate-x-6'}`}></span>
+                            </button>
+                        </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="w-28 flex justify-center gap-1">
                             <button
                                 onClick={() => setEditingCategory({ parentId: category.id, isActive: true })}
                                 className="p-2 rounded-lg hover:bg-emerald-500/10 text-emerald-400 transition-colors"
@@ -154,9 +158,20 @@ export default function CategoriesManagement() {
 
             {/* Tree Table */}
             <div className="glass-panel rounded-xl overflow-hidden flex flex-col min-h-[500px] bg-[#1e232d] border border-white/10">
-                <div className="p-5 border-b border-white/5 bg-white/[0.02]">
+                <div className="p-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
                     <h2 className="text-lg font-bold text-white">هيكل الأقسام</h2>
                 </div>
+
+                {/* Table Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02] text-xs font-bold text-slate-400">
+                    <div className="flex-1 text-right">القسم</div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-20 text-center">المنتجات</div>
+                        <div className="w-20 text-center">الحالة</div>
+                        <div className="w-28 text-center">إجراءات</div>
+                    </div>
+                </div>
+
                 <div className="flex-1 overflow-y-auto">
                     {categoryTree.length === 0 ? (
                         <div className="p-10 text-center text-slate-500">
@@ -202,8 +217,10 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
         name: category.name || '',
         image: category.image || '',
         icon: category.icon || '',
+        slug: category.slug || '',
         parentId: category.parentId || null,
         isActive: category.isActive ?? true,
+        isFeatured: category.isFeatured ?? false,
     });
 
     // Update form data when category prop changes (for edit mode)
@@ -212,8 +229,10 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
             name: category.name || '',
             image: category.image || '',
             icon: category.icon || '',
+            slug: category.slug || '',
             parentId: category.parentId || null,
             isActive: category.isActive ?? true,
+            isFeatured: category.isFeatured ?? false,
         });
     }, [category]);
 
@@ -253,33 +272,66 @@ function CategoryModal({ category, onClose, onSave, isSaving }: {
                             className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
                             placeholder="مثال: inventory_2"
                         />
+                        <div className="flex items-center gap-2 mt-2">
+                            <a
+                                href="https://fonts.google.com/icons?icon.set=Material+Symbols"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                تصفح الأيقونات
+                            </a>
+                        </div>
                         {formData.icon && (
-                            <div className="mt-2 flex items-center gap-2 p-2 bg-white/5 rounded-lg">
-                                <span className="material-symbols-outlined text-primary text-2xl">{formData.icon}</span>
-                                <span className="text-sm text-gray-400">معاينة الأيقونة</span>
+                            <div className="mt-2 flex flex-col items-center justify-center p-4 bg-white/5 rounded-lg border border-white/10">
+                                <span className="material-symbols-outlined text-primary text-[48px]">{formData.icon}</span>
+                                <span className="text-xs text-gray-400 mt-2">معاينة</span>
                             </div>
                         )}
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">رابط الصورة (URL)</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">الرابط المخصص (Slug)</label>
                         <input
-                            value={formData.image}
-                            onChange={e => setFormData({ ...formData, image: e.target.value })}
-                            className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                            placeholder="https://..."
+                            value={formData.slug}
+                            onChange={e => setFormData({ ...formData, slug: e.target.value })}
+                            className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none font-mono text-sm"
+                            placeholder="custom-category-slug"
                         />
+                        <p className="text-xs text-slate-500 mt-1">اتركه فارغاً ليتم توليده تلقائياً من الاسم</p>
                     </div>
-                    {/* Status Toggle */}
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium text-gray-300">الحالة:</label>
-                        <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.isActive ? 'bg-primary' : 'bg-slate-700'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? '-translate-x-1' : '-translate-x-6'}`}></span>
-                        </button>
-                        <span className="text-sm text-slate-400">{formData.isActive ? 'نشط' : 'غير نشط'}</span>
+
+
+                    {/* Status Toggles */}
+                    <div className="flex flex-col gap-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-300">الحالة (نشط/غير نشط)</span>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.isActive ? 'bg-primary' : 'bg-slate-700'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? '-translate-x-1' : '-translate-x-6'}`}></span>
+                                </button>
+                                <span className="text-sm text-slate-400 min-w-[3rem] text-left">{formData.isActive ? 'نشط' : 'غير نشط'}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-300">عرض في الصفحة الرئيسية</span>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, isFeatured: !prev.isFeatured }))}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.isFeatured ? 'bg-primary' : 'bg-slate-700'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isFeatured ? '-translate-x-1' : '-translate-x-6'}`}></span>
+                                </button>
+                                <span className="text-sm text-slate-400 min-w-[3rem] text-left">{formData.isFeatured ? 'نعم' : 'لا'}</span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">

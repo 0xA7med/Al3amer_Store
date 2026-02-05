@@ -131,7 +131,7 @@ export function HomePage() {
                         </Link>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {categories?.map((cat: any) => (
+                        {categories?.filter((cat: any) => cat.isActive && cat.isFeatured).map((cat: any) => (
                             <Link
                                 to={`/shop?categories=${cat.slug}`}
                                 key={cat.id}

@@ -23,6 +23,11 @@ export interface DiffItem {
         stock: number;
         cost: number;
     };
+    currentData?: {
+        price: number;
+        stock: number;
+        cost: number;
+    };
 }
 
 export interface PreviewResponse {

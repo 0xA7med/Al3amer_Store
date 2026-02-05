@@ -44,7 +44,9 @@ export function ShopPage() {
         initialData: []
     });
 
-    const effectiveCategories = categories.length > 0 ? categories : FALLBACK_CATEGORIES;
+    const effectiveCategories = categories.length > 0
+        ? categories.filter((c: any) => c.isActive !== false) // Default to true if undefined
+        : FALLBACK_CATEGORIES;
 
     const displayCategories = [
         { id: 'all', name: 'الكل', slug: 'all' },

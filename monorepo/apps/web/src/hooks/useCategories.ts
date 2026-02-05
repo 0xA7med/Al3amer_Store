@@ -10,7 +10,7 @@ export interface Category {
     image: string | null;
     icon: string | null;
     isActive: boolean;
-    children?: Category[]; // For tree structure
+    isFeatured?: boolean; children?: Category[]; // For tree structure
     parent?: Category | null;
     products?: any[]; // To show count
     productCount?: number; // derived

@@ -80,6 +80,7 @@ export const categories = pgTable('categories', {
     image: text('image'),
     icon: text('icon'),
     isActive: boolean('is_active').default(true),
+    isFeatured: boolean('is_featured').default(false),
 });
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
