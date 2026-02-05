@@ -113,7 +113,7 @@ const ProductRow = memo(({
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                     <button
-                        onClick={() => navigate(`/admin/products/edit/${product.id}`)}
+                        onClick={() => navigate(`/admin/products/${product.id}`)}
                         className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors"
                         title="تعديل"
                     >

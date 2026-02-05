@@ -9,19 +9,40 @@ interface AIProductDetails {
 
 export class AIService {
     private client: GoogleGenAI;
-    private static MODELS_TO_TRY = [
-        "gemini-2.0-flash-lite-preview-02-05", // Priority 1: Lite version (Likely Free)
-        "gemini-2.0-flash-exp",                 // Priority 2: Experimental (Likely Free)
-        "gemini-2.0-flash",                     // Priority 3: Standard 2.0
-        "gemini-pro-latest",                    // Priority 4: Latest Pro alias
-        "gemini-1.5-flash-latest"               // Priority 5: Latest Flash alias
+    private apiKey: string;
+    private availableModels: string[] = [];
+
+    // Fallback models if discovery fails
+    private static FALLBACK_MODELS = [
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-pro"
     ];
 
     constructor(apiKey: string) {
+        this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
             apiVersion: 'v1',
         });
+    }
+
+    /**
+     * Discovers and caches available models for this API key
+     */
+    private async ensureModelsDiscovered(): Promise<void> {
+        if (this.availableModels.length > 0) {
+            return; // Already discovered
+        }
+
+        try {
+            const { ModelDiscoveryService } = await import('./model-discovery.service');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
+            console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
+        } catch (error) {
+            console.warn('⚠️ Model discovery failed, using fallback models');
+            this.availableModels = AIService.FALLBACK_MODELS;
+        }
     }
 
     async generateProductDetails(
@@ -30,6 +51,14 @@ export class AIService {
         tone: string = 'Marketing',
         length: string = 'medium'
     ): Promise<AIProductDetails> {
+        // Discover models if not already done
+        await this.ensureModelsDiscovered();
+
+        // Use discovered models or fallback
+        const modelsToTry = this.availableModels.length > 0
+            ? this.availableModels
+            : AIService.FALLBACK_MODELS;
+
         const prompt = `
         Act as an expert E-commerce Copywriter.
         Product Name: "${productName}"
@@ -51,9 +80,9 @@ export class AIService {
         `;
 
         let lastError = null;
-        const forcedModel = AIService.MODELS_TO_TRY[0];
+        const forcedModel = modelsToTry[0];
 
-        console.log(`🤖 AI: Starting generation with primary model: ${forcedModel}`);
+        console.log(`🤖 AI: Using discovered model: ${forcedModel}`);
 
         try {
             const response = await this.client.models.generateContent({
@@ -79,8 +108,7 @@ export class AIService {
             console.warn(`⚠️ Primary model ${forcedModel} failed: ${error.message}. Entering waterfall...`);
 
             // Waterfall through remaining models
-            for (const modelName of AIService.MODELS_TO_TRY) {
-                if (modelName === forcedModel) continue;
+            for (const modelName of modelsToTry.slice(1)) {
                 try {
                     console.log(`🤖 AI: Attempting fallback with model: ${modelName}`);
 
