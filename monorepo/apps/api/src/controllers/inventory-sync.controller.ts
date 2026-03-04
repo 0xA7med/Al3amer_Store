@@ -63,6 +63,7 @@ interface DiffItem {
     status: 'new' | 'update' | 'match';
     existingProductId?: string;
     changes?: {
+        name?: { old: string; new: string };
         price?: { old: number; new: number };
         stock?: { old: number; new: number };
         cost?: { old: number; new: number };
@@ -208,6 +209,9 @@ export class InventorySyncController {
                     const existingStock = existing.stock || 0;
                     const existingCost = parseFloat(existing.cost?.toString() || '0');
 
+                    if (existing.name !== excelRow.name) {
+                        changes.name = { old: existing.name, new: excelRow.name };
+                    }
                     if (Math.abs(existingPrice - excelRow.price) > 0.01) {
                         changes.price = { old: existingPrice, new: excelRow.price };
                     }
@@ -307,6 +311,9 @@ export class InventorySyncController {
                                 };
 
 
+                                if (item.changes.name !== undefined && item.changes.name !== null) {
+                                    updateData.name = item.changes.name.new;
+                                }
                                 if (item.changes.price !== undefined && item.changes.price !== null) {
                                     updateData.price = item.changes.price.new.toString();
                                 }
@@ -347,7 +354,7 @@ export class InventorySyncController {
                                     cost: item.newData.cost?.toString() || '0',
                                     slug: slug,
                                     categoryId: defaultCategoryId,
-                                    status: 'draft', // Requires admin review before publishing
+                                    status: 'active', // Products imported from Excel are active by default
                                     isFeatured: false,
                                 });
 

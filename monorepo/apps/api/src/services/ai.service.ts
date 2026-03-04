@@ -1,10 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 
-interface AIProductDetails {
+interface GeniusAIProductDetails {
+    title: string;
     description: string;
-    metaTitle: string;
-    metaDescription: string;
-    features: string[];
+    slug: string;
+    specs: Array<{ key: string; value: string }>;
+    tags: string[];
+    // Legacy fields (backward compat)
+    specifications?: Array<{ key: string; value: string }>;
+    seoKeywords?: string[];
+    metaTitle?: string;
+    metaDescription?: string;
 }
 
 export class AIService {
@@ -50,7 +56,7 @@ export class AIService {
         language: string = 'ar',
         tone: string = 'Marketing',
         length: string = 'medium'
-    ): Promise<AIProductDetails> {
+    ): Promise<GeniusAIProductDetails> {
         // Discover models if not already done
         await this.ensureModelsDiscovered();
 
@@ -59,24 +65,47 @@ export class AIService {
             ? this.availableModels
             : AIService.FALLBACK_MODELS;
 
+        const langInst = language === 'ar' ? 'Arabic' : 'English';
+        const lengthGuide = length === 'short' ? '2-3 sentences' : length === 'long' ? '6-8 sentences' : '4-5 sentences';
+
         const prompt = `
-        Act as an expert E-commerce Copywriter.
-        Product Name: "${productName}"
-        
-        Requirements:
-        1. Language: ${language === 'ar' ? 'Arabic (Professional & Persuasive)' : 'English (Professional & Persuasive)'}
-        2. Tone: ${tone}
-        3. Description Length: ${length} (Short: ~50 words, Medium: ~100 words, Long: ~200 words)
-        
-        Generate the following in strict JSON format:
-        {
-            "description": "Compelling product description highlighting benefits",
-            "metaTitle": "SEO optimized title (max 60 chars)",
-            "metaDescription": "SEO optimized meta description (max 160 chars)",
-            "features": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"]
-        }
-        
-        Do not include markdown formatting like \`\`\`json. Return only the raw JSON string.
+You are a top-tier Egyptian e-commerce copywriter who writes highly converting product listings for the Egyptian market.
+You specialize in POS systems, retail technology, and electronics sold in Egypt.
+
+Product Name: "${productName}"
+Language: ${langInst}
+Tone: ${tone}
+Description Length: ${lengthGuide}
+
+Your task: Write a catchy, highly-converting product title and a compelling product description for this product.
+
+**STRICT RULES:**
+1. **ABSOLUTELY NO HTML TAGS.** No <h3>, <p>, <ul>, <li>, <br>, or any HTML. Use ONLY plain text.
+2. Use newlines (\\n) to separate paragraphs and sections.
+3. Use e-commerce emojis to make the description pop: ✅, 🚀, 🛡️, 💡, ⭐, 🔥, 💰, 📦, ✨
+4. Write in a persuasive, benefit-driven style that appeals to Egyptian business owners and shoppers.
+5. The title should be catchy, include the brand/model if apparent, and be optimized for search.
+6. Tags should be relevant Arabic search keywords that Egyptian customers would use.
+
+Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
+{
+  "title": "عنوان جذاب ومحسّن للسيو بالعربي",
+  "description": "وصف تسويقي مقنع بدون HTML... استخدم \\n للأسطر الجديدة و إيموجي للتنسيق",
+  "slug": "english-seo-friendly-slug",
+  "specs": [
+    {"key": "اسم المواصفة", "value": "القيمة"},
+    {"key": "...", "value": "..."}
+  ],
+  "tags": ["وسم1", "وسم2", "وسم3"]
+}
+
+Rules:
+- title: ${langInst}, catchy and SEO-optimized, max 80 chars.
+- description: ${langInst}, plain text only, ${lengthGuide}, use emojis and newlines for formatting.
+- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars.
+- specs: exactly 3-5 realistic technical key-value pairs in ${langInst}.
+- tags: 3-6 relevant search keywords/phrases in ${langInst}.
+- Return ONLY the raw JSON object. No markdown fences, no extra text.
         `;
 
         let lastError = null;

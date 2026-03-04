@@ -129,7 +129,7 @@ const ProductRow = memo(({
 });
 
 export function ProductList() {
-    const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 100 });
+    const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 5000 });
     const { data: statsData } = useAdminStats();
     const [syncModalOpen, setSyncModalOpen] = useState(false);
     const deleteProduct = useDeleteProduct();

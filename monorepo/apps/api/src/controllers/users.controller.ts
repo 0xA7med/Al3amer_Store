@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { users, orders } from '../db/schema.js';
 import { eq, count, sql, ne } from 'drizzle-orm';
 
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export class UsersController {
     // POST /api/users - Create new user (Admin)

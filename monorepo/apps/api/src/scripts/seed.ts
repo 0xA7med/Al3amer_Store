@@ -3,7 +3,7 @@ dotenv.config();
 
 import { db, migrationClient } from '../db/index.js';
 import { users, categories, brands, products, productImages, settings } from '../db/schema.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 async function seed() {
     try {
