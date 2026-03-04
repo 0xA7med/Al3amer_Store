@@ -206,7 +206,7 @@ export default function CategoriesManagement() {
     );
 }
 
-function CategoryModal({ category, onClose, onSave, isSaving }: {
+export function CategoryModal({ category, onClose, onSave, isSaving }: {
     category: Partial<Category>,
     onClose: () => void,
     onSave: (data: Partial<Category>) => Promise<void>,

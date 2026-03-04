@@ -92,6 +92,8 @@ Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
   "title": "عنوان جذاب ومحسّن للسيو بالعربي",
   "description": "وصف تسويقي مقنع بدون HTML... استخدم \\n للأسطر الجديدة و إيموجي للتنسيق",
   "slug": "english-seo-friendly-slug",
+  "metaTitle": "عنوان الميتا محسّن للسيو",
+  "metaDescription": "وصف الميتا محسّن للسيو",
   "specs": [
     {"key": "اسم المواصفة", "value": "القيمة"},
     {"key": "...", "value": "..."}
@@ -102,7 +104,9 @@ Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
 Rules:
 - title: ${langInst}, catchy and SEO-optimized, max 80 chars.
 - description: ${langInst}, plain text only, ${lengthGuide}, use emojis and newlines for formatting.
-- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars.
+- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars, extremely relevant and professional for SEO.
+- metaTitle: ${langInst}, professional SEO title optimized for search engines, max 60 chars.
+- metaDescription: ${langInst}, professional SEO description optimized for search engines, max 160 chars.
 - specs: exactly 3-5 realistic technical key-value pairs in ${langInst}.
 - tags: 3-6 relevant search keywords/phrases in ${langInst}.
 - Return ONLY the raw JSON object. No markdown fences, no extra text.

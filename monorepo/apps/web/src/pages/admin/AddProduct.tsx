@@ -4,6 +4,7 @@ import { useProduct, useCategories } from '../../hooks/useProducts';
 import { useCreateProduct, useUpdateProduct } from '../../hooks/useAdmin';
 import { useCategories as useCategoriesHook } from '../../hooks/useCategories';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { CategoryModal } from './CategoriesManagement';
 import toast from 'react-hot-toast';
 
 // =========================================================
@@ -47,101 +48,6 @@ function buildCategoryOptions(list: any[]): CategoryOption[] {
 }
 
 // =========================================================
-// Inline Category Creation Modal
-// =========================================================
-function InlineCategoryModal({ onClose, onSaved, categories }: {
-    onClose: () => void;
-    onSaved: (newCategoryId: string) => void;
-    categories: any[];
-}) {
-    const { createCategory, isCreating } = useCategoriesHook();
-    const [catName, setCatName] = useState('');
-    const [parentId, setParentId] = useState('');
-
-    const parentOptions = useMemo(() => {
-        return [
-            { value: '', label: 'بدون (قسم رئيسي)' },
-            ...categories
-                .filter((c: any) => !c.parentId && !c.parent_id)
-                .map((c: any) => ({ value: c.id, label: c.name }))
-        ];
-    }, [categories]);
-
-    const handleSave = async () => {
-        if (!catName.trim()) {
-            toast.error('يرجى كتابة اسم التصنيف');
-            return;
-        }
-        try {
-            const result: any = await createCategory({
-                name: catName.trim(),
-                parentId: parentId || null,
-                isActive: true,
-            });
-            toast.success('تم إنشاء التصنيف بنجاح!');
-            // Try to get the new category ID from mutation result
-            const newId = result?.id || result?.data?.id || '';
-            onSaved(newId);
-        } catch {
-            // Error already handled by useCategoriesHook
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-[#1e232d] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">create_new_folder</span>
-                        إضافة تصنيف جديد
-                    </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-                        <span className="material-symbols-outlined">close</span>
-                    </button>
-                </div>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-1.5">اسم التصنيف <span className="text-secondary">*</span></label>
-                        <input
-                            value={catName}
-                            onChange={e => setCatName(e.target.value)}
-                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all outline-none"
-                            placeholder="مثال: طابعات حرارية"
-                            autoFocus
-                            onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-slate-400 mb-1.5">القسم الأب (اختياري)</label>
-                        <CustomSelect
-                            value={parentId}
-                            onChange={setParentId}
-                            options={parentOptions}
-                            placeholder="بدون (قسم رئيسي)"
-                        />
-                    </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                    <button
-                        onClick={handleSave}
-                        disabled={isCreating || !catName.trim()}
-                        className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
-                    >
-                        {isCreating ? (
-                            <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        ) : (
-                            <span className="material-symbols-outlined text-[18px]">check</span>
-                        )}
-                        حفظ
-                    </button>
-                    <button onClick={onClose} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors">إلغاء</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// =========================================================
 // Main Component
 // =========================================================
 export function AddProduct() {
@@ -158,6 +64,7 @@ export function AddProduct() {
     const categoriesList: any[] = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.data || [];
     const createProductMutation = useCreateProduct();
     const updateProductMutation = useUpdateProduct();
+    const { createCategory, isCreating: isCreatingCategory } = useCategoriesHook();
 
     // ---- Form State ----
     const [formData, setFormData] = useState({
@@ -201,7 +108,7 @@ export function AddProduct() {
                 discountPrice: productData.discountPrice || '',
                 cost: productData.cost || '',
                 sku: productData.sku || '',
-                external_id: productData.externalId || productData.external_id || '',   // Pro_ID
+                external_id: (productData as any).externalId || productData.external_id || '',   // Pro_ID
                 stock: String(productData.stock || 0),
                 barcode: productData.barcode || '',
                 category: productData.categoryId || productData.category?.id || '',
@@ -974,12 +881,22 @@ export function AddProduct() {
                 </div>
             </div>
 
-            {/* Inline Category Modal */}
+            {/* Category Modal */}
             {showCategoryModal && (
-                <InlineCategoryModal
+                <CategoryModal
+                    category={{ isActive: true, isFeatured: false }}
                     onClose={() => setShowCategoryModal(false)}
-                    onSaved={handleCategorySaved}
-                    categories={categoriesList}
+                    onSave={async (data) => {
+                        try {
+                            const result: any = await createCategory(data);
+                            toast.success('تم إنشاء التصنيف بنجاح!');
+                            const newId = result?.id || result?.data?.id || '';
+                            handleCategorySaved(newId);
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    }}
+                    isSaving={isCreatingCategory}
                 />
             )}
 
