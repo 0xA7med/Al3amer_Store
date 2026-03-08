@@ -354,7 +354,7 @@ export class InventorySyncController {
                                     cost: item.newData.cost?.toString() || '0',
                                     slug: slug,
                                     categoryId: defaultCategoryId,
-                                    status: 'active', // Products imported from Excel are active by default
+                                    status: 'draft', // Products imported from Excel are hidden by default
                                     isFeatured: false,
                                 });
 

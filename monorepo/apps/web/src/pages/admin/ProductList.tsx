@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import InventorySyncModal from '../../components/admin/InventorySyncModal';
+import BulkActionsModal from '../../components/admin/BulkActionsModal';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
     active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle' },
@@ -132,6 +133,7 @@ export function ProductList() {
     const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 5000 });
     const { data: statsData } = useAdminStats();
     const [syncModalOpen, setSyncModalOpen] = useState(false);
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const deleteProduct = useDeleteProduct();
     const bulkUpdate = useBulkUpdateProducts();
     const products = productsData?.data || [];
@@ -401,13 +403,22 @@ export function ProductList() {
                 </div>
                 <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
                     {selectedIds.size > 0 && (
-                        <button
-                            onClick={handleBulkDelete}
-                            className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold border border-red-500/20 transition-all"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
-                            <span>حذف المختار ({selectedIds.size})</span>
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setBulkModalOpen(true)}
+                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">tune</span>
+                                <span className="whitespace-nowrap">إجراءات متعددة ({selectedIds.size})</span>
+                            </button>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold border border-red-500/20 transition-all"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
+                                <span className="whitespace-nowrap">حذف المختار ({selectedIds.size})</span>
+                            </button>
+                        </>
                     )}
                     <button
                         onClick={() => setSyncModalOpen(true)}
@@ -571,6 +582,23 @@ export function ProductList() {
                 isOpen={syncModalOpen}
                 onClose={() => setSyncModalOpen(false)}
                 onSuccess={() => refetch()}
+            />
+
+            {/* Bulk Actions Modal */}
+            <BulkActionsModal
+                isOpen={bulkModalOpen}
+                onClose={() => setBulkModalOpen(false)}
+                selectedProducts={filteredProducts.filter(p => selectedIds.has(p.id))}
+                isUpdating={bulkUpdate.isPending}
+                onApply={async (updates) => {
+                    try {
+                        await bulkUpdate.mutateAsync(updates);
+                        setBulkModalOpen(false);
+                        setSelectedIds(new Set());
+                    } catch (error) {
+                        console.error('Failed to apply bulk updates', error);
+                    }
+                }}
             />
         </div>
     );
