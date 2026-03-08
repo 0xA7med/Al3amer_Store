@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import api from '../lib/api';
 
 export interface DiffChange {
     old: number;
@@ -54,32 +53,25 @@ async function uploadAndPreview(file: File): Promise<PreviewResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await fetch(`${API_URL}/api/products/import/preview`, {
-        method: 'POST',
-        body: formData,
-    });
-
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to preview import');
+    try {
+        const { data } = await api.post('/products/import/preview', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return data;
+    } catch (error: any) {
+        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to preview import');
     }
-
-    return res.json();
 }
 
 async function executeSync(items: DiffItem[]): Promise<ExecuteResponse> {
-    const res = await fetch(`${API_URL}/api/products/import/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-    });
-
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to execute import');
+    try {
+        const { data } = await api.post('/products/import/execute', { items });
+        return data;
+    } catch (error: any) {
+        throw new Error(error.response?.data?.error || error.response?.data?.message || 'Failed to execute import');
     }
-
-    return res.json();
 }
 
 export function useInventorySync() {
