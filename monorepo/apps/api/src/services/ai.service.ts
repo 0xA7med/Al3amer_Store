@@ -1,17 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
 interface GeniusAIProductDetails {
-    title: string;
-    description: string;
-    slug: string;
-    specs: Array<{ key: string; value: string }>;
-    tags: string[];
+    title?: string;
+    description?: string;
+    slug?: string;
+    specs?: Array<{ key: string; value: string }>;
+    tags?: string[];
     // Legacy fields (backward compat)
     specifications?: Array<{ key: string; value: string }>;
     seoKeywords?: string[];
     metaTitle?: string;
     metaDescription?: string;
 }
+
+export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo';
 
 export class AIService {
     private client: GoogleGenAI;
@@ -39,7 +41,7 @@ export class AIService {
      */
     private async ensureModelsDiscovered(): Promise<void> {
         if (this.availableModels.length > 0) {
-            return; // Already discovered
+            return;
         }
 
         try {
@@ -52,11 +54,110 @@ export class AIService {
         }
     }
 
+    /**
+     * Builds a section-specific prompt
+     */
+    private buildPrompt(productName: string, section: AISection, langInst: string, lengthGuide: string): string {
+        const baseContext = `You are an expert B2B e-commerce product copywriter for an Egyptian POS and retail electronics store called "العامر ستور".
+Product Name: "${productName}"
+Language: ${langInst}
+Tone: Professional, direct, informative, and technical.
+
+**CRITICAL RULES:**
+1. ABSOLUTELY NO EMOJIS anywhere.
+2. Maintain a professional B2B tone. No cheap marketing slogans like "هل سئمت من..." or "اطلبها الآن".
+3. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
+4. Research what this product actually is based on its name and provide accurate, realistic information.`;
+
+        switch (section) {
+            case 'title':
+                return `${baseContext}
+
+Generate ONLY a professional product title for this product.
+
+\`\`\`json
+{
+  "title": "عنوان احترافي ودقيق للمنتج - max 80 chars"
+}
+\`\`\``;
+
+            case 'description':
+                return `${baseContext}
+
+Write ONLY a professional product description (${lengthGuide}).
+Structure: Start with a professional overview paragraph, then a bulleted list of key features using dashes (-).
+NO HTML tags. Plain text only.
+
+\`\`\`json
+{
+  "description": "وصف احترافي للمنتج يبدأ بنظرة عامة ثم قائمة مميزات.\\n\\n- ميزة 1\\n- ميزة 2\\n- ميزة 3"
+}
+\`\`\``;
+
+            case 'specs':
+                return `${baseContext}
+
+Generate ONLY realistic technical specifications for this product.
+Research what this product actually is and provide accurate specs.
+Provide 3-6 key-value specification pairs in ${langInst}.
+
+\`\`\`json
+{
+  "specs": [
+    {"key": "اسم المواصفة", "value": "القيمة الحقيقية"},
+    {"key": "...", "value": "..."}
+  ]
+}
+\`\`\``;
+
+            case 'seo':
+                return `${baseContext}
+
+Generate ONLY SEO metadata for this product:
+- slug: English, lowercase, hyphens, max 60 chars
+- metaTitle: ${langInst}, professional SEO title, max 60 chars
+- metaDescription: ${langInst}, professional SEO description, max 160 chars
+- tags: 3-6 relevant search keywords in ${langInst}
+
+\`\`\`json
+{
+  "slug": "english-seo-slug",
+  "metaTitle": "عنوان ميتا احترافي",
+  "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
+  "tags": ["وسم1", "وسم2", "وسم3"]
+}
+\`\`\``;
+
+            case 'all':
+            default:
+                return `${baseContext}
+
+Write a complete product listing with ALL fields.
+Description length: ${lengthGuide}
+Structure the description with a professional overview paragraph, then a bulleted list of key features using dashes (-).
+
+\`\`\`json
+{
+  "title": "عنوان احترافي ودقيق للمنتج",
+  "description": "وصف احترافي يبدأ بنظرة عامة ثم قائمة مميزات.\\n\\n- ميزة 1\\n- ميزة 2\\n- ميزة 3",
+  "slug": "english-seo-friendly-slug",
+  "metaTitle": "عنوان ميتا احترافي",
+  "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
+  "specs": [
+    {"key": "اسم المواصفة", "value": "القيمة"}
+  ],
+  "tags": ["وسم1", "وسم2", "وسم3"]
+}
+\`\`\``;
+        }
+    }
+
     async generateProductDetails(
         productName: string,
         language: string = 'ar',
         tone: string = 'Marketing',
-        length: string = 'medium'
+        length: string = 'medium',
+        section: AISection = 'all'
     ): Promise<GeniusAIProductDetails> {
         // Discover models if not already done
         await this.ensureModelsDiscovered();
@@ -69,35 +170,7 @@ export class AIService {
         const langInst = language === 'ar' ? 'Arabic' : 'English';
         const lengthGuide = length === 'short' ? '2-3 sentences' : length === 'long' ? '6-8 sentences' : '4-5 sentences';
 
-        const prompt = `
-You are an expert e-commerce copywriter.
-
-Write a product listing for: "${productName}"
-Language: ${langInst}
-Tone: Professional, direct, informative, and technical.
-Length: ${lengthGuide}
-
-**CRITICAL RULES:**
-1. ABSOLUTELY NO EMOJIS anywhere.
-2. Maintain a highly professional B2B tone. No cheap marketing slogans.
-3. Structure the description with a solid overview paragraph, followed by a bulleted list of key features.
-4. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
-
-JSON Structure:
-\`\`\`json
-{
-  "title": "Clean professional title",
-  "description": "Professional overview paragraph.\\n\\n- Key feature 1\\n- Key feature 2\\n- Key feature 3",
-  "slug": "english-seo-friendly-slug",
-  "metaTitle": "SEO title",
-  "metaDescription": "SEO description",
-  "specs": [
-    {"key": "Spec Name", "value": "Value"}
-  ],
-  "tags": ["tag1", "tag2"]
-}
-\`\`\`
-`;
+        const prompt = this.buildPrompt(productName, section, langInst, lengthGuide);
 
         const sanitizeJsonText = (rawText: string) => {
             return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -106,7 +179,7 @@ JSON Structure:
         let errors: string[] = [];
         const forcedModel = modelsToTry[0];
 
-        console.log(`🤖 AI: Using discovered model: ${forcedModel}`);
+        console.log(`🤖 AI: Using model: ${forcedModel} | Section: ${section}`);
 
         try {
             const response = await this.client.models.generateContent({

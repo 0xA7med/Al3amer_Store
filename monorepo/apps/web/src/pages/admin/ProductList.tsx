@@ -323,7 +323,7 @@ const ProductRow = memo(({
                     <button onClick={() => navigate(`/admin/products/${product.id}`)} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="تعديل">
                         <span className="material-symbols-outlined text-[18px]">edit_square</span>
                     </button>
-                    <Link to={`/product/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
+                    <Link to={`/product/${product.slug || product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
                     </Link>
                 </div>

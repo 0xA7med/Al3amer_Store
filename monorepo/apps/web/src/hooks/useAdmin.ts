@@ -13,6 +13,7 @@ export interface Product {
     stock: number;
     isActive: boolean;
     status: string;
+    slug?: string;
     isFeatured: boolean;
     videoUrl?: string | null;
     videoTitle?: string | null;

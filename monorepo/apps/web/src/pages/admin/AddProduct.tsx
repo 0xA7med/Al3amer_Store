@@ -250,12 +250,12 @@ export function AddProduct() {
     };
 
     // ---- AI Generate ----
-    const handleAIGenerate = async () => {
+    const handleAIGenerate = async (section: 'all' | 'title' | 'description' | 'specs' | 'seo' = 'all') => {
         if (!formData.name) { toast.error('يرجى كتابة اسم المنتج أولاً'); return; }
         setIsGeneratingAI(true);
         try {
             const api = (await import('../../lib/api')).default;
-            const { data } = await api.post('/products/ai-generate', { name: formData.name });
+            const { data } = await api.post('/products/ai-generate', { name: formData.name, section });
 
             // New compact JSON: { title, description, slug, specs[], tags[] }
             // Also handle legacy format for backwards compat
@@ -379,6 +379,18 @@ export function AddProduct() {
 
                     <div className="flex items-center gap-3">
                         <button
+                            onClick={() => handleAIGenerate('all')}
+                            disabled={isGeneratingAI}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="توليد كافة التفاصيل بالذكاء الاصطناعي"
+                            type="button"
+                        >
+                            <span className={`material-symbols-outlined text-[18px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
+                                {isGeneratingAI ? 'autorenew' : 'auto_awesome'}
+                            </span>
+                            <span className="hidden sm:inline">أكمل بالذكاء الاصطناعي</span>
+                        </button>
+                        <button
                             onClick={() => navigate('/admin/products')}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                         >
@@ -426,7 +438,7 @@ export function AddProduct() {
                                     />
                                 </div>
                                 <button
-                                    onClick={handleAIGenerate}
+                                    onClick={() => handleAIGenerate('all')}
                                     disabled={isGeneratingAI}
                                     className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                                     type="button"
@@ -466,7 +478,7 @@ export function AddProduct() {
                                                 placeholder="مثال: جهاز كاشير لمس 15 بوصة Sunmi T2"
                                             />
                                             <button
-                                                onClick={handleAIGenerate}
+                                                onClick={() => handleAIGenerate('title')}
                                                 disabled={isGeneratingAI}
                                                 className="absolute left-3 top-1/2 -translate-y-1/2 p-2 hover:bg-white/10 rounded-lg text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50"
                                                 title="تحسين باستخدام AI"
@@ -483,7 +495,7 @@ export function AddProduct() {
                                         <div className="flex items-center justify-between mb-2">
                                             <label className="field-label mb-0">وصف المنتج</label>
                                             <button
-                                                onClick={handleAIGenerate}
+                                                onClick={() => handleAIGenerate('description')}
                                                 disabled={isGeneratingAI}
                                                 className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors"
                                                 type="button"
@@ -646,9 +658,23 @@ export function AddProduct() {
                                 <div className="card-header">
                                     <span className="material-symbols-outlined text-purple-400">memory</span>
                                     <h3>المواصفات الفنية</h3>
-                                    <button onClick={addSpec} className="mr-auto btn-ghost text-xs" type="button">
-                                        <span className="material-symbols-outlined text-[16px]">add</span> إضافة مواصفة
-                                    </button>
+                                    
+                                    <div className="mr-auto flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleAIGenerate('specs')}
+                                            disabled={isGeneratingAI}
+                                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20"
+                                            type="button"
+                                        >
+                                            <span className={`material-symbols-outlined text-[14px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
+                                                {isGeneratingAI ? 'autorenew' : 'auto_fix_normal'}
+                                            </span>
+                                            {isGeneratingAI ? 'جاري...' : 'توليد بالذكاء الاصطناعي'}
+                                        </button>
+                                        <button onClick={addSpec} className="btn-ghost text-xs" type="button">
+                                            <span className="material-symbols-outlined text-[16px]">add</span> إضافة مواصفة
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     {/* Column headers */}
@@ -886,6 +912,17 @@ export function AddProduct() {
                                 <div className="card-header">
                                     <span className="material-symbols-outlined text-indigo-400">search</span>
                                     <h3>SEO</h3>
+                                    <button
+                                        onClick={() => handleAIGenerate('seo')}
+                                        disabled={isGeneratingAI}
+                                        className="mr-auto text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20"
+                                        type="button"
+                                    >
+                                        <span className={`material-symbols-outlined text-[14px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
+                                            {isGeneratingAI ? 'autorenew' : 'auto_fix_normal'}
+                                        </span>
+                                        {isGeneratingAI ? 'جاري التحسين...' : 'تحسين بالذكاء الاصطناعي'}
+                                    </button>
                                 </div>
                                 <div className="space-y-4">
                                     <div>

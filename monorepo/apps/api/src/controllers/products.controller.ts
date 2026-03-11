@@ -22,7 +22,7 @@ export class ProductsController {
     // Generate AI Content
     static async aiGenerate(req: Request, res: Response) {
         try {
-            const { name } = req.body;
+            const { name, section = 'all' } = req.body;
             if (!name) {
                 return res.status(400).json({ error: 'Product name is required' });
             }
@@ -40,7 +40,8 @@ export class ProductsController {
                 name,
                 appSettings?.aiLanguage || 'ar',
                 appSettings?.aiTone || 'Marketing',
-                appSettings?.aiDescriptionLength || 'medium'
+                appSettings?.aiDescriptionLength || 'medium',
+                section
             );
 
             return res.json(result);
@@ -293,12 +294,16 @@ export class ProductsController {
                 const imagesData = await Promise.all(imageUrls.map(async (img: any, index: number) => {
                     let url = typeof img === 'string' ? img : img.url;
 
-                    // If url is base64, upload to cloudinary
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            } else {
+                                url = await uploadToCloudinary(url);
+                            }
                         } catch (err) {
-                            console.error('Failed to upload image to cloudinary, falling back to base64:', err);
+                            console.error('❌ Failed to upload image to cloudinary, falling back to base64 string:', err);
                         }
                     }
 
@@ -406,12 +411,16 @@ export class ProductsController {
                 const imagesData = await Promise.all(req.body.images.map(async (img: any, index: number) => {
                     let url = typeof img === 'string' ? img : img.url;
 
-                    // If url is base64, upload to cloudinary
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            } else {
+                                url = await uploadToCloudinary(url);
+                            }
                         } catch (err) {
-                            console.error('Failed to upload update image to cloudinary:', err);
+                            console.error('❌ Failed to upload update image to cloudinary, falling back to base64 string:', err);
                         }
                     }
 
