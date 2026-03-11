@@ -30,7 +30,7 @@ export class AIService {
         this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
-            apiVersion: 'v1',
+            apiVersion: 'v1beta',
         });
     }
 
@@ -44,7 +44,7 @@ export class AIService {
 
         try {
             const { ModelDiscoveryService } = await import('./model-discovery.service');
-            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1beta');
             console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
         } catch (error) {
             console.warn('⚠️ Model discovery failed, using fallback models');
@@ -70,59 +70,37 @@ export class AIService {
         const lengthGuide = length === 'short' ? '2-3 sentences' : length === 'long' ? '6-8 sentences' : '4-5 sentences';
 
         const prompt = `
-You are a highly professional B2B e-commerce product manager writing product listings for an Egyptian POS and retail electronics store.
+You are an expert e-commerce copywriter.
 
-Product Name: "${productName}"
+Write a product listing for: "${productName}"
 Language: ${langInst}
 Tone: Professional, direct, informative, and technical.
-Description Length: ${lengthGuide}
+Length: ${lengthGuide}
 
-Your task is to write a highly professional, well-structured product description.
+**CRITICAL RULES:**
+1. ABSOLUTELY NO EMOJIS anywhere.
+2. Maintain a highly professional B2B tone. No cheap marketing slogans.
+3. Structure the description with a solid overview paragraph, followed by a bulleted list of key features.
+4. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
 
-**STRICT RULES:**
-1. **ABSOLUTELY NO EMOJIS.** Do not use emojis anywhere in the response.
-2. **NO CHEAP MARKETING SLOGANS.** Avoid phrases like "هل سئمت من..." or "اطلبها الآن...". Stay objective, professional, and focus on value and technical capabilities.
-3. **ABSOLUTELY NO HTML TAGS.** No <h3>, <p>, <ul>, <li>, <br>, or any HTML.
-4. **STRUCTURED FORMATTING:**
-   - Start with a clear, direct, and professional 1-2 sentence overview of the product.
-   - Follow it with a bulleted list of 3-5 key features. Use standard dashes (-) for bullets.
-   - Use the literal characters "\\n" (backslash followed by n) to separate the overview from the bullet points. Do NOT output an actual unescaped line break inside the JSON string.
-5. The title should be clean, professional, and optimized for search.
-6. Tags should be relevant Arabic search keywords (e.g. كاشير, طابعة فواتير).
-
-Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
+JSON Structure:
+\`\`\`json
 {
-  "title": "عنوان احترافي للمنتج",
-  "description": "نظرة عامة احترافية على المنتج...\\\\n\\\\n- الميزة الأولى...\\\\n- الميزة الثانية...\\\\n- الميزة الثالثة...",
+  "title": "Clean professional title",
+  "description": "Professional overview paragraph.\\n\\n- Key feature 1\\n- Key feature 2\\n- Key feature 3",
   "slug": "english-seo-friendly-slug",
-  "metaTitle": "عنوان الميتا محسّن للسيو",
-  "metaDescription": "وصف الميتا المكون من 150 حرف كحد أقصى",
+  "metaTitle": "SEO title",
+  "metaDescription": "SEO description",
   "specs": [
-    {"key": "اسم المواصفة", "value": "القيمة"},
-    {"key": "...", "value": "..."}
+    {"key": "Spec Name", "value": "Value"}
   ],
-  "tags": ["وسم1", "وسم2", "وسم3"]
+  "tags": ["tag1", "tag2"]
 }
-
-Rules:
-- title: ${langInst}, clean and professional, max 80 chars.
-- description: ${langInst}, plain text only, must include an overview paragraph followed by a bulleted list (using dashes -) of key features. Use literal "\\n" for line breaks. NO EMOJIS.
-- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars.
-- metaTitle: ${langInst}, professional SEO title, max 60 chars.
-- metaDescription: ${langInst}, professional SEO description, max 160 chars.
-- specs: exactly 3-5 realistic technical key-value pairs in ${langInst}.
-- tags: 3-6 relevant search keywords/phrases in ${langInst}.
-- Return ONLY the raw JSON object. No markdown fences, no extra text.
-        `;
+\`\`\`
+`;
 
         const sanitizeJsonText = (rawText: string) => {
-            let clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-            // In case it literally returns unescaped newlines within strings
-            clean = clean.replace(/\n/g, '\\n').replace(/\r/g, '');
-            // However, replacing ALL \n with \\n might break legitimate formatting outside strings if any, 
-            // but since we asked for JSON, it's mostly safe or it'll just parse as \n in values.
-            // A safer JSON parse wrapper:
-            return clean;
+            return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
         };
 
         let errors: string[] = [];

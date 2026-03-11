@@ -24,10 +24,10 @@ export class ModelDiscoveryService {
     /**
      * Discovers available models for the given API key
      * @param apiKey Google API key
-     * @param apiVersion API version (default: 'v1')
+     * @param apiVersion API version (default: 'v1beta')
      * @returns Array of model names that support generateContent
      */
-    static async discoverModels(apiKey: string, apiVersion: string = 'v1'): Promise<string[]> {
+    static async discoverModels(apiKey: string, apiVersion: string = 'v1beta'): Promise<string[]> {
         // Check cache first
         const cached = this.cache.get(apiKey);
         if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
