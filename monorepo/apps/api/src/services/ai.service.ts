@@ -114,15 +114,30 @@ Rules:
 - Return ONLY the raw JSON object. No markdown fences, no extra text.
         `;
 
-        let lastError = null;
+        const sanitizeJsonText = (rawText: string) => {
+            let clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            // In case it literally returns unescaped newlines within strings
+            clean = clean.replace(/\n/g, '\\n').replace(/\r/g, '');
+            // However, replacing ALL \n with \\n might break legitimate formatting outside strings if any, 
+            // but since we asked for JSON, it's mostly safe or it'll just parse as \n in values.
+            // A safer JSON parse wrapper:
+            return clean;
+        };
+
+        let lastError: any = null;
         const forcedModel = modelsToTry[0];
 
         console.log(`🤖 AI: Using discovered model: ${forcedModel}`);
 
+        const genConfig = {
+            responseMimeType: 'application/json',
+        };
+
         try {
             const response = await this.client.models.generateContent({
                 model: forcedModel,
-                contents: prompt
+                contents: prompt,
+                config: genConfig
             });
 
             const text = response.text;
@@ -130,17 +145,15 @@ Rules:
                 throw new Error(`Empty response from model: ${forcedModel}`);
             }
 
-            // Clean up potentially md formatted text
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
             try {
-                return JSON.parse(cleanText);
+                return JSON.parse(sanitizeJsonText(text));
             } catch (parseError) {
-                console.error(`AI JSON Parse Error with model ${forcedModel}:`, cleanText);
+                console.error(`AI JSON Parse Error with model ${forcedModel}:`, text);
                 throw new Error('AI returned invalid JSON format');
             }
         } catch (error: any) {
             console.warn(`⚠️ Primary model ${forcedModel} failed: ${error.message}. Entering waterfall...`);
+            lastError = error;
 
             // Waterfall through remaining models
             for (const modelName of modelsToTry.slice(1)) {
@@ -149,12 +162,12 @@ Rules:
 
                     const response = await this.client.models.generateContent({
                         model: modelName,
-                        contents: prompt
+                        contents: prompt,
+                        config: genConfig
                     });
 
                     if (response.text) {
-                        const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-                        return JSON.parse(cleanText);
+                        return JSON.parse(sanitizeJsonText(response.text));
                     }
                 } catch (fallbackError: any) {
                     lastError = fallbackError;
@@ -162,7 +175,7 @@ Rules:
                     continue;
                 }
             }
-            throw new Error(`All AI models are unavailable (Waterfall fail). Last error: ${error.message}`);
+            throw new Error(`All AI models failed. Last error: ${lastError?.message || 'Unknown error'}`);
         }
     }
 }

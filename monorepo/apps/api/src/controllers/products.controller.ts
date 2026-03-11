@@ -44,9 +44,9 @@ export class ProductsController {
             );
 
             return res.json(result);
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Generate Error:', error);
-            return res.status(500).json({ error: 'Failed to generate content' });
+            return res.status(500).json({ error: error?.message || 'Failed to generate content' });
         }
     }
 

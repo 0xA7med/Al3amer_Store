@@ -282,9 +282,10 @@ export function AddProduct() {
             }
 
             toast.success('✨ تم إنشاء المحتوى الذكي بنجاح');
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI Generate error:', error);
-            toast.error('فشل إنشاء المحتوى. يرجى المحاولة مرة أخرى.');
+            const msg = error.response?.data?.error || 'فشل إنشاء المحتوى. يرجى المحاولة مرة أخرى.';
+            toast.error(msg);
         } finally {
             setIsGeneratingAI(false);
         }
