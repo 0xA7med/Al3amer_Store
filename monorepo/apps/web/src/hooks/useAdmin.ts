@@ -240,7 +240,7 @@ export function useBulkUpdateProducts() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (updates: { id: string; price?: string; stock?: number; status?: string; categoryId?: string | null }[]) => {
+        mutationFn: async (updates: { id: string; price?: string; stock?: number }[]) => {
             const response = await api.patch('/products/bulk', { updates });
             return response.data;
         },
@@ -251,6 +251,35 @@ export function useBulkUpdateProducts() {
         },
         onError: () => {
             toast.error('حدث خطأ أثناء تحديث المنتجات');
+        }
+    });
+}
+
+export function useBulkAction() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (payload: {
+            ids: string[];
+            action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category';
+            payload?: {
+                priceMode?: 'add_fixed' | 'subtract_fixed' | 'add_percent' | 'subtract_percent' | 'set_fixed';
+                priceValue?: number;
+                stockMode?: 'add' | 'subtract' | 'set';
+                stockValue?: number;
+                categoryId?: string;
+            };
+        }) => {
+            const response = await api.post('/products/bulk-action', payload);
+            return response.data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+            toast.success(data?.message || 'تم تنفيذ الإجراء بنجاح');
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.error || 'حدث خطأ أثناء تنفيذ الإجراء');
         }
     });
 }

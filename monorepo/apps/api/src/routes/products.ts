@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { ProductsController } from '../controllers/products.controller.js';
 import inventorySyncRouter from './inventory-sync.js';
 
-const router = Router();
+const router: IRouter = Router();
 
 // Mount import routes first (more specific path)
 router.use('/import', inventorySyncRouter);
@@ -14,6 +14,7 @@ router.get('/:id', ProductsController.getOne);
 router.post('/', ProductsController.create);
 router.put('/:id', ProductsController.update);
 router.patch('/bulk', ProductsController.bulkUpdate);
+router.post('/bulk-action', ProductsController.bulkAction);
 router.delete('/:id', ProductsController.delete);
 
 export default router;

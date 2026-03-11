@@ -449,7 +449,7 @@ export class ProductsController {
         }
     }
 
-    // PATCH /api/products/bulk - Bulk update products
+    // PATCH /api/products/bulk - Bulk update products (inline price/stock edits)
     static async bulkUpdate(req: Request, res: Response) {
         try {
             const { updates } = req.body; // Array of { id, price, stock }
@@ -471,6 +471,114 @@ export class ProductsController {
         } catch (error) {
             console.error('Error in bulk update:', error);
             res.status(500).json({ error: 'Failed to perform bulk update' });
+        }
+    }
+
+    // POST /api/products/bulk-action - Comprehensive bulk actions
+    static async bulkAction(req: Request, res: Response) {
+        try {
+            const { ids, action, payload } = req.body as {
+                ids: string[];
+                action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category';
+                payload?: {
+                    // price action
+                    priceMode?: 'add_fixed' | 'subtract_fixed' | 'add_percent' | 'subtract_percent' | 'set_fixed';
+                    priceValue?: number;
+                    // stock action
+                    stockMode?: 'add' | 'subtract' | 'set';
+                    stockValue?: number;
+                    // category action
+                    categoryId?: string;
+                };
+            };
+
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ error: 'No product IDs provided' });
+            }
+            if (!action) {
+                return res.status(400).json({ error: 'Action is required' });
+            }
+
+            let affected = 0;
+
+            if (action === 'delete') {
+                await db.delete(products).where(inArray(products.id, ids));
+                affected = ids.length;
+            } else if (action === 'show') {
+                await db.update(products)
+                    .set({ status: 'active', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            } else if (action === 'hide') {
+                await db.update(products)
+                    .set({ status: 'draft', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            } else if (action === 'category') {
+                if (!payload?.categoryId) return res.status(400).json({ error: 'categoryId is required' });
+                await db.update(products)
+                    .set({ categoryId: payload.categoryId, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            } else if (action === 'price') {
+                if (!payload?.priceMode || payload.priceValue === undefined) {
+                    return res.status(400).json({ error: 'priceMode and priceValue are required' });
+                }
+                const val = payload.priceValue;
+                const mode = payload.priceMode;
+
+                // Build a single SQL expression based on the mode — no row-by-row loop
+                let priceExpr: any;
+                if (mode === 'add_fixed') {
+                    priceExpr = sql`GREATEST(0, CAST(${products.price} AS NUMERIC) + ${val})::TEXT`;
+                } else if (mode === 'subtract_fixed') {
+                    priceExpr = sql`GREATEST(0, CAST(${products.price} AS NUMERIC) - ${val})::TEXT`;
+                } else if (mode === 'add_percent') {
+                    priceExpr = sql`GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 + ${val} / 100.0))::TEXT`;
+                } else if (mode === 'subtract_percent') {
+                    priceExpr = sql`GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 - ${val} / 100.0))::TEXT`;
+                } else if (mode === 'set_fixed') {
+                    priceExpr = sql`${val.toString()}`;
+                } else {
+                    return res.status(400).json({ error: 'Invalid priceMode' });
+                }
+
+                await db.update(products)
+                    .set({ price: priceExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+
+            } else if (action === 'stock') {
+                if (!payload?.stockMode || payload.stockValue === undefined) {
+                    return res.status(400).json({ error: 'stockMode and stockValue are required' });
+                }
+                const val = payload.stockValue;
+                const mode = payload.stockMode;
+
+                let stockExpr: any;
+                if (mode === 'add') {
+                    stockExpr = sql`GREATEST(0, COALESCE(${products.stock}, 0) + ${val})`;
+                } else if (mode === 'subtract') {
+                    stockExpr = sql`GREATEST(0, COALESCE(${products.stock}, 0) - ${val})`;
+                } else if (mode === 'set') {
+                    stockExpr = sql`${val}`;
+                } else {
+                    return res.status(400).json({ error: 'Invalid stockMode' });
+                }
+
+                await db.update(products)
+                    .set({ stock: stockExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+
+            } else {
+                return res.status(400).json({ error: `Unknown action: ${action}` });
+            }
+
+            res.json({ success: true, affected, message: `تم تطبيق الإجراء على ${affected} منتج` });
+        } catch (error) {
+            console.error('Error in bulk action:', error);
+            res.status(500).json({ error: 'Failed to perform bulk action' });
         }
     }
 

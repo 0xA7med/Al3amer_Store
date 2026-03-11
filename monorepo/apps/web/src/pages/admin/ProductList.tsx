@@ -1,11 +1,10 @@
 import { useState, useMemo, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAdminProducts, useAdminStats, useDeleteProduct, useBulkUpdateProducts, type Product } from '../../hooks/useAdmin';
+import { useAdminProducts, useAdminStats, useDeleteProduct, useBulkUpdateProducts, useBulkAction, type Product } from '../../hooks/useAdmin';
+import { useCategories, type Category } from '../../hooks/useCategories';
 import toast from 'react-hot-toast';
-
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import InventorySyncModal from '../../components/admin/InventorySyncModal';
-import BulkActionsModal from '../../components/admin/BulkActionsModal';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
     active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle' },
@@ -16,6 +15,224 @@ function getProductStatus(product: Product): string {
     if (product.status === 'archived') return 'draft';
     return product.status || 'active';
 }
+
+// ================================================================
+// Bulk Action Modals
+// ================================================================
+
+function PriceModal({ count, onClose, onApply, isPending }: {
+    count: number;
+    onClose: () => void;
+    onApply: (mode: string, value: number) => void;
+    isPending: boolean;
+}) {
+    const [mode, setMode] = useState('add_fixed');
+    const [value, setValue] = useState('');
+    const modeOptions = [
+        { value: 'add_fixed', label: '➕ زيادة مبلغ ثابت' },
+        { value: 'subtract_fixed', label: '➖ نقصان مبلغ ثابت' },
+        { value: 'add_percent', label: '📈 زيادة نسبة %' },
+        { value: 'subtract_percent', label: '📉 نقصان نسبة %' },
+        { value: 'set_fixed', label: '🎯 تحديد سعر ثابت' },
+    ];
+    const isPercent = mode.includes('percent');
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-[#1e2532] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="material-symbols-outlined text-amber-400">sell</span>
+                        تعديل أسعار ({count} منتج)
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1.5">نوع التعديل</label>
+                        <select value={mode} onChange={e => setMode(e.target.value)}
+                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-primary outline-none">
+                            {modeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                            {isPercent ? 'النسبة (%)' : 'المبلغ (ج.م)'}
+                        </label>
+                        <input type="number" min="0" value={value} onChange={e => setValue(e.target.value)}
+                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-primary outline-none"
+                            placeholder={isPercent ? 'مثال: 10' : 'مثال: 50'} autoFocus />
+                    </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                    <button onClick={() => { if (!value || isNaN(+value)) { toast.error('أدخل قيمة صحيحة'); return; } onApply(mode, +value); }}
+                        disabled={isPending}
+                        className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+                        {isPending ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <span className="material-symbols-outlined text-[18px]">check</span>}
+                        تطبيق
+                    </button>
+                    <button onClick={onClose} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function StockModal({ count, onClose, onApply, isPending }: {
+    count: number;
+    onClose: () => void;
+    onApply: (mode: string, value: number) => void;
+    isPending: boolean;
+}) {
+    const [mode, setMode] = useState('add');
+    const [value, setValue] = useState('');
+    const modeOptions = [
+        { value: 'add', label: '➕ إضافة كمية' },
+        { value: 'subtract', label: '➖ نقصان كمية' },
+        { value: 'set', label: '🎯 تحديد كمية ثابتة' },
+    ];
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-[#1e2532] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="material-symbols-outlined text-blue-400">inventory_2</span>
+                        تعديل المخزون ({count} منتج)
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1.5">نوع التعديل</label>
+                        <select value={mode} onChange={e => setMode(e.target.value)}
+                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-primary outline-none">
+                            {modeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-slate-400 mb-1.5">الكمية</label>
+                        <input type="number" min="0" value={value} onChange={e => setValue(e.target.value)}
+                            className="w-full h-11 bg-black/20 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-primary outline-none"
+                            placeholder="مثال: 10" autoFocus />
+                    </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                    <button onClick={() => { if (!value || isNaN(+value)) { toast.error('أدخل كمية صحيحة'); return; } onApply(mode, +value); }}
+                        disabled={isPending}
+                        className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+                        {isPending ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <span className="material-symbols-outlined text-[18px]">check</span>}
+                        تطبيق
+                    </button>
+                    <button onClick={onClose} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function CategoryModal({ count, categories: cats, onClose, onApply, isPending }: {
+    count: number;
+    categories: { id: string; name: string; parentId?: string | null; parent?: { name: string } | null }[];
+    onClose: () => void;
+    onApply: (categoryId: string) => void;
+    isPending: boolean;
+}) {
+    const [selectedCat, setSelectedCat] = useState('');
+
+    // Build flat list: parents first, then children grouped under their parent
+    const parents = cats.filter(c => !c.parentId);
+    const children = cats.filter(c => !!c.parentId);
+
+    const orderedList: { id: string; label: string; isChild: boolean }[] = [];
+    parents.forEach(p => {
+        orderedList.push({ id: p.id, label: p.name, isChild: false });
+        children.filter(c => c.parentId === p.id).forEach(c => {
+            orderedList.push({ id: c.id, label: `↳ ${c.name}`, isChild: true });
+        });
+    });
+    // Add any orphan children (parents not in list)
+    children.filter(c => !parents.find(p => p.id === c.parentId)).forEach(c => {
+        orderedList.push({ id: c.id, label: `↳ ${c.name}`, isChild: true });
+    });
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-[#1e2532] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="material-symbols-outlined text-purple-400">category</span>
+                        تغيير التصنيف ({count} منتج)
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5">التصنيف الجديد</label>
+                    {orderedList.length === 0 ? (
+                        <div className="text-slate-500 text-sm py-4 text-center">جاري تحميل التصنيفات...</div>
+                    ) : (
+                        <select
+                            value={selectedCat}
+                            onChange={e => setSelectedCat(e.target.value)}
+                            className="w-full h-11 bg-black/30 border border-white/10 rounded-xl px-4 text-white text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 outline-none appearance-none"
+                            autoFocus
+                        >
+                            <option value="" disabled className="bg-[#1e2532] text-slate-400">-- اختر تصنيفاً --</option>
+                            {orderedList.map(cat => (
+                                <option key={cat.id} value={cat.id} className={`bg-[#1e2532] ${cat.isChild ? 'text-slate-300 pr-4' : 'text-white font-medium'}`}>
+                                    {cat.label}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+                <div className="flex gap-3 mt-6">
+                    <button onClick={() => { if (!selectedCat) { toast.error('اختر تصنيفاً أولاً'); return; } onApply(selectedCat); }}
+                        disabled={isPending}
+                        className="flex-1 flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+                        {isPending ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <span className="material-symbols-outlined text-[18px]">check</span>}
+                        تغيير التصنيف
+                    </button>
+                    <button onClick={onClose} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DeleteConfirmModal({ count, onClose, onConfirm, isPending }: {
+    count: number;
+    onClose: () => void;
+    onConfirm: () => void;
+    isPending: boolean;
+}) {
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-[#1e2532] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-4 mb-5">
+                    <div className="size-14 rounded-full bg-red-500/10 flex items-center justify-center text-red-400">
+                        <span className="material-symbols-outlined text-[32px]">delete_forever</span>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white">تأكيد الحذف الجماعي</h3>
+                        <p className="text-sm text-slate-400 mt-1">هل أنت متأكد من حذف <span className="text-red-400 font-bold">{count} منتج</span>؟</p>
+                    </div>
+                </div>
+                <p className="text-xs text-red-400/80 bg-red-500/10 rounded-lg p-3 mb-6">⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بيانات المنتجات المحددة بشكل نهائي.</p>
+                <div className="flex gap-3">
+                    <button onClick={onConfirm} disabled={isPending}
+                        className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+                        {isPending ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <span className="material-symbols-outlined text-[18px]">delete_forever</span>}
+                        نعم، احذف الكل
+                    </button>
+                    <button onClick={onClose} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ================================================================
+// Product Row
+// ================================================================
 
 interface ProductRowProps {
     product: Product;
@@ -40,7 +257,7 @@ const ProductRow = memo(({
     const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url;
 
     return (
-        <tr className="hover:bg-white/5 transition-colors group">
+        <tr className={`hover:bg-white/5 transition-colors group ${selected ? 'bg-primary/5' : ''}`}>
             <td className="px-6 py-2">
                 <div className="flex items-center">
                     <input
@@ -55,13 +272,7 @@ const ProductRow = memo(({
                 <div className="flex items-center gap-4">
                     <div className="size-12 rounded-lg bg-white/5 p-1 flex-shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
                         {imageUrl && !imageError ? (
-                            <img
-                                src={imageUrl}
-                                alt={product.name}
-                                className="w-full h-full object-cover rounded"
-                                onError={() => setImageError(true)}
-                                loading="lazy"
-                            />
+                            <img src={imageUrl} alt={product.name} className="w-full h-full object-cover rounded" onError={() => setImageError(true)} loading="lazy" />
                         ) : (
                             <span className="material-symbols-outlined text-slate-600 text-[24px]">image_not_supported</span>
                         )}
@@ -106,18 +317,10 @@ const ProductRow = memo(({
             </td>
             <td className="px-6 py-2 text-left">
                 <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={() => onDelete(product)}
-                        className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors"
-                        title="حذف"
-                    >
+                    <button onClick={() => onDelete(product)} className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors" title="حذف">
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
-                    <button
-                        onClick={() => navigate(`/admin/products/${product.id}`)}
-                        className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors"
-                        title="تعديل"
-                    >
+                    <button onClick={() => navigate(`/admin/products/${product.id}`)} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="تعديل">
                         <span className="material-symbols-outlined text-[18px]">edit_square</span>
                     </button>
                     <Link to={`/product/${product.id}`} className="p-2 rounded hover:bg-white/10 hover:text-white text-slate-400 transition-colors" title="معاينة">
@@ -129,14 +332,20 @@ const ProductRow = memo(({
     );
 });
 
+// ================================================================
+// Main Component
+// ================================================================
+
 export function ProductList() {
     const { data: productsData, isLoading, refetch } = useAdminProducts({ limit: 5000 });
     const { data: statsData } = useAdminStats();
+    const categoriesResult = useCategories();
     const [syncModalOpen, setSyncModalOpen] = useState(false);
-    const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const deleteProduct = useDeleteProduct();
     const bulkUpdate = useBulkUpdateProducts();
-    const products = productsData?.data || [];
+    const bulkAction = useBulkAction();
+    const productsList = productsData?.data || [];
+    const allCategories: Category[] = categoriesResult?.categories || [];
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -145,39 +354,29 @@ export function ProductList() {
     const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; product: Product | null }>({ show: false, product: null });
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // Modal states
+    const [showPriceModal, setShowPriceModal] = useState(false);
+    const [showStockModal, setShowStockModal] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+
     // Inline Editing State
     const [editedProducts, setEditedProducts] = useState<Record<string, { price?: string; stock?: number }>>({});
-
     const hasChanges = Object.keys(editedProducts).length > 0;
 
     const handleEditChange = useCallback((id: string, field: 'price' | 'stock', value: string) => {
         setEditedProducts(prev => {
             const current = prev[id] || {};
-            return {
-                ...prev,
-                [id]: {
-                    ...current,
-                    [field]: field === 'stock' ? parseInt(value) || 0 : value
-                }
-            };
+            return { ...prev, [id]: { ...current, [field]: field === 'stock' ? parseInt(value) || 0 : value } };
         });
     }, []);
 
     const handleSaveAll = async () => {
-        const updates = Object.entries(editedProducts).map(([id, data]) => ({
-            id,
-            ...data
-        }));
+        const updates = Object.entries(editedProducts).map(([id, data]) => ({ id, ...data }));
         try {
             await bulkUpdate.mutateAsync(updates);
             setEditedProducts({});
-        } catch (err) {
-            console.error('Failed to bulk update:', err);
-        }
-    };
-
-    const handleDiscard = () => {
-        setEditedProducts({});
+        } catch (err) { console.error('Failed to bulk update:', err); }
     };
 
     const handleDelete = async () => {
@@ -185,9 +384,7 @@ export function ProductList() {
             try {
                 await deleteProduct.mutateAsync(deleteConfirm.product.id);
                 setDeleteConfirm({ show: false, product: null });
-            } catch (error) {
-                console.error('Failed to delete product:', error);
-            }
+            } catch (error) { console.error('Failed to delete product:', error); }
         }
     };
 
@@ -202,11 +399,8 @@ export function ProductList() {
     const toggleSelect = useCallback((id: string) => {
         setSelectedIds(prev => {
             const newSelected = new Set(prev);
-            if (newSelected.has(id)) {
-                newSelected.delete(id);
-            } else {
-                newSelected.add(id);
-            }
+            if (newSelected.has(id)) newSelected.delete(id);
+            else newSelected.add(id);
             return newSelected;
         });
     }, []);
@@ -215,31 +409,42 @@ export function ProductList() {
         setDeleteConfirm({ show: true, product });
     }, []);
 
+    // Bulk action helpers
+    const selectedIdsArr = Array.from(selectedIds);
+
+    const executeBulkAction = async (action: string, payload?: any) => {
+        await bulkAction.mutateAsync({ ids: selectedIdsArr, action: action as any, payload });
+        setSelectedIds(new Set());
+    };
+
+    const handleBulkShow = () => executeBulkAction('show');
+    const handleBulkHide = () => executeBulkAction('hide');
     const handleBulkDelete = async () => {
-        if (window.confirm(`هل أنت متأكد من حذف ${selectedIds.size} منتجات؟`)) {
-            try {
-                for (const id of Array.from(selectedIds)) {
-                    await deleteProduct.mutateAsync(id);
-                }
-                setSelectedIds(new Set());
-                toast.success('تم حذف المنتجات المحددة بنجاح');
-            } catch (error) {
-                console.error('Failed to bulk delete:', error);
-            }
-        }
+        await executeBulkAction('delete');
+        setShowBulkDeleteModal(false);
+    };
+    const handleBulkPrice = async (mode: string, value: number) => {
+        await executeBulkAction('price', { priceMode: mode, priceValue: value });
+        setShowPriceModal(false);
+    };
+    const handleBulkStock = async (mode: string, value: number) => {
+        await executeBulkAction('stock', { stockMode: mode, stockValue: value });
+        setShowStockModal(false);
+    };
+    const handleBulkCategory = async (categoryId: string) => {
+        await executeBulkAction('category', { categoryId });
+        setShowCategoryModal(false);
     };
 
     // Calculate stats
-    const totalProducts = products.length;
-    const totalValue = products.reduce((sum, p) => sum + (parseFloat(p.price) * p.stock), 0);
-    const lowStockCount = products.filter(p => p.stock < 10 && p.stock > 0).length;
+    const totalProducts = productsList.length;
+    const totalValue = productsList.reduce((sum, p) => sum + (parseFloat(p.price) * p.stock), 0);
+    const lowStockCount = productsList.filter(p => p.stock < 10 && p.stock > 0).length;
 
-    // Unique categories from data
-    const categories = [...new Set(products.map(p => p.category?.name).filter(Boolean))];
+    const categories = [...new Set(productsList.map(p => p.category?.name).filter(Boolean))];
 
-    // Unified Filter and Sort Logic
-    const filteredAndSortedProducts = useMemo(() => {
-        let result = products.filter((product) => {
+    const filteredProducts = useMemo(() => {
+        let result = productsList.filter((product) => {
             const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (product.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
             const matchesCategory = selectedCategory === '' || product.category?.name === selectedCategory;
@@ -248,28 +453,16 @@ export function ProductList() {
         });
 
         result.sort((a, b) => {
-            if (sortBy === 'name') {
-                return a.name.localeCompare(b.name, 'ar');
-            }
-            if (sortBy === 'price_asc') {
-                return parseFloat(a.price) - parseFloat(b.price);
-            }
-            if (sortBy === 'price_desc') {
-                return parseFloat(b.price) - parseFloat(a.price);
-            }
-            if (sortBy === 'newest') {
-                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-            }
-            if (sortBy === 'oldest') {
-                return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-            }
+            if (sortBy === 'name') return a.name.localeCompare(b.name, 'ar');
+            if (sortBy === 'price_asc') return parseFloat(a.price) - parseFloat(b.price);
+            if (sortBy === 'price_desc') return parseFloat(b.price) - parseFloat(a.price);
+            if (sortBy === 'newest') return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            if (sortBy === 'oldest') return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
             return 0;
         });
 
         return result;
-    }, [products, searchQuery, selectedCategory, selectedStatus, sortBy]);
-
-    const filteredProducts = filteredAndSortedProducts;
+    }, [productsList, searchQuery, selectedCategory, selectedStatus, sortBy]);
 
     if (isLoading) {
         return (
@@ -283,6 +476,8 @@ export function ProductList() {
             </div>
         );
     }
+
+    const isBulkPending = bulkAction.isPending;
 
     return (
         <div className="flex flex-col gap-6">
@@ -308,8 +503,6 @@ export function ProductList() {
                         <h3 className="text-xl font-bold text-white">{statsData?.totalProducts || totalProducts} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
                     </div>
                 </div>
-
-                {/* Visible Products */}
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
                     <div className="size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
                         <span className="material-symbols-outlined text-[28px]">visibility</span>
@@ -319,8 +512,6 @@ export function ProductList() {
                         <h3 className="text-xl font-bold text-white">{statsData?.activeProducts || 0} <span className="text-xs text-slate-500 font-normal">منتج</span></h3>
                     </div>
                 </div>
-
-                {/* Hidden Products */}
                 <div className="glass-panel rounded-xl p-5 flex items-center gap-4">
                     <div className="size-12 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-400">
                         <span className="material-symbols-outlined text-[28px]">visibility_off</span>
@@ -357,38 +548,17 @@ export function ProductList() {
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
                             <span className="material-symbols-outlined text-[20px]">search</span>
                         </div>
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="بحث باسم المنتج، SKU..."
-                            className="block w-full h-10 pr-10 pl-4 rounded-lg bg-white/5 border border-white/5 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all"
-                        />
+                            className="block w-full h-10 pr-10 pl-4 rounded-lg bg-white/5 border border-white/5 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-primary focus:border-primary/50 transition-all" />
                     </div>
-                    <CustomSelect
-                        value={selectedCategory}
-                        onChange={setSelectedCategory}
-                        options={[
-                            { value: '', label: 'جميع الأقسام' },
-                            ...categories.filter((cat): cat is string => !!cat).map(cat => ({ value: cat, label: cat }))
-                        ]}
-                        placeholder="جميع الأقسام"
-                        className="w-full md:w-48"
-                    />
-                    <CustomSelect
-                        value={selectedStatus}
-                        onChange={setSelectedStatus}
-                        options={[
-                            { value: '', label: 'الحالة: الكل' },
-                            { value: 'active', label: 'نشط' },
-                            { value: 'draft', label: 'غير نشط' }
-                        ]}
-                        placeholder="الحالة: الكل"
-                        className="w-full md:w-40"
-                    />
-                    <CustomSelect
-                        value={sortBy}
-                        onChange={setSortBy}
+                    <CustomSelect value={selectedCategory} onChange={setSelectedCategory}
+                        options={[{ value: '', label: 'جميع الأقسام' }, ...categories.filter((cat): cat is string => !!cat).map(cat => ({ value: cat, label: cat }))]}
+                        placeholder="جميع الأقسام" className="w-full md:w-48" />
+                    <CustomSelect value={selectedStatus} onChange={setSelectedStatus}
+                        options={[{ value: '', label: 'الحالة: الكل' }, { value: 'active', label: 'نشط' }, { value: 'draft', label: 'غير نشط' }]}
+                        placeholder="الحالة: الكل" className="w-full md:w-40" />
+                    <CustomSelect value={sortBy} onChange={setSortBy}
                         options={[
                             { value: 'name', label: 'الاسم (أ-ي)' },
                             { value: 'price_asc', label: 'السعر: من الأقل' },
@@ -396,38 +566,16 @@ export function ProductList() {
                             { value: 'newest', label: 'الأحدث أولاً' },
                             { value: 'oldest', label: 'الأقدم أولاً' }
                         ]}
-                        placeholder="ترتيب حسب"
-                        className="w-full md:w-44"
-                        icon="sort"
-                    />
+                        placeholder="ترتيب حسب" className="w-full md:w-44" icon="sort" />
                 </div>
                 <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
-                    {selectedIds.size > 0 && (
-                        <>
-                            <button
-                                onClick={() => setBulkModalOpen(true)}
-                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">tune</span>
-                                <span className="whitespace-nowrap">إجراءات متعددة ({selectedIds.size})</span>
-                            </button>
-                            <button
-                                onClick={handleBulkDelete}
-                                className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-bold border border-red-500/20 transition-all"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">delete_sweep</span>
-                                <span className="whitespace-nowrap">حذف المختار ({selectedIds.size})</span>
-                            </button>
-                        </>
-                    )}
-                    <button
-                        onClick={() => setSyncModalOpen(true)}
-                        className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold border border-emerald-500/20 transition-all"
-                    >
+                    <button onClick={() => setSyncModalOpen(true)}
+                        className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-sm font-bold border border-emerald-500/20 transition-all">
                         <span className="material-symbols-outlined text-[20px]">sync</span>
                         <span>تحديث المخزون (Excel)</span>
                     </button>
-                    <Link to="/admin/products/add" className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all w-full md:w-auto">
+                    <Link to="/admin/products/add"
+                        className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all w-full md:w-auto">
                         <span className="material-symbols-outlined text-[20px]">add</span>
                         <span>إضافة منتج</span>
                     </Link>
@@ -442,12 +590,10 @@ export function ProductList() {
                             <tr>
                                 <th className="px-6 py-3 w-10">
                                     <div className="flex items-center">
-                                        <input
-                                            type="checkbox"
+                                        <input type="checkbox"
                                             checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
                                             onChange={toggleSelectAll}
-                                            className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer"
-                                        />
+                                            className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer" />
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 whitespace-nowrap">المنتج</th>
@@ -492,7 +638,80 @@ export function ProductList() {
                 </div>
             </div>
 
-            {/* Action Toolbar (Sticky) */}
+            {/* ============================================================ */}
+            {/* BULK ACTIONS TOOLBAR (Sticky Bottom) */}
+            {/* ============================================================ */}
+            {selectedIds.size > 0 && !hasChanges && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-8 duration-300 w-max max-w-[95vw]">
+                    <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex items-center gap-1.5 shadow-2xl ring-1 ring-white/5 overflow-x-auto">
+                        {/* Selection Badge */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 border-l border-white/10 ml-1 shrink-0">
+                            <div className="size-2 rounded-full bg-primary animate-pulse"></div>
+                            <span className="text-sm font-bold text-white whitespace-nowrap">{selectedIds.size} محدد</span>
+                        </div>
+
+                        {/* Show */}
+                        <button onClick={handleBulkShow} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="إظهار المحدد">
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                            <span>إظهار</span>
+                        </button>
+
+                        {/* Hide */}
+                        <button onClick={handleBulkHide} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-slate-500/20 text-slate-400 hover:text-slate-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="إخفاء المحدد">
+                            <span className="material-symbols-outlined text-[18px]">visibility_off</span>
+                            <span>إخفاء</span>
+                        </button>
+
+                        <div className="h-6 w-px bg-white/10 mx-0.5 shrink-0" />
+
+                        {/* Price */}
+                        <button onClick={() => setShowPriceModal(true)} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="تعديل الأسعار">
+                            <span className="material-symbols-outlined text-[18px]">sell</span>
+                            <span>تعديل الأسعار</span>
+                        </button>
+
+                        {/* Stock */}
+                        <button onClick={() => setShowStockModal(true)} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="تعديل المخزون">
+                            <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+                            <span>تعديل المخزون</span>
+                        </button>
+
+                        {/* Category */}
+                        <button onClick={() => setShowCategoryModal(true)} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="تغيير التصنيف">
+                            <span className="material-symbols-outlined text-[18px]">category</span>
+                            <span>تغيير التصنيف</span>
+                        </button>
+
+                        <div className="h-6 w-px bg-white/10 mx-0.5 shrink-0" />
+
+                        {/* Delete */}
+                        <button onClick={() => setShowBulkDeleteModal(true)} disabled={isBulkPending}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-bold transition-all disabled:opacity-50 shrink-0"
+                            title="حذف المحدد">
+                            <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+                            <span>حذف</span>
+                        </button>
+
+                        {/* Close/Deselect */}
+                        <button onClick={() => setSelectedIds(new Set())}
+                            className="mr-1 p-1.5 rounded-xl hover:bg-white/10 text-slate-500 hover:text-white transition-all shrink-0">
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Inline Edits Toolbar */}
             {hasChanges && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-8 duration-300">
                     <div className="bg-slate-900/90 backdrop-blur-xl border border-primary/20 rounded-2xl p-2 pl-6 flex items-center gap-4 shadow-2xl shadow-primary/20 ring-1 ring-white/10">
@@ -501,28 +720,14 @@ export function ProductList() {
                             <span className="text-sm font-bold text-white whitespace-nowrap">لديك {Object.keys(editedProducts).length} تعديلات غير محفوظة</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleDiscard}
-                                disabled={bulkUpdate.isPending}
-                                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 text-sm font-bold transition-all disabled:opacity-50"
-                            >
-                                تجاهل
-                            </button>
-                            <button
-                                onClick={handleSaveAll}
-                                disabled={bulkUpdate.isPending}
-                                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold transition-all shadow-lg shadow-primary/30 flex items-center gap-2 disabled:opacity-50"
-                            >
+                            <button onClick={() => setEditedProducts({})} disabled={bulkUpdate.isPending}
+                                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 text-sm font-bold transition-all disabled:opacity-50">تجاهل</button>
+                            <button onClick={handleSaveAll} disabled={bulkUpdate.isPending}
+                                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary-dark text-white text-sm font-bold transition-all shadow-lg shadow-primary/30 flex items-center gap-2 disabled:opacity-50">
                                 {bulkUpdate.isPending ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        جاري الحفظ...
-                                    </>
+                                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> جاري الحفظ...</>
                                 ) : (
-                                    <>
-                                        <span className="material-symbols-outlined text-[18px]">save</span>
-                                        حفظ التعديلات
-                                    </>
+                                    <><span className="material-symbols-outlined text-[18px]">save</span> حفظ التعديلات</>
                                 )}
                             </button>
                         </div>
@@ -530,7 +735,11 @@ export function ProductList() {
                 </div>
             )}
 
-            {/* Delete Confirmation Dialog */}
+            {/* ============================================================ */}
+            {/* MODALS */}
+            {/* ============================================================ */}
+
+            {/* Single-Product Delete Confirmation */}
             {deleteConfirm.show && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="glass-panel rounded-xl p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
@@ -548,28 +757,16 @@ export function ProductList() {
                             <p className="text-xs text-slate-500">SKU: {deleteConfirm.product?.sku || 'N/A'}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button
-                                onClick={handleDelete}
-                                disabled={deleteProduct.isPending}
-                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2"
-                            >
+                            <button onClick={handleDelete} disabled={deleteProduct.isPending}
+                                className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2">
                                 {deleteProduct.isPending ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        جاري الحذف...
-                                    </>
+                                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> جاري الحذف...</>
                                 ) : (
-                                    <>
-                                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                                        نعم، احذف المنتج
-                                    </>
+                                    <><span className="material-symbols-outlined text-[18px]">delete</span> نعم، احذف المنتج</>
                                 )}
                             </button>
-                            <button
-                                onClick={() => setDeleteConfirm({ show: false, product: null })}
-                                disabled={deleteProduct.isPending}
-                                className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border border-white/10"
-                            >
+                            <button onClick={() => setDeleteConfirm({ show: false, product: null })} disabled={deleteProduct.isPending}
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border border-white/10">
                                 إلغاء
                             </button>
                         </div>
@@ -577,29 +774,25 @@ export function ProductList() {
                 </div>
             )}
 
-            {/* Inventory Sync Modal */}
-            <InventorySyncModal
-                isOpen={syncModalOpen}
-                onClose={() => setSyncModalOpen(false)}
-                onSuccess={() => refetch()}
-            />
+            {/* Bulk Price Modal */}
+            {showPriceModal && (
+                <PriceModal count={selectedIds.size} onClose={() => setShowPriceModal(false)} onApply={handleBulkPrice} isPending={isBulkPending} />
+            )}
+            {/* Bulk Stock Modal */}
+            {showStockModal && (
+                <StockModal count={selectedIds.size} onClose={() => setShowStockModal(false)} onApply={handleBulkStock} isPending={isBulkPending} />
+            )}
+            {/* Bulk Category Modal */}
+            {showCategoryModal && (
+                <CategoryModal count={selectedIds.size} categories={allCategories} onClose={() => setShowCategoryModal(false)} onApply={handleBulkCategory} isPending={isBulkPending} />
+            )}
+            {/* Bulk Delete Confirm */}
+            {showBulkDeleteModal && (
+                <DeleteConfirmModal count={selectedIds.size} onClose={() => setShowBulkDeleteModal(false)} onConfirm={handleBulkDelete} isPending={isBulkPending} />
+            )}
 
-            {/* Bulk Actions Modal */}
-            <BulkActionsModal
-                isOpen={bulkModalOpen}
-                onClose={() => setBulkModalOpen(false)}
-                selectedProducts={filteredProducts.filter(p => selectedIds.has(p.id))}
-                isUpdating={bulkUpdate.isPending}
-                onApply={async (updates) => {
-                    try {
-                        await bulkUpdate.mutateAsync(updates);
-                        setBulkModalOpen(false);
-                        setSelectedIds(new Set());
-                    } catch (error) {
-                        console.error('Failed to apply bulk updates', error);
-                    }
-                }}
-            />
+            {/* Inventory Sync Modal */}
+            <InventorySyncModal isOpen={syncModalOpen} onClose={() => setSyncModalOpen(false)} onSuccess={() => refetch()} />
         </div>
     );
 }
