@@ -112,9 +112,10 @@ export class ModelDiscoveryService {
     private static getFallbackModels(): string[] {
         console.log('⚠️ Using fallback model list');
         return [
+            'gemini-2.5-flash',
+            'gemini-2.0-flash',
             'gemini-1.5-flash',
-            'gemini-1.5-pro',
-            'gemini-pro'
+            'gemini-1.5-pro'
         ];
     }
 

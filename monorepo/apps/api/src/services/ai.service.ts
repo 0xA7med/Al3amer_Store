@@ -20,9 +20,10 @@ export class AIService {
 
     // Fallback models if discovery fails
     private static FALLBACK_MODELS = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
         "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-pro"
+        "gemini-1.5-pro"
     ];
 
     constructor(apiKey: string) {
@@ -124,7 +125,7 @@ Rules:
             return clean;
         };
 
-        let lastError: any = null;
+        let errors: string[] = [];
         const forcedModel = modelsToTry[0];
 
         console.log(`🤖 AI: Using discovered model: ${forcedModel}`);
@@ -144,11 +145,11 @@ Rules:
                 return JSON.parse(sanitizeJsonText(text));
             } catch (parseError) {
                 console.error(`AI JSON Parse Error with model ${forcedModel}:`, text);
-                throw new Error('AI returned invalid JSON format');
+                throw new Error(`AI returned invalid JSON format when using ${forcedModel}`);
             }
         } catch (error: any) {
             console.warn(`⚠️ Primary model ${forcedModel} failed: ${error.message}. Entering waterfall...`);
-            lastError = error;
+            errors.push(`${forcedModel}: ${error.message}`);
 
             // Waterfall through remaining models
             for (const modelName of modelsToTry.slice(1)) {
@@ -161,15 +162,21 @@ Rules:
                     });
 
                     if (response.text) {
-                        return JSON.parse(sanitizeJsonText(response.text));
+                        try {
+                            return JSON.parse(sanitizeJsonText(response.text));
+                        } catch (parseError) {
+                            throw new Error(`Invalid JSON returned from ${modelName}`);
+                        }
+                    } else {
+                        throw new Error("Empty response");
                     }
                 } catch (fallbackError: any) {
-                    lastError = fallbackError;
                     console.warn(`⚠️ Fallback ${modelName} failed: ${fallbackError.message}`);
+                    errors.push(`${modelName}: ${fallbackError.message}`);
                     continue;
                 }
             }
-            throw new Error(`All AI models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+            throw new Error(`All AI models failed. Errors: ${errors.join(' | ')}`);
         }
     }
 }
