@@ -102,7 +102,13 @@ export class ProductsController {
                 limit: limitNum,
                 offset,
                 with: {
-                    category: true,
+                    category: {
+                        with: {
+                            parent: {
+                                with: { parent: true }
+                            }
+                        }
+                    },
                     brand: true,
                     images: {
                         orderBy: (images, { asc }) => [asc(images.sortOrder)],
@@ -184,7 +190,13 @@ export class ProductsController {
             const product = await db.query.products.findFirst({
                 where: condition,
                 with: {
-                    category: true,
+                    category: {
+                        with: {
+                            parent: {
+                                with: { parent: true }
+                            }
+                        }
+                    },
                     brand: true,
                     images: {
                         orderBy: (images, { asc }) => [asc(images.sortOrder)],

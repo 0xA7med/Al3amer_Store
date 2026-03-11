@@ -195,11 +195,8 @@ export function AddProduct() {
     // ---- Derived ----
     const categoryOptions = useMemo(() => buildCategoryOptions(categoriesList), [categoriesList]);
 
-    const showHardwareSpecs = useMemo(() => {
-        const cat = categoriesList.find((c: any) => c.id === formData.category);
-        const hardwareSlugs = ['pos', 'printers', 'scanners', 'scales', 'drawers', 'pos-systems'];
-        return hardwareSlugs.includes(cat?.slug) || cat?.slug?.includes('print') || cat?.slug?.includes('scan');
-    }, [formData.category, categoriesList]);
+    // Hardware specs are always shown — this is a hardware/POS store
+    const showHardwareSpecs = true;
 
     // ---- Handlers ----
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

@@ -23,7 +23,19 @@ export interface Product {
     categoryId?: string | null;
     brandId?: string | null;
     cost?: string | null;
-    category: { id: string; name: string; slug: string } | null;
+    category: {
+        id: string;
+        name: string;
+        slug: string;
+        parentId?: string | null;
+        parent?: {
+            id: string;
+            name: string;
+            slug: string;
+            parentId?: string | null;
+            parent?: { id: string; name: string; slug: string } | null;
+        } | null;
+    } | null;
     brand: { id: string; name: string } | null;
     images: { id: string; url: string; isPrimary: boolean }[];
     specifications?: any;
@@ -32,6 +44,7 @@ export interface Product {
     reviewCount?: number;
     averageRating?: number;
     supportPhone?: string;
+    createdAt?: string;
     reviews?: {
         id: string;
         rating: number;

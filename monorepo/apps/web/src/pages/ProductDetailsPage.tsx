@@ -139,16 +139,31 @@ export const ProductDetailsPage = () => {
                             الرئيسية
                         </Link>
                     </li>
-                    {product.category && (
-                        <li>
-                            <div className="flex items-center">
-                                <ChevronLeft className="w-4 h-4 text-slate-600 mx-2 rtl:rotate-180" />
-                                <Link to={`/shop?category=${product.category.slug}`} className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">
-                                    {product.category.name}
-                                </Link>
-                            </div>
-                        </li>
-                    )}
+                    {/* Build full breadcrumb chain from category ancestry */}
+                    {(() => {
+                        const crumbs: { name: string; slug: string }[] = [];
+                        if (product.category) {
+                            // Walk up the parent chain
+                            const cat = product.category as any;
+                            if (cat.parent?.parent) {
+                                crumbs.push({ name: cat.parent.parent.name, slug: cat.parent.parent.slug });
+                            }
+                            if (cat.parent) {
+                                crumbs.push({ name: cat.parent.name, slug: cat.parent.slug });
+                            }
+                            crumbs.push({ name: cat.name, slug: cat.slug });
+                        }
+                        return crumbs.map((crumb, idx) => (
+                            <li key={idx}>
+                                <div className="flex items-center">
+                                    <ChevronLeft className="w-4 h-4 text-slate-600 mx-2 rtl:rotate-180" />
+                                    <Link to={`/shop?categories=${crumb.slug}`} className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">
+                                        {crumb.name}
+                                    </Link>
+                                </div>
+                            </li>
+                        ));
+                    })()}
                     <li aria-current="page">
                         <div className="flex items-center">
                             <ChevronLeft className="w-4 h-4 text-slate-600 mx-2 rtl:rotate-180" />
@@ -294,9 +309,9 @@ export const ProductDetailsPage = () => {
                         </div>
                     </div>
 
-                    <p className="text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic">
+                    <div className="text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic" style={{ whiteSpace: 'pre-line' }}>
                         {product.description || 'وصف المنتج غير متاح حالياً، يرجى مراجعة المواصفات الفنية.'}
-                    </p>
+                    </div>
 
                     <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-col gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red via-primary to-brand-red opacity-50"></div>
