@@ -48,6 +48,46 @@ function buildCategoryOptions(list: any[]): CategoryOption[] {
 }
 
 // =========================================================
+// Image Compression Helper
+// =========================================================
+const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1080;
+                const MAX_HEIGHT = 1080;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+                // Compress to WebP or JPEG
+                resolve(canvas.toDataURL('image/webp', 0.8));
+            };
+        };
+    });
+};
+
+// =========================================================
 // Main Component
 // =========================================================
 export function AddProduct() {
@@ -487,15 +527,23 @@ export function AddProduct() {
                                             multiple
                                             className="hidden"
                                             id="image-upload"
-                                            onChange={(e) => {
+                                            onChange={async (e) => {
                                                 if (e.target.files && e.target.files.length > 0) {
-                                                    Array.from(e.target.files).forEach(file => {
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => {
-                                                            setImages(prev => [...prev, { url: reader.result as string, isPrimary: prev.length === 0 }]);
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                    });
+                                                    const files = Array.from(e.target.files);
+                                                    for (const file of files) {
+                                                        try {
+                                                            const compressedBase64 = await compressImage(file);
+                                                            setImages(prev => [...prev, { url: compressedBase64, isPrimary: prev.length === 0 }]);
+                                                        } catch (error) {
+                                                            console.error('Error compressing image:', error);
+                                                            // Fallback to raw if compression fails
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                setImages(prev => [...prev, { url: reader.result as string, isPrimary: prev.length === 0 }]);
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }
                                                 }
                                             }}
                                         />

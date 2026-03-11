@@ -85,14 +85,14 @@ Your task is to write a highly professional, well-structured product description
 4. **STRUCTURED FORMATTING:**
    - Start with a clear, direct, and professional 1-2 sentence overview of the product.
    - Follow it with a bulleted list of 3-5 key features. Use standard dashes (-) for bullets.
-   - Use newlines (\\n) strictly for layout to separate the overview from the bullet points.
+   - Use the literal characters "\\n" (backslash followed by n) to separate the overview from the bullet points. Do NOT output an actual unescaped line break inside the JSON string.
 5. The title should be clean, professional, and optimized for search.
 6. Tags should be relevant Arabic search keywords (e.g. كاشير, طابعة فواتير).
 
 Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
 {
   "title": "عنوان احترافي للمنتج",
-  "description": "نظرة عامة احترافية على المنتج...\\n\\n- الميزة الأولى...\\n- الميزة الثانية...\\n- الميزة الثالثة...",
+  "description": "نظرة عامة احترافية على المنتج...\\\\n\\\\n- الميزة الأولى...\\\\n- الميزة الثانية...\\\\n- الميزة الثالثة...",
   "slug": "english-seo-friendly-slug",
   "metaTitle": "عنوان الميتا محسّن للسيو",
   "metaDescription": "وصف الميتا المكون من 150 حرف كحد أقصى",
@@ -105,7 +105,7 @@ Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
 
 Rules:
 - title: ${langInst}, clean and professional, max 80 chars.
-- description: ${langInst}, plain text only, must include an overview paragraph followed by a bulleted list (using dashes -) of key features. NO EMOJIS.
+- description: ${langInst}, plain text only, must include an overview paragraph followed by a bulleted list (using dashes -) of key features. Use literal "\\n" for line breaks. NO EMOJIS.
 - slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars.
 - metaTitle: ${langInst}, professional SEO title, max 60 chars.
 - metaDescription: ${langInst}, professional SEO description, max 160 chars.
