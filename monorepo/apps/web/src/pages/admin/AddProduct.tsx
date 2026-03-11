@@ -133,8 +133,6 @@ export function AddProduct() {
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
-    const [selectedConnectivity, setSelectedConnectivity] = useState<string[]>([]);
-    const [selectedUsage, setSelectedUsage] = useState<string[]>([]);
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
@@ -179,12 +177,6 @@ export function AddProduct() {
             const finalSpecs = flattenSpecs(productData.specifications);
             setSpecs(finalSpecs.length > 0 ? finalSpecs : [makeSpec('المعالج'), makeSpec('الذاكرة')]);
 
-            const connSpec = finalSpecs.find(s => s.key === 'connectivity' || s.key === 'اتصال')?.value;
-            if (connSpec) setSelectedConnectivity(connSpec.split(',').map(s => s.trim()));
-
-            const usageSpec = finalSpecs.find(s => s.key === 'usage' || s.key === 'الاستخدام')?.value;
-            if (usageSpec) setSelectedUsage(usageSpec.split(',').map(s => s.trim()));
-
             if (productData.tags) setTags(productData.tags);
             if (productData.images) {
                 setImages(productData.images.map((img: any) => ({ url: img.url, isPrimary: img.isPrimary })));
@@ -195,11 +187,7 @@ export function AddProduct() {
     // ---- Derived ----
     const categoryOptions = useMemo(() => buildCategoryOptions(categoriesList), [categoriesList]);
 
-    const showHardwareSpecs = useMemo(() => {
-        const cat = categoriesList.find((c: any) => c.id === formData.category);
-        const hardwareSlugs = ['pos', 'printers', 'scanners', 'scales', 'drawers', 'pos-systems'];
-        return hardwareSlugs.includes(cat?.slug) || cat?.slug?.includes('print') || cat?.slug?.includes('scan');
-    }, [formData.category, categoriesList]);
+    // ---- Handlers ----
 
     // ---- Handlers ----
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -294,11 +282,8 @@ export function AddProduct() {
     // ---- Submit ----
     const handleSubmit = async () => {
         const finalSpecs = specs
-            .filter(s => s.key && s.value && s.key !== 'connectivity' && s.key !== 'اتصال' && s.key !== 'usage' && s.key !== 'الاستخدام')
+            .filter(s => s.key && s.value)
             .map(({ key, value }) => ({ key, value }));
-
-        if (selectedConnectivity.length > 0) finalSpecs.push({ key: 'connectivity', value: selectedConnectivity.join(', ') });
-        if (selectedUsage.length > 0) finalSpecs.push({ key: 'usage', value: selectedUsage.join(', ') });
 
         const payload = {
             ...formData,
@@ -722,47 +707,6 @@ export function AddProduct() {
                                 )}
                             </div>
 
-                            {/* Hardware Props (Conditional) */}
-                            {showHardwareSpecs && (
-                                <div className="glass-card border-t-2 border-t-blue-500/30">
-                                    <div className="card-header">
-                                        <span className="material-symbols-outlined text-blue-400">settings_input_component</span>
-                                        <h3>خصائص الهاردوير</h3>
-                                    </div>
-                                    <div className="space-y-6">
-                                        <div>
-                                            <label className="field-label mb-3">خيارات الاتصال (Connectivity)</label>
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                                {['USB', 'Bluetooth', 'Wi-Fi', 'Ethernet', 'RS232', 'RJ11'].map(conn => (
-                                                    <button
-                                                        key={conn}
-                                                        type="button"
-                                                        onClick={() => setSelectedConnectivity(prev => prev.includes(conn) ? prev.filter(c => c !== conn) : [...prev, conn])}
-                                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${selectedConnectivity.includes(conn) ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'}`}
-                                                    >
-                                                        {conn}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="field-label mb-3">نمط الاستخدام (Usage)</label>
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                                {['Handheld', 'Desktop', 'Industrial', 'Mobile', 'Wall Mount'].map(usage => (
-                                                    <button
-                                                        key={usage}
-                                                        type="button"
-                                                        onClick={() => setSelectedUsage(prev => prev.includes(usage) ? prev.filter(u => u !== usage) : [...prev, usage])}
-                                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${selectedUsage.includes(usage) ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'}`}
-                                                    >
-                                                        {usage}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* ========== SIDE COLUMN (Left in RTL) ========== */}

@@ -79,7 +79,13 @@ export class ProductsController {
                     where: inArray(categories.slug, categorySlugs),
                 });
                 if (cats.length > 0) {
-                    conditions.push(inArray(products.categoryId, cats.map(c => c.id)));
+                    const catIds = cats.map(c => c.id);
+                    // Find subcategories to include products from them too
+                    const children = await db.query.categories.findMany({
+                        where: inArray(categories.parentId, catIds)
+                    });
+                    const allCatIds = [...catIds, ...children.map(c => c.id)];
+                    conditions.push(inArray(products.categoryId, allCatIds));
                 }
             }
 
