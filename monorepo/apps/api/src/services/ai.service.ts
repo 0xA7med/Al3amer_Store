@@ -129,15 +129,10 @@ Rules:
 
         console.log(`🤖 AI: Using discovered model: ${forcedModel}`);
 
-        const genConfig = {
-            responseMimeType: 'application/json',
-        };
-
         try {
             const response = await this.client.models.generateContent({
                 model: forcedModel,
-                contents: prompt,
-                config: genConfig
+                contents: prompt
             });
 
             const text = response.text;
@@ -162,8 +157,7 @@ Rules:
 
                     const response = await this.client.models.generateContent({
                         model: modelName,
-                        contents: prompt,
-                        config: genConfig
+                        contents: prompt
                     });
 
                     if (response.text) {
