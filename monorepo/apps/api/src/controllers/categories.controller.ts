@@ -72,16 +72,21 @@ export class CategoriesController {
             const { id } = req.params;
             const { name, parentId, image, icon, isActive, isFeatured, slug } = req.body;
 
+            const updateData: any = {};
+            if (name !== undefined) updateData.name = name;
+            if (slug !== undefined) updateData.slug = slug;
+            if (parentId !== undefined) updateData.parentId = parentId; // Can be null to remove parent
+            if (image !== undefined) updateData.image = image;
+            if (icon !== undefined) updateData.icon = icon;
+            if (isActive !== undefined) updateData.isActive = isActive;
+            if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+
+            if (Object.keys(updateData).length === 0) {
+                return res.json({ message: 'No fields to update' });
+            }
+
             const [updatedCategory] = await db.update(categories)
-                .set({
-                    name,
-                    slug, // Allow updating slug
-                    parentId: parentId || null,
-                    image,
-                    icon,
-                    isActive,
-                    isFeatured,
-                })
+                .set(updateData)
                 .where(eq(categories.id, id))
                 .returning();
 

@@ -69,31 +69,33 @@ export class AIService {
         const lengthGuide = length === 'short' ? '2-3 sentences' : length === 'long' ? '6-8 sentences' : '4-5 sentences';
 
         const prompt = `
-You are a top-tier Egyptian e-commerce copywriter who writes highly converting product listings for the Egyptian market.
-You specialize in POS systems, retail technology, and electronics sold in Egypt.
+You are a highly professional B2B e-commerce product manager writing product listings for an Egyptian POS and retail electronics store.
 
 Product Name: "${productName}"
 Language: ${langInst}
-Tone: ${tone}
+Tone: Professional, direct, informative, and technical.
 Description Length: ${lengthGuide}
 
-Your task: Write a catchy, highly-converting product title and a compelling product description for this product.
+Your task is to write a highly professional, well-structured product description.
 
 **STRICT RULES:**
-1. **ABSOLUTELY NO HTML TAGS.** No <h3>, <p>, <ul>, <li>, <br>, or any HTML. Use ONLY plain text.
-2. Use newlines (\\n) to separate paragraphs and sections.
-3. Use e-commerce emojis to make the description pop: ✅, 🚀, 🛡️, 💡, ⭐, 🔥, 💰, 📦, ✨
-4. Write in a persuasive, benefit-driven style that appeals to Egyptian business owners and shoppers.
-5. The title should be catchy, include the brand/model if apparent, and be optimized for search.
-6. Tags should be relevant Arabic search keywords that Egyptian customers would use.
+1. **ABSOLUTELY NO EMOJIS.** Do not use emojis anywhere in the response.
+2. **NO CHEAP MARKETING SLOGANS.** Avoid phrases like "هل سئمت من..." or "اطلبها الآن...". Stay objective, professional, and focus on value and technical capabilities.
+3. **ABSOLUTELY NO HTML TAGS.** No <h3>, <p>, <ul>, <li>, <br>, or any HTML.
+4. **STRUCTURED FORMATTING:**
+   - Start with a clear, direct, and professional 1-2 sentence overview of the product.
+   - Follow it with a bulleted list of 3-5 key features. Use standard dashes (-) for bullets.
+   - Use newlines (\\n) strictly for layout to separate the overview from the bullet points.
+5. The title should be clean, professional, and optimized for search.
+6. Tags should be relevant Arabic search keywords (e.g. كاشير, طابعة فواتير).
 
 Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
 {
-  "title": "عنوان جذاب ومحسّن للسيو بالعربي",
-  "description": "وصف تسويقي مقنع بدون HTML... استخدم \\n للأسطر الجديدة و إيموجي للتنسيق",
+  "title": "عنوان احترافي للمنتج",
+  "description": "نظرة عامة احترافية على المنتج...\\n\\n- الميزة الأولى...\\n- الميزة الثانية...\\n- الميزة الثالثة...",
   "slug": "english-seo-friendly-slug",
   "metaTitle": "عنوان الميتا محسّن للسيو",
-  "metaDescription": "وصف الميتا محسّن للسيو",
+  "metaDescription": "وصف الميتا المكون من 150 حرف كحد أقصى",
   "specs": [
     {"key": "اسم المواصفة", "value": "القيمة"},
     {"key": "...", "value": "..."}
@@ -102,11 +104,11 @@ Output ONLY a valid JSON object — no markdown, no code fences, no extra text:
 }
 
 Rules:
-- title: ${langInst}, catchy and SEO-optimized, max 80 chars.
-- description: ${langInst}, plain text only, ${lengthGuide}, use emojis and newlines for formatting.
-- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars, extremely relevant and professional for SEO.
-- metaTitle: ${langInst}, professional SEO title optimized for search engines, max 60 chars.
-- metaDescription: ${langInst}, professional SEO description optimized for search engines, max 160 chars.
+- title: ${langInst}, clean and professional, max 80 chars.
+- description: ${langInst}, plain text only, must include an overview paragraph followed by a bulleted list (using dashes -) of key features. NO EMOJIS.
+- slug: lowercase English, hyphens only, no trailing hyphens, max 60 chars.
+- metaTitle: ${langInst}, professional SEO title, max 60 chars.
+- metaDescription: ${langInst}, professional SEO description, max 160 chars.
 - specs: exactly 3-5 realistic technical key-value pairs in ${langInst}.
 - tags: 3-6 relevant search keywords/phrases in ${langInst}.
 - Return ONLY the raw JSON object. No markdown fences, no extra text.
