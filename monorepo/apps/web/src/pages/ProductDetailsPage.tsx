@@ -566,14 +566,17 @@ export const ProductDetailsPage = () => {
                                                 <h5 className="text-slate-200 text-xs font-medium group-hover:text-primary transition-colors line-clamp-1">{rp.name}</h5>
                                             </Link>
                                             <div className="flex justify-between items-center mt-1">
-                                                <span className="text-brand-red font-bold text-sm">{parseFloat(rp.price).toLocaleString()} ج.م</span>
+                                                <span className="text-brand-red font-bold text-sm">
+                                                    {(rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price)).toLocaleString()} ج.م
+                                                </span>
                                                 <button
                                                     onClick={(e) => {
                                                         e.preventDefault();
+                                                        const effectivePrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
                                                         addToCart({
                                                             id: rp.id,
                                                             name: rp.name,
-                                                            price: parseFloat(rp.price),
+                                                            price: effectivePrice,
                                                             image: rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url,
                                                             quantity: 1
                                                         });
@@ -667,14 +670,24 @@ export const ProductDetailsPage = () => {
                                         <span className="text-[10px] text-primary font-bold mb-1 uppercase tracking-wider">{rp.brand?.name || 'ماركة'}</span>
                                         <h3 className="text-white font-bold text-sm mb-4 line-clamp-2 group-hover:text-primary transition-colors">{rp.name}</h3>
                                         <div className="mt-auto flex items-center justify-between">
-                                            <span className="text-lg font-bold text-brand-red">{parseFloat(rp.price).toLocaleString()} ج.م</span>
+                                            <div className="flex flex-col">
+                                                {rp.discountPrice && (
+                                                    <span className="text-[10px] text-slate-500 line-through">
+                                                        {parseFloat(rp.price).toLocaleString()} ج.م
+                                                    </span>
+                                                )}
+                                                <span className="text-lg font-bold text-brand-red">
+                                                    {(rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price)).toLocaleString()} ج.م
+                                                </span>
+                                            </div>
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
+                                                    const effectivePrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
                                                     addToCart({
                                                         id: rp.id,
                                                         name: rp.name,
-                                                        price: parseFloat(rp.price),
+                                                        price: effectivePrice,
                                                         image: rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url,
                                                         quantity: 1
                                                     });

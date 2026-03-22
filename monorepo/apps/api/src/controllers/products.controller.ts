@@ -282,7 +282,7 @@ export class ProductsController {
             let resolvedBrandId = brandId;
             if (brandName && !brandId) {
                 const existingBrand = await db.query.brands.findFirst({
-                    where: eq(brands.name, brandName)
+                    where: ilike(brands.name, brandName)
                 });
                 if (existingBrand) {
                     resolvedBrandId = existingBrand.id;
@@ -398,7 +398,7 @@ export class ProductsController {
             let resolvedBrandId = brandId;
             if (brandName && !brandId) {
                 const existingBrand = await db.query.brands.findFirst({
-                    where: eq(brands.name, brandName)
+                    where: ilike(brands.name, brandName)
                 });
                 if (existingBrand) {
                     resolvedBrandId = existingBrand.id;

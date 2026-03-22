@@ -241,7 +241,7 @@ export function useBulkUpdateProducts() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (updates: { id: string; price?: string; stock?: number }[]) => {
+        mutationFn: async (updates: { id: string; price?: string; discountPrice?: string | null; stock?: number }[]) => {
             const response = await api.patch('/products/bulk', { updates });
             return response.data;
         },

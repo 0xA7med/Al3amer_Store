@@ -236,8 +236,8 @@ function DeleteConfirmModal({ count, onClose, onConfirm, isPending }: {
 
 interface ProductRowProps {
     product: Product;
-    editedValue: { price?: string; stock?: number } | undefined;
-    onEditChange: (id: string, field: 'price' | 'stock', value: string) => void;
+    editedValue: { price?: string; stock?: number; discountPrice?: string | null } | undefined;
+    onEditChange: (id: string, field: 'price' | 'stock' | 'discountPrice', value: string) => void;
     onDelete: (product: Product) => void;
     selected: boolean;
     onToggleSelect: (id: string) => void;
@@ -283,7 +283,12 @@ const ProductRow = memo(({
                     </div>
                 </div>
             </td>
-            <td className="px-6 py-2 text-slate-400">{product.category?.name || 'غير مصنف'}</td>
+            <td className="px-6 py-2">
+                <div className="flex flex-col">
+                    <span className="text-slate-400">{product.category?.name || 'غير مصنف'}</span>
+                    <span className="text-primary/70 text-[10px] font-bold">{product.brand?.name || ''}</span>
+                </div>
+            </td>
             <td className="px-6 py-2">
                 <div className="flex justify-center">
                     <span
@@ -295,14 +300,29 @@ const ProductRow = memo(({
                 </div>
             </td>
             <td className="px-6 py-2">
-                <div className="relative group/input min-w-[100px] max-w-[140px]">
-                    <input
-                        type="text"
-                        value={editedValue?.price ?? product.price}
-                        onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
-                        className={`w-full bg-white/5 border ${editedValue?.price !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-3 py-2 pl-9 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
-                    />
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-bold pointer-events-none bg-white/5 px-1 rounded">ج.م</span>
+                <div className="flex flex-col gap-1 w-full max-w-[140px]">
+                    <div className="relative group/input min-w-[100px]">
+                        <input
+                            type="text"
+                            value={
+                                product.discountPrice 
+                                    ? (editedValue?.discountPrice ?? product.discountPrice)
+                                    : (editedValue?.price ?? product.price)
+                            }
+                            onChange={(e) => onEditChange(product.id, product.discountPrice ? 'discountPrice' : 'price', e.target.value)}
+                            className={`w-full bg-white/5 border ${
+                                (product.discountPrice ? editedValue?.discountPrice !== undefined : editedValue?.price !== undefined) 
+                                    ? 'border-primary/50' 
+                                    : 'border-white/5'
+                            } hover:border-white/20 rounded px-3 py-2 pl-9 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
+                        />
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-bold pointer-events-none bg-white/5 px-1 rounded">ج.م</span>
+                    </div>
+                    {product.discountPrice && (
+                        <div className="flex items-center gap-1.5 px-1 mt-0.5">
+                            <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">السعر الأساسي: {product.price} ج.م</span>
+                        </div>
+                    )}
                 </div>
             </td>
             <td className="px-6 py-2">
@@ -361,10 +381,10 @@ export function ProductList() {
     const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
     // Inline Editing State
-    const [editedProducts, setEditedProducts] = useState<Record<string, { price?: string; stock?: number }>>({});
+    const [editedProducts, setEditedProducts] = useState<Record<string, { price?: string; stock?: number; discountPrice?: string | null }>>({});
     const hasChanges = Object.keys(editedProducts).length > 0;
 
-    const handleEditChange = useCallback((id: string, field: 'price' | 'stock', value: string) => {
+    const handleEditChange = useCallback((id: string, field: 'price' | 'stock' | 'discountPrice', value: string) => {
         setEditedProducts(prev => {
             const current = prev[id] || {};
             return { ...prev, [id]: { ...current, [field]: field === 'stock' ? parseInt(value) || 0 : value } };
@@ -597,7 +617,7 @@ export function ProductList() {
                                     </div>
                                 </th>
                                 <th className="px-6 py-3 whitespace-nowrap">المنتج</th>
-                                <th className="px-6 py-3 whitespace-nowrap">القسم</th>
+                                <th className="px-6 py-3 whitespace-nowrap">القسم / الماركة</th>
                                 <th className="px-6 py-3 whitespace-nowrap w-32 text-center">الحالة</th>
                                 <th className="px-6 py-3 whitespace-nowrap w-40">السعر</th>
                                 <th className="px-6 py-3 whitespace-nowrap w-32">المخزون</th>

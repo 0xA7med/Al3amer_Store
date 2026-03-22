@@ -125,6 +125,7 @@ interface CategoryNode {
     slug: string;
     parentId?: string | null;
     isActive?: boolean;
+    productCount?: number;
     children?: CategoryNode[];
 }
 
@@ -140,6 +141,11 @@ function CategoryTreeItem({
     const [expanded, setExpanded] = useState(true);
     const hasChildren = node.children && node.children.length > 0;
     const isChecked = selectedCategories.includes(node.slug);
+
+    // Use productCount from node if available (from backend), fallback to calculated counts
+    const count = (node as any).productCount !== undefined 
+        ? (node as any).productCount 
+        : (categoryCounts[node.slug] || 0);
 
     return (
         <div>
@@ -172,7 +178,7 @@ function CategoryTreeItem({
                     </span>
                 </div>
                 <span className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                    {categoryCounts[node.slug] || 0}
+                    {count}
                 </span>
             </label>
             {hasChildren && expanded && (
@@ -213,7 +219,29 @@ function buildCategoryTree(flatList: any[]): CategoryNode[] {
         }
     });
 
-return roots;
+    return roots;
+}
+
+/**
+ * Recursively filters the category tree to remove nodes that have 0 products 
+ * AND whose descendants all have 0 products.
+ */
+function filterEmptyCategories(nodes: CategoryNode[]): CategoryNode[] {
+    return nodes.reduce((acc: CategoryNode[], node) => {
+        const children = node.children ? filterEmptyCategories(node.children) : [];
+        const hasActiveChildren = children.length > 0;
+        
+        // Calculate total count for this node (direct + children)
+        const childrenCount = children.reduce((sum, child) => sum + (child.productCount || 0), 0);
+        const totalCount = (node.productCount || 0) + childrenCount;
+        
+        const hasDirectProducts = (node.productCount || 0) > 0;
+
+        if (hasDirectProducts || hasActiveChildren) {
+            acc.push({ ...node, children, productCount: totalCount });
+        }
+        return acc;
+    }, []);
 }
 
 function getAllDescendantSlugs(parentId: string, flatList: any[]): string[] {
@@ -289,7 +317,10 @@ export function ShopPage() {
         categories.filter((c: any) => c.isActive !== false),
     [categories]);
 
-    const categoryTree = useMemo(() => buildCategoryTree(activeCategories), [activeCategories]);
+    const categoryTree = useMemo(() => {
+        const tree = buildCategoryTree(activeCategories);
+        return filterEmptyCategories(tree);
+    }, [activeCategories]);
 
     // Expand selected categories to include all descendants
     const expandedCategories = useMemo(() => {
@@ -718,8 +749,8 @@ export function ShopPage() {
                                     id={product.id}
                                     name={product.name}
                                     brand={product.brand?.name || 'Generic'}
-                                    price={parseFloat(product.price)}
-                                    originalPrice={product.discountPrice ? parseFloat(product.discountPrice) : undefined}
+                                    price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
+                                    originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
                                     rating={5}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}

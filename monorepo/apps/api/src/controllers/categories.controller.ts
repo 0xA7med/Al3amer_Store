@@ -1,16 +1,41 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { categories } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { categories, products } from '../db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 export class CategoriesController {
     async list(req: Request, res: Response) {
         try {
-            const result = await db.query.categories.findMany({
+            // Get all categories with their parent info
+            const allCategories = await db.query.categories.findMany({
                 with: {
                     parent: true,
                 }
             });
+
+            // Get product counts grouped by categoryId
+            const counts = await db.select({
+                categoryId: products.categoryId,
+                count: sql<number>`count(*)`
+            })
+            .from(products)
+            .where(eq(products.status, 'active'))
+            .groupBy(products.categoryId);
+
+            // Create a map for easy lookup
+            const countMap: Record<string, number> = {};
+            counts.forEach(c => {
+                if (c.categoryId) {
+                    countMap[c.categoryId] = Number(c.count);
+                }
+            });
+
+            // Attach counts to categories
+            const result = allCategories.map(cat => ({
+                ...cat,
+                productCount: countMap[cat.id] || 0
+            }));
+
             res.json(result);
         } catch (error) {
             console.error('Error fetching categories:', error);

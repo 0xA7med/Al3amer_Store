@@ -105,12 +105,13 @@ export function AIBundleBuilderPage() {
     };
 
     const handleAddManualItem = (product: any) => {
+        const effectivePrice = product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price);
         setManualBundle(prev => [
             ...prev,
             {
                 productId: product.id,
                 name: product.name,
-                price: parseFloat(product.price),
+                price: effectivePrice,
                 imageUrl: product.images[0]?.url || '',
                 category: product.category?.slug
             }
@@ -583,7 +584,16 @@ function ManualWizard({ step, setStep, manualBundle, onAddItem, onRemoveItem }: 
                                 <p className="text-gray-400 text-xs mt-1 line-clamp-2">{product.description}</p>
                             </div>
                             <div className="flex items-center justify-between mt-2">
-                                <span className="text-xl font-bold text-primary">{parseFloat(product.price).toLocaleString()} EGP</span>
+                             <div className="flex items-baseline gap-2 mt-2">
+                                 {product.discountPrice && (
+                                     <span className="text-xs text-slate-500 line-through">
+                                         {parseFloat(product.price).toLocaleString()}
+                                     </span>
+                                 )}
+                                 <span className="text-xl font-bold text-primary">
+                                     {(product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)).toLocaleString()} EGP
+                                 </span>
+                             </div>
                                 {!isSelected ? (
                                     <button
                                         onClick={() => onAddItem(product)}

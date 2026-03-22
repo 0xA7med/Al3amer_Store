@@ -326,7 +326,7 @@ export function AddProduct() {
             slug: formData.slug || null,
         };
 
-        const { category, brand, ...finalPayload } = payload;
+        const { category, ...finalPayload } = payload;
 
         try {
             if (isEditMode && id) {

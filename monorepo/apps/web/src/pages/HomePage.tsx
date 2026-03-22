@@ -172,8 +172,8 @@ export function HomePage() {
                                     id={product.id}
                                     name={product.name}
                                     brand={product.brand?.name || 'Generic'}
-                                    price={parseFloat(product.price)}
-                                    originalPrice={product.discountPrice ? parseFloat(product.discountPrice) : undefined}
+                                    price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
+                                    originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
                                     rating={5} // Placeholder
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}

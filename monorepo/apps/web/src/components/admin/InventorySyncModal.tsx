@@ -22,6 +22,11 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
         cost?: number;
     }>>(new Map());
     const [summary, setSummary] = useState({ total: 0, new: 0, updates: 0, unchanged: 0 });
+    const [enabledFields, setEnabledFields] = useState({
+        price: true,
+        stock: true,
+        cost: true
+    });
     const [dragActive, setDragActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +38,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
         setSelectedIds(new Set());
         setEditedValues(new Map());
         setSummary({ total: 0, new: 0, updates: 0, unchanged: 0 });
+        setEnabledFields({ price: true, stock: true, cost: true });
     }, []);
 
     const handleClose = () => {
@@ -146,16 +152,30 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                         }
                     };
                 } else if (item.status === 'update' && item.changes) {
+                    const finalChanges: any = {};
+                    if (enabledFields.price) {
+                        finalChanges.price = edited?.price !== undefined ? { old: item.changes.price?.old || 0, new: edited.price } : item.changes.price;
+                    }
+                    if (enabledFields.stock) {
+                        finalChanges.stock = edited?.stock !== undefined ? { old: item.changes.stock?.old || 0, new: edited.stock } : item.changes.stock;
+                    }
+                    if (enabledFields.cost) {
+                        finalChanges.cost = edited?.cost !== undefined ? { old: item.changes.cost?.old || 0, new: edited.cost } : item.changes.cost;
+                    }
+
                     return {
                         ...item,
-                        changes: {
-                            price: edited?.price !== undefined ? { old: item.changes.price?.old || 0, new: edited.price } : item.changes.price,
-                            stock: edited?.stock !== undefined ? { old: item.changes.stock?.old || 0, new: edited.stock } : item.changes.stock,
-                            cost: edited?.cost !== undefined ? { old: item.changes.cost?.old || 0, new: edited.cost } : item.changes.cost,
-                        }
+                        changes: finalChanges
                     };
                 }
                 return item;
+            })
+            .filter(item => {
+                // Remove update items that have no changes after stripping disabled fields
+                if (item.status === 'update' && Object.keys(item.changes || {}).length === 0) {
+                    return false;
+                }
+                return true;
             });
 
         if (itemsToExecute.length === 0) {
@@ -348,9 +368,39 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                             />
                                             <span>المنتج</span>
                                         </div>
-                                        <div className="col-span-2 text-center">السعر</div>
-                                        <div className="col-span-2 text-center">الكمية</div>
-                                        <div className="col-span-2 text-center">التكلفة</div>
+                                        <div className="col-span-2 flex flex-col items-center gap-1">
+                                            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={enabledFields.price}
+                                                    onChange={(e) => setEnabledFields(prev => ({ ...prev, price: e.target.checked }))}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/20"
+                                                />
+                                                <span>السعر</span>
+                                            </label>
+                                        </div>
+                                        <div className="col-span-2 flex flex-col items-center gap-1">
+                                            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={enabledFields.stock}
+                                                    onChange={(e) => setEnabledFields(prev => ({ ...prev, stock: e.target.checked }))}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500/20"
+                                                />
+                                                <span>الكمية</span>
+                                            </label>
+                                        </div>
+                                        <div className="col-span-2 flex flex-col items-center gap-1">
+                                            <label className="flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={enabledFields.cost}
+                                                    onChange={(e) => setEnabledFields(prev => ({ ...prev, cost: e.target.checked }))}
+                                                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-violet-500 focus:ring-violet-500/20"
+                                                />
+                                                <span>التكلفة</span>
+                                            </label>
+                                        </div>
                                         <div className="col-span-2 text-center">الحالة</div>
                                     </div>
 
@@ -359,8 +409,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                         {diffItems.map((item) => (
                                             <div
                                                 key={item.externalId}
-                                                className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-slate-800/50 transition-colors ${selectedIds.has(item.externalId) ? 'bg-slate-800/30' : ''
-                                                    }`}
+                                                className={`grid grid-cols-12 gap-4 p-4 items-center hover:bg-slate-800/50 transition-colors ${selectedIds.has(item.externalId) ? 'bg-slate-800/30' : ''}`}
                                             >
                                                 {/* Product Name & Checkbox */}
                                                 <div className="col-span-4 flex items-center gap-3">
@@ -377,7 +426,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                 </div>
 
                                                 {/* Price Column */}
-                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                <div className={`col-span-2 flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${!enabledFields.price ? 'opacity-20 grayscale pointer-events-none' : ''}`}>
                                                     {item.changes?.price ? (
                                                         <div className="flex items-center gap-1 opacity-70">
                                                             <span className="text-red-500 text-xs">
@@ -386,7 +435,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />
                                                         </div>
                                                     ) : (
-                                                        <div className="h-4"></div> // Spacer to keep alignment
+                                                        <div className="h-4"></div>
                                                     )}
                                                     <div className="flex items-center gap-1 w-full">
                                                         <input
@@ -398,12 +447,13 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                                 : 'border-slate-600 text-white focus:border-slate-500'
                                                                 }`}
                                                             step="0.01"
+                                                            disabled={!enabledFields.price}
                                                         />
                                                     </div>
                                                 </div>
 
                                                 {/* Stock Column */}
-                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                <div className={`col-span-2 flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${!enabledFields.stock ? 'opacity-20 grayscale pointer-events-none' : ''}`}>
                                                     {item.changes?.stock ? (
                                                         <div className="flex items-center gap-1 opacity-70">
                                                             <span className="text-red-500 text-xs">
@@ -412,7 +462,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />
                                                         </div>
                                                     ) : (
-                                                        <div className="h-4"></div> // Spacer
+                                                        <div className="h-4"></div>
                                                     )}
                                                     <input
                                                         type="number"
@@ -423,11 +473,12 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                             : 'border-slate-600 text-white focus:border-slate-500'
                                                             }`}
                                                         step="1"
+                                                        disabled={!enabledFields.stock}
                                                     />
                                                 </div>
 
                                                 {/* Cost Column */}
-                                                <div className="col-span-2 flex flex-col items-center justify-center gap-1.5">
+                                                <div className={`col-span-2 flex flex-col items-center justify-center gap-1.5 transition-all duration-300 ${!enabledFields.cost ? 'opacity-20 grayscale pointer-events-none' : ''}`}>
                                                     {item.changes?.cost ? (
                                                         <div className="flex items-center gap-1 opacity-70">
                                                             <span className="text-red-500 text-xs">
@@ -436,7 +487,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                             <ArrowLeft className="w-3 h-3 text-slate-500" />
                                                         </div>
                                                     ) : (
-                                                        <div className="h-4"></div> // Spacer
+                                                        <div className="h-4"></div>
                                                     )}
                                                     <div className="flex items-center gap-1 w-full">
                                                         <input
@@ -448,6 +499,7 @@ export default function InventorySyncModal({ isOpen, onClose, onSuccess }: Inven
                                                                 : 'border-slate-600 text-white focus:border-slate-500'
                                                                 }`}
                                                             step="0.01"
+                                                            disabled={!enabledFields.cost}
                                                         />
                                                     </div>
                                                 </div>
