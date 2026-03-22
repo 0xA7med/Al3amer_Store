@@ -213,7 +213,17 @@ function buildCategoryTree(flatList: any[]): CategoryNode[] {
         }
     });
 
-    return roots;
+return roots;
+}
+
+function getAllDescendantSlugs(parentId: string, flatList: any[]): string[] {
+    const children = flatList.filter(c => (c.parentId || c.parent_id) === parentId);
+    let slugs: string[] = [];
+    children.forEach(child => {
+        slugs.push(child.slug);
+        slugs = slugs.concat(getAllDescendantSlugs(child.id, flatList));
+    });
+    return slugs;
 }
 
 // =========================================================
@@ -262,21 +272,43 @@ export function ShopPage() {
     }, [searchParams]);
 
     // Fetch Categories
-    const { data: categories = [] } = useQuery({
+    const { data: categoriesRaw, isLoading: isLoadingCategories } = useQuery({
         queryKey: ['categories'],
         queryFn: async () => {
             const { data } = await api.get('/categories');
             return data;
-        },
-        initialData: []
+        }
     });
 
-    const activeCategories = categories.filter((c: any) => c.isActive !== false);
+    const categories = useMemo(() => {
+        if (!categoriesRaw) return [];
+        return Array.isArray(categoriesRaw) ? categoriesRaw : (categoriesRaw as any).value || [];
+    }, [categoriesRaw]);
+
+    const activeCategories = useMemo(() => 
+        categories.filter((c: any) => c.isActive !== false),
+    [categories]);
+
     const categoryTree = useMemo(() => buildCategoryTree(activeCategories), [activeCategories]);
+
+    // Expand selected categories to include all descendants
+    const expandedCategories = useMemo(() => {
+        if (selectedCategories.length === 0) return [];
+        
+        let allSlugs = [...selectedCategories];
+        selectedCategories.forEach(slug => {
+            const cat = activeCategories.find((c: any) => c.slug === slug);
+            if (cat) {
+                const descendantSlugs = getAllDescendantSlugs(cat.id, activeCategories);
+                allSlugs = allSlugs.concat(descendantSlugs);
+            }
+        });
+        return Array.from(new Set(allSlugs));
+    }, [selectedCategories, activeCategories]);
 
     const { data: productsData, isLoading } = useProducts({
         limit: 1000,
-        categories: selectedCategories,
+        categories: expandedCategories,
         search: querySearch
     });
 
@@ -529,15 +561,19 @@ export function ShopPage() {
                                         {categoryCounts['all'] || 0}
                                     </span>
                                 </label>
-                                {categoryTree.map(node => (
-                                    <CategoryTreeItem
-                                        key={node.id}
-                                        node={node}
-                                        selectedCategories={selectedCategories}
-                                        categoryCounts={categoryCounts}
-                                        toggleCategory={toggleCategory}
-                                    />
-                                ))}
+                                {categoryTree.length > 0 ? (
+                                    categoryTree.map(node => (
+                                        <CategoryTreeItem
+                                            key={node.id}
+                                            node={node}
+                                            selectedCategories={selectedCategories}
+                                            categoryCounts={categoryCounts}
+                                            toggleCategory={toggleCategory}
+                                        />
+                                    ))
+                                ) : (
+                                    !isLoadingCategories && <p className="text-[11px] text-slate-500 py-2">لا توجد تصنيفات نشطة</p>
+                                )}
                             </div>
                         </FilterSection>
 
