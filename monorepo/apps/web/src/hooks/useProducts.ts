@@ -79,7 +79,7 @@ export function useProducts(params?: UseProductsParams) {
     return useQuery({
         queryKey: ['products', params],
         queryFn: async () => {
-            const queryParams = { ...params };
+            const queryParams = { status: 'active', ...params };
             if (Array.isArray(queryParams.categories)) {
                 queryParams.categories = queryParams.categories.join(',');
             }
@@ -89,14 +89,33 @@ export function useProducts(params?: UseProductsParams) {
     });
 }
 
-// Special hook for featured products which might just slice the result or use a specific endpoint if we make one
-export function useFeaturedProducts() {
+// Special hook for featured products using server-side filtering
+export function useFeaturedProducts(limit = 8) {
     return useQuery({
-        queryKey: ['products', 'featured'],
+        queryKey: ['products', 'featured', limit],
         queryFn: async () => {
-            // For now, allow fetching a list and filtering client side or just taking first few
-            const { data } = await api.get<ProductsResponse>('/products?limit=20');
-            return data.data.filter(p => p.isFeatured);
+            const { data } = await api.get<ProductsResponse>(`/products?featured=true&status=active&limit=${limit}`);
+            return data.data;
+        }
+    });
+}
+
+export function useNewArrivals(limit = 8) {
+    return useQuery({
+        queryKey: ['products', 'newest', limit],
+        queryFn: async () => {
+            const { data } = await api.get<ProductsResponse>(`/products?sort=newest&status=active&limit=${limit}`);
+            return data.data;
+        }
+    });
+}
+
+export function useOffers(limit = 8) {
+    return useQuery({
+        queryKey: ['products', 'offers', limit],
+        queryFn: async () => {
+            const { data } = await api.get<ProductsResponse>(`/products?hasDiscount=true&status=active&limit=${limit}`);
+            return data.data;
         }
     });
 }

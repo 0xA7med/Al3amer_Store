@@ -63,6 +63,10 @@ export class ProductsController {
                 search,
                 minPrice,
                 status = 'active',
+                featured,
+                hasDiscount,
+                sort,
+                exclude,
             } = req.query;
 
             const pageNum = parseInt(page as string);
@@ -73,6 +77,18 @@ export class ProductsController {
 
             if (status) {
                 conditions.push(eq(products.status, status as string));
+            }
+
+            if (featured === 'true') {
+                conditions.push(eq(products.isFeatured, true));
+            }
+
+            if (hasDiscount === 'true') {
+                conditions.push(sql`${products.discountPrice} IS NOT NULL`);
+            }
+
+            if (exclude) {
+                conditions.push(sql`${products.id} != ${exclude}`);
             }
 
             if (categoriesParam) {
@@ -103,6 +119,12 @@ export class ProductsController {
                 where,
                 limit: limitNum,
                 offset,
+                orderBy: (products, { desc, asc }) => {
+                    if (sort === 'newest') return [desc(products.createdAt)];
+                    if (sort === 'price_asc') return [asc(products.price)];
+                    if (sort === 'price_desc') return [desc(products.price)];
+                    return [desc(products.createdAt)]; // Default to newest
+                },
                 with: {
                     category: {
                         with: {
