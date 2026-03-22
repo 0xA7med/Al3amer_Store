@@ -152,7 +152,7 @@ export function AddProduct() {
                 stock: String(productData.stock || 0),
                 barcode: productData.barcode || '',
                 category: productData.categoryId || productData.category?.id || '',
-                brand: productData.brandId || productData.brand?.id || '',
+                brand: productData.brand?.name || '', // Use name for the text field
                 status: productData.status === 'archived' ? 'draft' : (productData.status || 'active'),
                 videoUrl: productData.videoUrl || '',
                 metaTitle: productData.metaTitle || '',
@@ -252,7 +252,16 @@ export function AddProduct() {
         setIsGeneratingAI(true);
         try {
             const api = (await import('../../lib/api')).default;
-            const { data } = await api.post('/products/ai-generate', { name: formData.name, section });
+            
+            // Resolve Category Name
+            const categoryName = categoriesList.find(c => c.id === formData.category)?.name;
+            
+            const { data } = await api.post('/products/ai-generate', { 
+                name: formData.name, 
+                section,
+                category: categoryName,
+                brand: formData.brand // Send the brand text value
+            });
 
             // New compact JSON: { title, description, slug, specs[], tags[] }
             // Also handle legacy format for backwards compat
@@ -308,7 +317,7 @@ export function AddProduct() {
             tags,
             images,
             categoryId: formData.category || null,
-            brandId: formData.brand || null,
+            brand: formData.brand || null, // Send name as 'brand' for auto-resolution
             videoUrl: formData.videoUrl || null,
             metaTitle: formData.metaTitle || null,
             metaDescription: formData.metaDescription || null,
@@ -811,6 +820,19 @@ export function AddProduct() {
                                             onChange={(val) => setFormData(prev => ({ ...prev, category: val }))}
                                             options={categoryOptions}
                                             placeholder="اختر القسم..."
+                                        />
+                                    </div>
+ 
+                                    {/* Brand (Manual text for now as no Brand Management exists) */}
+                                    <div>
+                                        <label className="field-label">العلامة التجارية (Brand)</label>
+                                        <input
+                                            type="text"
+                                            name="brand"
+                                            value={formData.brand}
+                                            onChange={handleInputChange}
+                                            className="input-field text-sm"
+                                            placeholder="مثال: Sunmi, HP, Canon..."
                                         />
                                     </div>
 

@@ -22,7 +22,7 @@ export class ProductsController {
     // Generate AI Content
     static async aiGenerate(req: Request, res: Response) {
         try {
-            const { name, section = 'all' } = req.body;
+            const { name, section = 'all', category, brand } = req.body;
             if (!name) {
                 return res.status(400).json({ error: 'Product name is required' });
             }
@@ -41,7 +41,9 @@ export class ProductsController {
                 appSettings?.aiLanguage || 'ar',
                 appSettings?.aiTone || 'Marketing',
                 appSettings?.aiDescriptionLength || 'medium',
-                section
+                section,
+                category,
+                brand
             );
 
             return res.json(result);
@@ -273,7 +275,22 @@ export class ProductsController {
                 tags,
                 images: imageUrls,
                 slug: manualSlug,
+                brand: brandName, // Allow name for auto-resolution
             } = req.body;
+ 
+            // Resolve brand name to ID if brandName is provided
+            let resolvedBrandId = brandId;
+            if (brandName && !brandId) {
+                const existingBrand = await db.query.brands.findFirst({
+                    where: eq(brands.name, brandName)
+                });
+                if (existingBrand) {
+                    resolvedBrandId = existingBrand.id;
+                } else {
+                    const [newBrand] = await db.insert(brands).values({ name: brandName }).returning();
+                    resolvedBrandId = newBrand.id;
+                }
+            }
 
             // Insert the product
             const [newProduct] = await db.insert(products).values({
@@ -287,7 +304,7 @@ export class ProductsController {
                 stock: stock || 0,
                 barcode,
                 categoryId,
-                brandId,
+                brandId: resolvedBrandId || null,
                 slug: manualSlug || ProductsController.slugify(name), // Manual slug or auto-generate
                 status: status || 'active',
                 videoUrl,
@@ -374,7 +391,22 @@ export class ProductsController {
                 tags,
                 images,
                 slug: manualSlug,
+                brand: brandName, // Allow name for auto-resolution
             } = req.body;
+ 
+            // Resolve brand name to ID if brandName is provided
+            let resolvedBrandId = brandId;
+            if (brandName && !brandId) {
+                const existingBrand = await db.query.brands.findFirst({
+                    where: eq(brands.name, brandName)
+                });
+                if (existingBrand) {
+                    resolvedBrandId = existingBrand.id;
+                } else {
+                    const [newBrand] = await db.insert(brands).values({ name: brandName }).returning();
+                    resolvedBrandId = newBrand.id;
+                }
+            }
 
             const updateData: any = {
                 name,
@@ -387,7 +419,7 @@ export class ProductsController {
                 stock: stock !== undefined ? Number(stock) : undefined,
                 barcode,
                 categoryId: categoryId || null,
-                brandId: brandId || null,
+                brandId: resolvedBrandId || brandId || null,
                 status,
                 videoUrl,
                 videoTitle,

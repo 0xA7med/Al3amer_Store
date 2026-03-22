@@ -67,7 +67,10 @@ Tone: Professional, direct, informative, and technical.
 1. ABSOLUTELY NO EMOJIS anywhere.
 2. Maintain a professional B2B tone. No cheap marketing slogans like "هل سئمت من..." or "اطلبها الآن".
 3. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
-4. Research what this product actually is based on its name and provide accurate, realistic information.`;
+4. FACTUAL ACCURACY IS MANDATORY. Act as a technical researcher. 
+5. Research the specific product model name and brand. If you are not 100% sure about a spec, DO NOT invent it.
+6. Ensure specifications are actual, real-world technical data (e.g., Processor model, RAM type, Print speed in PPM, IP rating, etc.). No "hallucinated" or filler info.
+7. If Category or Brand is provided, ensure specs align with that specific industry/standards.`;
 
         switch (section) {
             case 'title':
@@ -157,20 +160,27 @@ Structure the description with a professional overview paragraph, then a bullete
         language: string = 'ar',
         tone: string = 'Marketing',
         length: string = 'medium',
-        section: AISection = 'all'
+        section: AISection = 'all',
+        category?: string,
+        brand?: string
     ): Promise<GeniusAIProductDetails> {
         // Discover models if not already done
         await this.ensureModelsDiscovered();
-
+ 
         // Use discovered models or fallback
         const modelsToTry = this.availableModels.length > 0
             ? this.availableModels
             : AIService.FALLBACK_MODELS;
-
+ 
         const langInst = language === 'ar' ? 'Arabic' : 'English';
         const lengthGuide = length === 'short' ? '2-3 sentences' : length === 'long' ? '6-8 sentences' : '4-5 sentences';
-
-        const prompt = this.buildPrompt(productName, section, langInst, lengthGuide);
+        
+        // Add more context to product name if provided
+        let enhancedProductName = productName;
+        if (brand) enhancedProductName = `${brand} ${enhancedProductName}`;
+        if (category) enhancedProductName = `${enhancedProductName} (Category: ${category})`;
+ 
+        const prompt = this.buildPrompt(enhancedProductName, section, langInst, lengthGuide);
 
         const sanitizeJsonText = (rawText: string) => {
             return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
