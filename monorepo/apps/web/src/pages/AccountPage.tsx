@@ -32,7 +32,6 @@ export function AccountPage() {
         name: '',
         email: '',
         phone: '',
-        avatar: '',
     });
     const [profileLoading, setProfileLoading] = useState(false);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -51,7 +50,6 @@ export function AccountPage() {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-                avatar: user.avatar || '',
             });
             fetchAddresses();
             fetchWishlist();
@@ -82,7 +80,6 @@ export function AccountPage() {
             await api.put('/users/profile', {
                 name: profileData.name,
                 phone: profileData.phone,
-                avatar: profileData.avatar,
             });
             alert('تم تحديث الملف الشخصي بنجاح');
         } catch (error) {
@@ -448,53 +445,7 @@ export function AccountPage() {
                         تعديل الملف الشخصي
                     </h3>
 
-                    {/* Avatar Selection */}
-                    <div className="mb-6 p-6 bg-white/5 rounded-xl border border-white/10">
-                        <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">account_circle</span>
-                            اختر صورة حسابك
-                        </h4>
-                        <div className="grid grid-cols-6 md:grid-cols-10 gap-3 mb-4">
-                            {[
-                                'adventurer', 'adventurer-neutral', 'avataaars', 'avataaars-neutral', 'big-ears',
-                                'big-ears-neutral', 'big-smile', 'bottts', 'bottts-neutral', 'croodles',
-                                'croodles-neutral', 'fun-emoji', 'icons', 'identicon', 'initials',
-                                'lorelei', 'lorelei-neutral', 'micah', 'miniavs', 'notionists',
-                                'notionists-neutral', 'open-peeps', 'personas', 'pixel-art', 'pixel-art-neutral'
-                            ].map((style) => {
-                                const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${user?.email || 'default'}`;
-                                const isSelected = profileData.avatar === avatarUrl;
-                                return (
-                                    <button
-                                        key={style}
-                                        type="button"
-                                        onClick={() => setProfileData({ ...profileData, avatar: avatarUrl })}
-                                        className={`size-12 rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${isSelected ? 'border-primary ring-2 ring-primary/50 scale-110' : 'border-white/20'
-                                            }`}
-                                        title={style}
-                                    >
-                                        <img src={avatarUrl} alt={style} className="w-full h-full object-cover" />
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {profileData.avatar && (
-                            <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
-                                <img src={profileData.avatar} alt="Selected" className="size-16 rounded-full" />
-                                <div className="flex-1">
-                                    <p className="text-white font-medium">الصورة المختارة</p>
-                                    <p className="text-gray-400 text-sm">سيتم عرضها في حسابك</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setProfileData({ ...profileData, avatar: '' })}
-                                    className="text-red-400 hover:text-red-300"
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                        )}
-                    </div>
+
 
                     <form className="space-y-4" onSubmit={handleProfileUpdate}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
