@@ -195,25 +195,10 @@ export const ProductDetailsPage = () => {
                             className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in relative"
                             onClick={() => setIsZoomOpen(true)}
                         >
-                            {/* Repeating Watermark — below image and badges */}
-                            <div
-                                className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden opacity-20"
-                                style={{ transform: 'rotate(-45deg) scale(1.5)' }}
-                            >
-                                {Array.from({ length: 6 }).map((_, row) => (
-                                    <div key={row} className="flex gap-8 mb-8 whitespace-nowrap">
-                                        {Array.from({ length: 4 }).map((_, col) => (
-                                            <span key={col} className="text-base md:text-lg font-black text-white" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.6)' }}>
-                                                مركز العامر - 01026043165
-                                            </span>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
                             <img
                                 src={images[activeImageIndex] || images[0]}
                                 alt={product.name}
-                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500 relative z-20"
+                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                             />
                         </div>
                         <button
