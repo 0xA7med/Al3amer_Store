@@ -179,7 +179,8 @@ export const ProductDetailsPage = () => {
                 {/* Visual Gallery Section */}
                 <div className="lg:col-span-7 flex flex-col gap-4">
                     <div className="w-full aspect-[4/3] rounded-2xl glass-panel relative overflow-hidden group">
-                        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                        {/* Badges — always on top */}
+                        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
                             {hasDiscount && (
                                 <span className="px-3 py-1.5 bg-brand-red/90 backdrop-blur text-white text-xs font-bold rounded-lg shadow-lg shadow-red-900/20 border border-red-500/30">
                                     خصم {discountPercent}%
@@ -194,18 +195,25 @@ export const ProductDetailsPage = () => {
                             className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in relative"
                             onClick={() => setIsZoomOpen(true)}
                         >
-                            {/* CSS Watermark Overlay */}
-                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10 rotate-[15deg] md:rotate-[-15deg] select-none z-20 overflow-hidden">
-                                <span className="text-3xl md:text-5xl font-black text-white whitespace-nowrap" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                                    مركز العامر - 01026043165
-                                </span>
+                            {/* Repeating Watermark — below image and badges */}
+                            <div
+                                className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden opacity-20"
+                                style={{ transform: 'rotate(-45deg) scale(1.5)' }}
+                            >
+                                {Array.from({ length: 6 }).map((_, row) => (
+                                    <div key={row} className="flex gap-8 mb-8 whitespace-nowrap">
+                                        {Array.from({ length: 4 }).map((_, col) => (
+                                            <span key={col} className="text-base md:text-lg font-black text-white" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.6)' }}>
+                                                مركز العامر - 01026043165
+                                            </span>
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
                             <img
                                 src={images[activeImageIndex] || images[0]}
                                 alt={product.name}
-                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500 relative z-10"
-                                onContextMenu={(e) => e.preventDefault()}
-                                onDragStart={(e) => e.preventDefault()}
+                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500 relative z-20"
                             />
                         </div>
                         <button
@@ -224,7 +232,7 @@ export const ProductDetailsPage = () => {
                                 className={`relative size-20 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
                                     }`}
                             >
-                                <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()} />
+                                <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
                             </button>
                         ))}
                         {product.videos && product.videos.length > 0 && (
@@ -452,7 +460,7 @@ export const ProductDetailsPage = () => {
             </div>
 
             {/* Detailed Content Section (Tabs) */}
-            <div className="flex flex-col gap-8">
+            <div id="tabs-section" className="flex flex-col gap-8">
                 <div className="border-b border-white/10 sticky top-20 bg-background-dark/95 backdrop-blur z-30">
                     <nav className="flex gap-8 overflow-x-auto no-scrollbar">
                         <button
@@ -513,19 +521,49 @@ export const ProductDetailsPage = () => {
                                 {product.videos.map((video, idx) => {
                                     const embedUrl = getEmbedUrl(video.url);
                                     if (!embedUrl) return null;
+                                    const isFB = video.url.includes('facebook') || video.url.includes('fb.watch');
                                     return (
-                                        <div key={idx} className="flex flex-col gap-2 relative z-20">
-                                            {video.title && <h3 className="text-white font-bold text-lg">{video.title}</h3>}
-                                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 aspect-video w-full bg-black/50">
-                                                <iframe
-                                                    className="w-full h-full relative z-30 pointer-events-auto"
-                                                    src={embedUrl}
-                                                    title={video.title || "Product Video"}
-                                                    frameBorder="0"
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                    allowFullScreen
-                                                ></iframe>
+                                        <div key={idx} className="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-xl">
+                                            {/* Card Header */}
+                                            <div className="flex items-center gap-3 px-5 py-3 bg-white/5 border-b border-white/10">
+                                                <span className="size-7 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-black flex items-center justify-center">{idx + 1}</span>
+                                                <h3 className="text-white font-bold text-base flex-1">{video.title || `فيديو رقم ${idx + 1}`}</h3>
+                                                {video.is_featured && (
+                                                    <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold">مميز</span>
+                                                )}
+                                                {isFB && (
+                                                    <span className="text-[10px] bg-blue-700 text-white px-2 py-0.5 rounded font-bold">Facebook</span>
+                                                )}
                                             </div>
+                                            {isFB ? (
+                                                /* Facebook: open externally instead of broken iframe */
+                                                <div className="aspect-video w-full bg-gradient-to-br from-[#1877f2]/10 to-black/60 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                                                    <div className="size-16 rounded-full bg-[#1877f2]/20 border border-[#1877f2]/30 flex items-center justify-center">
+                                                        <PlayCircle className="w-10 h-10 text-[#1877f2]" />
+                                                    </div>
+                                                    <p className="text-slate-300 text-sm">فيديو Facebook — اضغط للمشاهدة في صفحة جديدة</p>
+                                                    <a
+                                                        href={video.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-5 py-2 bg-[#1877f2] hover:bg-[#1565d8] text-white rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
+                                                    >
+                                                        <PlayCircle className="w-4 h-4" />
+                                                        مشاهدة على Facebook
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <div className="aspect-video w-full bg-black/50">
+                                                    <iframe
+                                                        className="w-full h-full"
+                                                        src={embedUrl}
+                                                        title={video.title || `فيديو رقم ${idx + 1}`}
+                                                        frameBorder="0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                    ></iframe>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -660,13 +698,16 @@ export const ProductDetailsPage = () => {
                                 <div className="glass-panel p-6 rounded-2xl overflow-hidden relative border border-white/10">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -z-10"></div>
                                     <h4 className="text-white font-bold mb-4 flex items-center justify-between">
-                                        {featured.title || 'شرح الاستخدام'}
-                                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold text-center">فيديو</span>
+                                        {featured.title || 'فيديو المنتج'}
+                                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold text-center">شاهد الآن</span>
                                     </h4>
                                     <div
                                         onClick={() => {
                                             setActiveTab('video');
-                                            window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
+                                            setTimeout(() => {
+                                                const el = document.getElementById('tabs-section');
+                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                            }, 50);
                                         }}
                                         className="aspect-video w-full rounded-xl bg-black/50 overflow-hidden relative group cursor-pointer border border-white/10 shadow-lg"
                                     >
@@ -684,7 +725,7 @@ export const ProductDetailsPage = () => {
                                             allow="autoplay; encrypted-media"
                                         ></iframe>
                                     </div>
-                                    <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">اضغط لمشاهدة شرح المنتج الكامل في قسم الفيديو.</p>
+                                    <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">اضغط لمشاهدة الفيديو كاملاً في قسم الفيديو أعلاه.</p>
                                 </div>
                             );
                         })()}
