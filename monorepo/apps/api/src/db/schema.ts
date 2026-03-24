@@ -118,9 +118,7 @@ export const products = pgTable('products', {
     brandId: uuid('brand_id').references(() => brands.id),
     slug: text('slug').notNull().unique(),
     status: text('status').default('active'), // active | draft | archived
-    videoUrl: text('video_url'),
-    videoTitle: text('video_title'),
-    videoDescription: text('video_description'),
+    videos: jsonb('videos').$type<Array<{ url: string; title: string; is_featured: boolean }>>().default([]),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
     isFeatured: boolean('is_featured').default(false),

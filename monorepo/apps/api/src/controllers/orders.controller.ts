@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { orders, orderItems, products, productImages, settings, coupons } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
 
 export class OrdersController {
@@ -37,21 +37,54 @@ export class OrdersController {
             // Ensure phone is a string
             const safePhone = phone ? String(phone) : '0000000000';
 
-            // Calculate totals
-            let subtotal = 0;
-            console.log('Calculating subtotal for items:', JSON.stringify(items));
-            for (const item of items) {
-                // Ensure price is a number
-                const price = typeof item.price === 'string' ? parseFloat(item.price) : Number(item.price);
+            // Fetch fresh product data from DB to ensure validity and calculate subtotal
+            const productIds = items.map((i: any) => i.productId);
+            const validProducts = await db.query.products.findMany({
+                where: and(
+                    inArray(products.id, productIds),
+                    eq(products.status, 'active')
+                ),
+                columns: {
+                    id: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    name: true,
+                }
+            });
 
-                if (isNaN(price)) {
-                    console.error(`Invalid price for item: ${JSON.stringify(item)}`);
-                    return res.status(400).json({ error: `Invalid price for item ${item.name || 'Unknown'}: ${item.price}` });
+            // Calculate totals using DB source-of-truth prices
+            let subtotal = 0;
+            const finalOrderItems = []; // What we will actually save in DB to prevent price spoofing
+            
+            console.log('Validating cart items and calculating subtotal...');
+            
+            for (const item of items) {
+                const dbProduct = validProducts.find(p => p.id === item.productId);
+                
+                // Safety net: Check if product still exists and is active
+                if (!dbProduct) {
+                    console.error(`Product ID ${item.productId} (${item.name || 'Unknown'}) not found or inactive`);
+                    return res.status(400).json({ error: "One or more products in your cart are no longer available. Please refresh your cart." });
                 }
 
-                // Update item price to be string if it was number, for consistency if needed downstream, 
-                // but local calculation uses number.
-                subtotal += price * Number(item.quantity);
+                // Use the database price (discountPrice if available, else price)
+                const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
+                const quantity = Number(item.quantity) || 1;
+
+                // Optional but good Practice: Check stock
+                // if (dbProduct.stock !== null && dbProduct.stock < quantity) {
+                //      return res.status(400).json({ error: `Not enough stock for product: ${dbProduct.name}` });
+                // }
+
+                subtotal += effectivePrice * quantity;
+                
+                // Store accurate line items
+                finalOrderItems.push({
+                   ...item,
+                   price: effectivePrice, // Override client's price
+                   name: dbProduct.name,  // Override client's name
+                });
             }
 
             // Calculate discount if coupon provided
@@ -124,7 +157,7 @@ export class OrdersController {
             }).returning();
 
             // Create order items
-            const orderItemsData = items.map((item: any) => ({
+            const orderItemsData = finalOrderItems.map((item: any) => ({
                 orderId: order.id,
                 productId: item.productId,
                 name: item.name,

@@ -120,7 +120,6 @@ export function AddProduct() {
         category: '',
         brand: '',
         status: 'active',
-        videoUrl: '',
         metaTitle: '',
         metaDescription: '',
         slug: '',
@@ -130,6 +129,7 @@ export function AddProduct() {
         makeSpec('المعالج'),
         makeSpec('الذاكرة'),
     ]);
+    const [videos, setVideos] = useState<{ url: string; title: string; is_featured: boolean }[]>([]);
     const [tags, setTags] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState('');
     const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
@@ -154,11 +154,14 @@ export function AddProduct() {
                 category: productData.categoryId || productData.category?.id || '',
                 brand: productData.brand?.name || '', // Use name for the text field
                 status: productData.status === 'archived' ? 'draft' : (productData.status || 'active'),
-                videoUrl: productData.videoUrl || '',
                 metaTitle: productData.metaTitle || '',
                 metaDescription: productData.metaDescription || '',
                 slug: productData.slug || '',
             });
+
+            if (productData.videos) {
+                setVideos(productData.videos as any);
+            }
 
             // Flatten specifications
             const flattenSpecs = (s: any): { _id: number; key: string; value: string }[] => {
@@ -230,6 +233,20 @@ export function AddProduct() {
     };
 
     const removeTag = (tag: string) => setTags(prev => prev.filter(t => t !== tag));
+
+    // ---- Videos ----
+    const addVideo = () => setVideos(prev => [...prev, { url: '', title: '', is_featured: prev.length === 0 }]);
+    const removeVideo = (idx: number) => setVideos(prev => {
+        const next = prev.filter((_, i) => i !== idx);
+        if (next.length > 0 && !next.some(v => v.is_featured)) next[0].is_featured = true;
+        return next;
+    });
+    const updateVideo = (idx: number, field: 'url' | 'title', value: string) => {
+        setVideos(prev => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+    };
+    const setFeaturedVideo = (idx: number) => {
+        setVideos(prev => prev.map((v, i) => ({ ...v, is_featured: i === idx })));
+    };
 
     // ---- Image Drag & Drop ----
     const handleDragStart = (idx: number) => { dragIndexRef.current = idx; };
@@ -318,7 +335,7 @@ export function AddProduct() {
             images,
             categoryId: formData.category || null,
             brand: formData.brand || null, // Send name as 'brand' for auto-resolution
-            videoUrl: formData.videoUrl || null,
+            videos: videos.filter(v => v.url.trim()), // Filter empty URLs
             metaTitle: formData.metaTitle || null,
             metaDescription: formData.metaDescription || null,
             sku: formData.sku || null,
@@ -642,20 +659,50 @@ export function AddProduct() {
                                     </div>
                                 </div>
 
-                                {/* Video URL */}
-                                <div>
-                                    <label className="field-label">رابط فيديو YouTube (اختياري)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-red-500 text-[20px]">play_circle</span>
-                                        <input
-                                            type="text"
-                                            name="videoUrl"
-                                            value={formData.videoUrl}
-                                            onChange={handleInputChange}
-                                            className="input-field pl-10"
-                                            placeholder="https://www.youtube.com/watch?v=..."
-                                        />
+                                {/* Videos List */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="field-label mb-0">روابط الفيديو (يوتيوب أو فيسبوك)</label>
+                                        <button onClick={addVideo} type="button" className="text-xs text-primary hover:text-primary/80 flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-[16px]">add</span>
+                                            إضافة فيديو
+                                        </button>
                                     </div>
+                                    {videos.map((video, idx) => (
+                                        <div key={idx} className="flex flex-col gap-2 p-3 bg-white/5 border border-white/10 rounded-xl relative">
+                                            <div className="flex items-start gap-4">
+                                                <div className="flex-1 space-y-3">
+                                                    <input
+                                                        type="text"
+                                                        value={video.url}
+                                                        onChange={(e) => updateVideo(idx, 'url', e.target.value)}
+                                                        className="input-field"
+                                                        placeholder="رابط الفيديو (https://youtube.com/... أو facebook.com/...)"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={video.title}
+                                                        onChange={(e) => updateVideo(idx, 'title', e.target.value)}
+                                                        className="input-field"
+                                                        placeholder="عنوان توضيحي (اختياري) - مثلاً: شرح الاستخدام"
+                                                    />
+                                                </div>
+                                                <button onClick={() => removeVideo(idx)} type="button" className="p-2 text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors mt-1">
+                                                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                </button>
+                                            </div>
+                                            <label className="flex items-center gap-2 cursor-pointer mt-1 pl-2">
+                                                <input
+                                                    type="radio"
+                                                    name="featured_video"
+                                                    checked={video.is_featured}
+                                                    onChange={() => setFeaturedVideo(idx)}
+                                                    className="w-4 h-4 text-primary focus:ring-primary border-slate-600 bg-slate-800"
+                                                />
+                                                <span className="text-sm text-slate-300">تعيين كفيديو أساسي (شرح الاستخدام)</span>
+                                            </label>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 

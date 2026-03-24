@@ -27,12 +27,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
-    // Load cart from localStorage on mount
+    // Load cart from localStorage on mount and sync with server
     useEffect(() => {
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
             try {
-                setItems(JSON.parse(savedCart));
+                const parsedCart = JSON.parse(savedCart);
+                setItems(parsedCart);
+                
+                // Sync with server immediately if cart is not empty
+                if (parsedCart.length > 0) {
+                    syncCart(parsedCart);
+                }
             } catch (error) {
                 console.error('Failed to parse cart data:', error);
                 localStorage.removeItem('cart');
@@ -44,6 +50,50 @@ export function CartProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         localStorage.setItem('cart', JSON.stringify(items));
     }, [items]);
+
+    const syncCart = async (currentItems: CartItem[]) => {
+        try {
+            const productIds = currentItems.map(item => item.id);
+            // Fetch validation from our new endpoint
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/products/validate-cart`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productIds }),
+            });
+            
+            if (!res.ok) throw new Error('Failed to validate cart');
+            
+            const data = await res.json();
+            const { validProducts, invalidIds } = data;
+            
+            if (invalidIds && invalidIds.length > 0) {
+                // Show warning message
+                alert("تم تحديث سلتك: بعض المنتجات لم تعد متوفرة وتم إزالتها");
+            }
+            
+            // Build synced cart
+            const syncedItems = currentItems
+                .filter(item => !invalidIds.includes(item.id)) // Remove invalid
+                .map(item => {
+                    const validProduct = validProducts.find((p: any) => p.id === item.id);
+                    if (validProduct) {
+                        return { 
+                            ...item, 
+                            price: Number(validProduct.discountPrice) || Number(validProduct.price), // Priority to discount
+                            name: validProduct.name,
+                            // Optionally update image or max out quantity based on stock
+                        };
+                    }
+                    return item;
+                });
+                
+            setItems(syncedItems);
+            
+        } catch (error) {
+            console.error('Cart sync error:', error);
+            // On failure, keep current cart or handle gracefully
+        }
+    };
 
     const addToCart = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
         setItems(currentItems => {

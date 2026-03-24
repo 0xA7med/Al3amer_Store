@@ -287,9 +287,7 @@ export class ProductsController {
                 categoryId,
                 brandId,
                 status,
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos,
                 metaTitle,
                 metaDescription,
                 isFeatured,
@@ -329,9 +327,7 @@ export class ProductsController {
                 brandId: resolvedBrandId || null,
                 slug: manualSlug || ProductsController.slugify(name), // Manual slug or auto-generate
                 status: status || 'active',
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos: videos || [],
                 metaTitle,
                 metaDescription,
                 isFeatured: isFeatured || false,
@@ -403,9 +399,7 @@ export class ProductsController {
                 categoryId,
                 brandId,
                 status,
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos,
                 metaTitle,
                 metaDescription,
                 isFeatured,
@@ -443,9 +437,7 @@ export class ProductsController {
                 categoryId: categoryId || null,
                 brandId: resolvedBrandId || brandId || null,
                 status,
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos,
                 metaTitle,
                 metaDescription,
                 isFeatured,
@@ -654,6 +646,67 @@ export class ProductsController {
         } catch (error) {
             console.error('Error in bulk action:', error);
             res.status(500).json({ error: 'Failed to perform bulk action' });
+        }
+    }
+
+    // POST /api/products/validate-cart - Validate cart items still exist and return fresh data
+    static async validateCart(req: Request, res: Response) {
+        try {
+            const { productIds } = req.body;
+
+            if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+                return res.status(400).json({ error: 'productIds must be a non-empty array' });
+            }
+
+            // Fetch all matching products in a single DB query
+            const foundProducts = await db.query.products.findMany({
+                where: inArray(products.id, productIds),
+                with: {
+                    images: {
+                        where: eq(productImages.isPrimary, true),
+                        limit: 1,
+                    },
+                },
+                columns: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    status: true,
+                },
+            });
+
+            // Build a Set of found IDs for fast lookup
+            const foundIdSet = new Set(foundProducts.map(p => p.id));
+
+            // Determine which requested IDs are missing or inactive
+            const invalidIds = productIds.filter(id => !foundIdSet.has(id));
+
+            // Map to a clean response shape
+            const validProducts = foundProducts
+                .filter(p => p.status === 'active')
+                .map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    discountPrice: p.discountPrice,
+                    stock: p.stock,
+                    image: p.images[0]?.url || null,
+                }));
+
+            // Products that exist but are inactive (draft/hidden) are also "invalid" from cart perspective
+            const inactiveIds = foundProducts
+                .filter(p => p.status !== 'active')
+                .map(p => p.id);
+
+            return res.json({
+                validProducts,
+                invalidIds: [...invalidIds, ...inactiveIds],
+            });
+        } catch (error) {
+            console.error('Error validating cart:', error);
+            res.status(500).json({ error: 'Failed to validate cart' });
         }
     }
 

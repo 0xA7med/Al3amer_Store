@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../hooks/useWishlist';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { getEmbedUrl } from '../utils/videoParser';
 
 export const ProductDetailsPage = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -21,6 +22,7 @@ export const ProductDetailsPage = () => {
     const [isZoomOpen, setIsZoomOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<'specs' | 'video' | 'reviews' | 'warranty'>('specs');
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const { addToCart, items } = useCart();
     const { isAuthenticated } = useAuth();
     const { toggleWishlist, isInWishlist } = useWishlist();
@@ -189,13 +191,21 @@ export const ProductDetailsPage = () => {
                             </span>
                         </div>
                         <div
-                            className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in"
+                            className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in relative"
                             onClick={() => setIsZoomOpen(true)}
                         >
+                            {/* CSS Watermark Overlay */}
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-10 rotate-[15deg] md:rotate-[-15deg] select-none z-20 overflow-hidden">
+                                <span className="text-3xl md:text-5xl font-black text-white whitespace-nowrap" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                                    مركز العامر - 01026043165
+                                </span>
+                            </div>
                             <img
                                 src={images[activeImageIndex] || images[0]}
                                 alt={product.name}
-                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
+                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500 relative z-10"
+                                onContextMenu={(e) => e.preventDefault()}
+                                onDragStart={(e) => e.preventDefault()}
                             />
                         </div>
                         <button
@@ -214,12 +224,15 @@ export const ProductDetailsPage = () => {
                                 className={`relative size-20 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
                                     }`}
                             >
-                                <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
+                                <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" onContextMenu={(e) => e.preventDefault()} onDragStart={(e) => e.preventDefault()} />
                             </button>
                         ))}
-                        {product.videoUrl && (
+                        {product.videos && product.videos.length > 0 && (
                             <button
-                                onClick={() => setActiveTab('video')}
+                                onClick={() => {
+                                    setActiveTab('video');
+                                    window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
+                                }}
                                 className="relative size-20 md:size-24 rounded-xl border-2 border-transparent hover:border-primary overflow-hidden flex-shrink-0 bg-surface-dark transition-all opacity-70 hover:opacity-100 flex items-center justify-center group"
                             >
                                 <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors"></div>
@@ -309,8 +322,31 @@ export const ProductDetailsPage = () => {
                         </div>
                     </div>
 
-                    <div className="text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic" style={{ whiteSpace: 'pre-line' }}>
-                        {product.description || 'وصف المنتج غير متاح حالياً، يرجى مراجعة المواصفات الفنية.'}
+                    <div className="relative">
+                        <div 
+                            className={`text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-4'}`} 
+                            style={{ whiteSpace: 'pre-line' }}
+                        >
+                            {product.description || 'وصف المنتج غير متاح حالياً، يرجى مراجعة المواصفات الفنية.'}
+                        </div>
+                        
+                        {(product.description && (product.description.split('\n').length > 4 || product.description.length > 200)) && (
+                            <>
+                                {!isDescriptionExpanded && (
+                                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background-dark to-transparent pointer-events-none"></div>
+                                )}
+                                <button 
+                                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                    className="text-primary hover:text-white text-sm font-bold mt-2 flex items-center gap-1 transition-colors relative z-10"
+                                >
+                                    {isDescriptionExpanded ? (
+                                        <>إخفاء التفاصيل <Minus className="w-4 h-4" /></>
+                                    ) : (
+                                        <>قراءة المزيد <Plus className="w-4 h-4" /></>
+                                    )}
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-col gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
@@ -427,7 +463,7 @@ export const ProductDetailsPage = () => {
                             <LayoutList className="w-5 h-5" />
                             المواصفات التقنية
                         </button>
-                        {product.videoUrl && (
+                        {product.videos && product.videos.length > 0 && (
                             <button
                                 onClick={() => setActiveTab('video')}
                                 className={`border-b-2 px-4 py-4 text-base whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'video' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600 font-medium'
@@ -472,16 +508,27 @@ export const ProductDetailsPage = () => {
                             </div>
                         )}
 
-                        {activeTab === 'video' && product.videoUrl && (
-                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 aspect-video animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <iframe
-                                    className="w-full h-full"
-                                    src={product.videoUrl.replace('watch?v=', 'embed/')}
-                                    title="Product Video"
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                ></iframe>
+                        {activeTab === 'video' && product.videos && product.videos.length > 0 && (
+                            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {product.videos.map((video, idx) => {
+                                    const embedUrl = getEmbedUrl(video.url);
+                                    if (!embedUrl) return null;
+                                    return (
+                                        <div key={idx} className="flex flex-col gap-2 relative z-20">
+                                            {video.title && <h3 className="text-white font-bold text-lg">{video.title}</h3>}
+                                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 aspect-video w-full bg-black/50">
+                                                <iframe
+                                                    className="w-full h-full relative z-30 pointer-events-auto"
+                                                    src={embedUrl}
+                                                    title={video.title || "Product Video"}
+                                                    frameBorder="0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                ></iframe>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -603,31 +650,44 @@ export const ProductDetailsPage = () => {
                             )}
                         </div>
 
-                        {product.videoUrl && (
-                            <div className="glass-panel p-6 rounded-2xl overflow-hidden relative border border-white/10">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -z-10"></div>
-                                <h4 className="text-white font-bold mb-4 flex items-center justify-between">
-                                    {product.videoTitle || 'شرح الاستخدام'}
-                                    <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold">YouTube</span>
-                                </h4>
-                                <div
-                                    onClick={() => setActiveTab('video')}
-                                    className="aspect-video w-full rounded-xl bg-black/50 overflow-hidden relative group cursor-pointer border border-white/10 shadow-lg"
-                                >
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 transition-transform group-hover:scale-110">
-                                        <div className="size-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20 shadow-xl">
-                                            <PlayCircle className="w-10 h-10 text-white fill-current" />
+                        {product.videos && product.videos.length > 0 && product.videos.some(v => v.is_featured) && (() => {
+                            const featured = product.videos.find(v => v.is_featured);
+                            if (!featured) return null;
+                            const embedUrl = getEmbedUrl(featured.url);
+                            if (!embedUrl) return null;
+
+                            return (
+                                <div className="glass-panel p-6 rounded-2xl overflow-hidden relative border border-white/10">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -z-10"></div>
+                                    <h4 className="text-white font-bold mb-4 flex items-center justify-between">
+                                        {featured.title || 'شرح الاستخدام'}
+                                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold text-center">فيديو</span>
+                                    </h4>
+                                    <div
+                                        onClick={() => {
+                                            setActiveTab('video');
+                                            window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
+                                        }}
+                                        className="aspect-video w-full rounded-xl bg-black/50 overflow-hidden relative group cursor-pointer border border-white/10 shadow-lg"
+                                    >
+                                        <div className="absolute inset-0 z-20 transition-transform group-hover:bg-black/20 bg-transparent flex items-center justify-center">
+                                            <div className="size-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <PlayCircle className="w-8 h-8 text-white" />
+                                            </div>
                                         </div>
+                                        {/* Background iframe as thumbnail, pointer disabled */}
+                                        <iframe
+                                            className="w-full h-full absolute inset-0 z-10 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity"
+                                            src={embedUrl}
+                                            title={featured.title || "Video Preview"}
+                                            frameBorder="0"
+                                            allow="autoplay; encrypted-media"
+                                        ></iframe>
                                     </div>
-                                    <img
-                                        src={`https://img.youtube.com/vi/${product.videoUrl?.includes('v=') ? product.videoUrl?.split('v=')[1]?.split('&')[0] : product.videoUrl?.split('/').pop()}/hqdefault.jpg`}
-                                        alt="Video Preview"
-                                        className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity duration-500"
-                                    />
+                                    <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">اضغط لمشاهدة شرح المنتج الكامل في قسم الفيديو.</p>
                                 </div>
-                                <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">{product.videoDescription || 'تعرف على كيفية إعداد الجهاز وربطه بنظام الكاشير في أقل من 5 دقائق.'}</p>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
                 </div>
             </div>

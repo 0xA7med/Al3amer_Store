@@ -15,9 +15,7 @@ export interface Product {
     status: string;
     slug?: string;
     isFeatured: boolean;
-    videoUrl?: string | null;
-    videoTitle?: string | null;
-    videoDescription?: string | null;
+    videos?: { url: string; title: string; is_featured: boolean }[];
     category: { id: string; name: string } | null;
     brand: { id: string; name: string } | null;
     images: { url: string; isPrimary: boolean }[];

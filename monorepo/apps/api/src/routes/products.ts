@@ -8,6 +8,7 @@ const router: IRouter = Router();
 router.use('/import', inventorySyncRouter);
 
 router.post('/ai-generate', ProductsController.aiGenerate);
+router.post('/validate-cart', ProductsController.validateCart);
 router.get('/search-suggestions', ProductsController.searchSuggestions);
 router.get('/', ProductsController.list);
 router.get('/:id', ProductsController.getOne);
