@@ -1,19 +1,17 @@
 import { Link } from 'react-router-dom';
-import { useDashboardStats, useUpdateOrderStatus, type Order } from '../../hooks/useAdmin';
+import { useDashboardStats, type Order } from '../../hooks/useAdmin';
 import { useAdminReports } from '../../hooks/useAdminReports';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 import OrdersTable from '../../components/admin/OrdersTable';
 import OrderDetailsModal from '../../components/admin/OrderDetailsModal';
 
 export function DashboardOverview() {
     const { stats, isLoading, products, orders } = useDashboardStats();
     const { dailySalesChart } = useAdminReports('week');
-    const updateStatus = useUpdateOrderStatus();
 
     // ── In-page modal state (Phase 2 Fix) ──
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -32,9 +30,13 @@ export function DashboardOverview() {
     // Recent orders (last 5) — fetched by the stats endpoint
     const recentOrders = orders.slice(0, 5);
 
-    // Top products by featured flag
-    const topProducts = products.filter(p => p.isFeatured).slice(0, 3);
-    if (topProducts.length < 3) topProducts.push(...products.slice(0, 3 - topProducts.length));
+    // Top products by featured flag (filtering for ACTIVE only)
+    const activeProducts = products.filter(p => p.status === 'active');
+    const topProducts = activeProducts.filter(p => p.isFeatured).slice(0, 3);
+    if (topProducts.length < 3) {
+        const remaining = activeProducts.filter(p => !topProducts.find(tp => tp.id === p.id)).slice(0, 3 - topProducts.length);
+        topProducts.push(...remaining);
+    }
 
     if (isLoading) {
         return (
