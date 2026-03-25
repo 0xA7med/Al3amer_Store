@@ -10,6 +10,7 @@ const SIDEBAR_LINKS = [
     { path: '/admin/coupons', icon: 'confirmation_number', label: 'أكواد الخصم' },
     { path: '/admin/reviews', icon: 'reviews', label: 'التقييمات' },
     { path: '/admin/reports', icon: 'bar_chart', label: 'التقارير' },
+    { path: '/admin/metadata', icon: 'database', label: 'إدارة البيانات' },
     { path: '/admin/ai-logs', icon: 'auto_awesome', label: 'سجلات AI' },
     { path: '/admin/ai-settings', icon: 'psychology', label: 'إعدادات AI' },
     { path: '/admin/settings', icon: 'settings', label: 'الإعدادات' },

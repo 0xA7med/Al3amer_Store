@@ -81,6 +81,7 @@ export const categories = pgTable('categories', {
     icon: text('icon'),
     isActive: boolean('is_active').default(true),
     isFeatured: boolean('is_featured').default(false),
+    attributesSchema: jsonb('attributes_schema').$type<Array<{ name: string; type: 'single-select' | 'multi-select'; options: string[] }>>().default([]),
 });
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -123,6 +124,7 @@ export const products = pgTable('products', {
     metaDescription: text('meta_description'),
     isFeatured: boolean('is_featured').default(false),
     specifications: jsonb('specifications').$type<Array<{ key: string; value: string }>>(),
+    dynamicAttributes: jsonb('dynamic_attributes').$type<Record<string, string | string[]>>().default({}),
     tags: text('tags').array(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

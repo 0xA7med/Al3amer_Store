@@ -10,10 +10,13 @@ export interface Category {
     image: string | null;
     icon: string | null;
     isActive: boolean;
-    isFeatured?: boolean; children?: Category[]; // For tree structure
+    isFeatured?: boolean;
+    attributesSchema?: { name: string; type: 'single-select' | 'multi-select'; options: string[] }[];
+    children?: Category[]; // For tree structure
     parent?: Category | null;
     products?: any[]; // To show count
-    productCount?: number; // derived
+    productCount?: number; // total (active + draft)
+    activeProductCount?: number; // only active
 }
 
 export function useCategories() {
@@ -34,34 +37,61 @@ export function useCategories() {
 
         // First pass: create map and initialize children
         flatList.forEach(cat => {
-            map.set(cat.id, { ...cat, children: [], productCount: cat.products?.length || 0 });
+            map.set(cat.id, { 
+                ...cat, 
+                children: [], 
+                productCount: cat.productCount || 0,
+                activeProductCount: cat.activeProductCount || 0
+            });
         });
 
         // Second pass: link parents
         flatList.forEach(cat => {
+            const current = map.get(cat.id);
+            if (!current) return;
             if (cat.parentId && map.has(cat.parentId)) {
-                map.get(cat.parentId)!.children!.push(map.get(cat.id)!);
+                map.get(cat.parentId)!.children!.push(current);
             } else {
-                roots.push(map.get(cat.id)!);
+                roots.push(current);
             }
         });
+
+        // Recursive helper to sum child product counts into parents
+        const aggregateCounts = (node: Category): { total: number, active: number } => {
+            let total = node.productCount || 0;
+            let active = node.activeProductCount || 0;
+            
+            if (node.children) {
+                node.children.forEach(child => {
+                    const childCounts = aggregateCounts(child);
+                    total += childCounts.total;
+                    active += childCounts.active;
+                });
+            }
+            
+            node.productCount = total;
+            node.activeProductCount = active;
+            return { total, active };
+        };
+
+        // Aggregrate counts starting from roots
+        roots.forEach(r => aggregateCounts(r));
 
         return roots;
     };
 
     const categoryTree = buildTree(categories);
 
-    // Mutations
     const createmut = useMutation({
         mutationFn: async (data: Partial<Category>) => {
             await api.post('/categories', data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            toast.success('Category created successfully');
+            toast.success('تم إنشاء القسم بنجاح');
         },
-        onError: () => {
-            toast.error('Failed to create category');
+        onError: (err: any) => {
+            toast.error(err.response?.data?.error || 'حدث خطأ في إنشاء القسم');
         }
     });
 
@@ -71,10 +101,10 @@ export function useCategories() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            toast.success('Category updated successfully');
+            toast.success('تم تحديث القسم بنجاح');
         },
-        onError: () => {
-            toast.error('Failed to update category');
+        onError: (err: any) => {
+            toast.error(err.response?.data?.error || 'حدث خطأ في تحديث القسم');
         }
     });
 
@@ -84,10 +114,10 @@ export function useCategories() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            toast.success('Category deleted successfully');
+            toast.success('تم حذف القسم بنجاح');
         },
-        onError: () => {
-            toast.error('Failed to delete category');
+        onError: (err: any) => {
+            toast.error(err.response?.data?.error || 'حدث خطأ في حذف القسم');
         }
     });
 

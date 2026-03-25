@@ -36,6 +36,7 @@ import AIBundleLogs from './pages/admin/AIBundleLogs';
 import AdminReportsPage from './pages/admin/AdminReportsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import AdminAISettingsPage from './pages/admin/AdminAISettingsPage';
+import MetadataManagement from './pages/admin/MetadataManagement';
 import { OrderAWB } from './components/admin/OrderAWB';
 
 function App() {
@@ -123,6 +124,7 @@ function App() {
                 <Route path="reports" element={<AdminReportsPage />} />
                 <Route path="ai-settings" element={<AdminAISettingsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="metadata" element={<MetadataManagement />} />
               </Route>
             </Routes>
           </BrowserRouter>

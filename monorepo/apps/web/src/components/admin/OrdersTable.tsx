@@ -26,18 +26,54 @@ export const getPaymentInfo = (method: string) => {
 // ─────────────────────────────────────────────
 // Internal StatusBadge sub-component
 // ─────────────────────────────────────────────
+import { createPortal } from 'react-dom';
+
 function StatusBadge({ status, orderId }: { status: string; orderId: string }) {
     const [isOpen, setIsOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [coords, setCoords] = useState({ top: 0, right: 0, bottom: 0, direction: 'down' as 'up' | 'down' });
     const updateStatus = useUpdateOrderStatus();
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+            if (
+                buttonRef.current && !buttonRef.current.contains(e.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+            ) {
+                setIsOpen(false);
+            }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+
+        const handleScroll = () => {
+            if (isOpen) setIsOpen(false); // Close on scroll
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('scroll', handleScroll, true);
+            window.addEventListener('resize', handleScroll);
+
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect();
+                const dropdownHeight = 220; // Estimated max height of dropdown (5 items * ~40px + padding + border)
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const shouldShowUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+                setCoords({
+                    top: shouldShowUp ? 0 : rect.bottom + 4,
+                    bottom: shouldShowUp ? window.innerHeight - rect.top + 4 : 0,
+                    right: window.innerWidth - rect.right,
+                    direction: shouldShowUp ? 'up' : 'down'
+                });
+            }
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', handleScroll);
+        };
+    }, [isOpen]);
 
     const currentConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
 
@@ -49,8 +85,9 @@ function StatusBadge({ status, orderId }: { status: string; orderId: string }) {
     };
 
     return (
-        <div className="relative" ref={ref}>
+        <>
             <button
+                ref={buttonRef}
                 onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border transition-all hover:brightness-110 ${currentConfig.color}`}
             >
@@ -61,8 +98,20 @@ function StatusBadge({ status, orderId }: { status: string; orderId: string }) {
                 <span className="material-symbols-outlined text-[14px]">expand_more</span>
             </button>
 
-            {isOpen && (
-                <div className="absolute top-full mt-1 left-0 z-40 w-40 bg-[#1e2330] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: 'fixed',
+                        top: coords.direction === 'down' ? `${coords.top}px` : 'auto',
+                        bottom: coords.direction === 'up' ? `${coords.bottom}px` : 'auto',
+                        right: `${coords.right}px`,
+                        zIndex: 9999
+                    }}
+                    className={`w-40 bg-[#1e2330] border border-white/10 rounded-lg shadow-xl overflow-hidden animate-in fade-in duration-100 ${
+                        coords.direction === 'down' ? 'zoom-in-95 mt-1' : 'zoom-in-95 mb-1'
+                    }`}
+                >
                     {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                         <button
                             key={key}
@@ -73,9 +122,10 @@ function StatusBadge({ status, orderId }: { status: string; orderId: string }) {
                             {config.label}
                         </button>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
-        </div>
+        </>
     );
 }
 

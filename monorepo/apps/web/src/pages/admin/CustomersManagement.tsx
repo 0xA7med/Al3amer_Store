@@ -2,17 +2,36 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomers } from '../../hooks/useCustomers';
 
-export function CustomersManagement() {
-    const { customers, isLoading, updateStatus, createCustomer } = useCustomers();
+const GOVERNORATES = [
+    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
+    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
+    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
+    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
+];
+
+const CustomersManagement = () => {
+    const { customers, isLoading, updateStatus, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'blocked'>('all');
     const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState<any>(null);
 
-    const toggleStatus = (id: string, currentStatus: string) => {
-        const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
-        // @ts-ignore
-        updateStatus(id, newStatus as 'active' | 'inactive' | 'blocked');
+    const handleDelete = async (customer: any) => {
+        const confirmMsg = customer.type === 'guest' 
+            ? `هل أنت متأكد من حذف هذا العميل الزائر؟ سيتم حذف جميع طلباته المرتبطة برقم الهاتف (${customer.phone}) نهائياً.`
+            : `هل أنت متأكد من حذف العميل (${customer.name})؟ سيتم حذف جميع بياناته وطلباته نهائياً.`;
+        
+        if (window.confirm(confirmMsg)) {
+            await deleteCustomer(customer.id);
+        }
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingCustomer) return;
+        await updateCustomer(editingCustomer.id, editingCustomer);
+        setEditingCustomer(null);
     };
 
     const filteredCustomers = customers.filter(c => {
@@ -152,7 +171,7 @@ export function CustomersManagement() {
                             <tr>
                                 <th className="px-6 py-4 whitespace-nowrap">العميل</th>
                                 <th className="px-6 py-4 whitespace-nowrap">معلومات الاتصال</th>
-                                <th className="px-6 py-4 whitespace-nowrap">الموقع</th>
+                                <th className="px-6 py-4 whitespace-nowrap">العنوان</th>
                                 <th className="px-6 py-4 whitespace-nowrap">الطلبات</th>
                                 <th className="px-6 py-4 whitespace-nowrap">إجمالي المشتريات</th>
                                 <th className="px-6 py-4 whitespace-nowrap">الحالة</th>
@@ -195,9 +214,13 @@ export function CustomersManagement() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-400">
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-[16px]">location_on</span>
-                                            {customer.location}
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                                {customer.governorate && <span className="font-medium text-white">{customer.governorate}</span>}
+                                                {customer.city && <span className="text-xs">({customer.city})</span>}
+                                            </div>
+                                            {customer.address && <p className="text-xs text-slate-500">{customer.address}</p>}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -227,14 +250,34 @@ export function CustomersManagement() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    toggleStatus(customer.id, customer.status);
+                                                    updateStatus(customer.id, customer.status === 'active' ? 'blocked' : 'active');
                                                 }}
-                                                className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                                className="p-1.5 rounded hover:bg-white/10 text-slate-400 transition-colors"
                                                 title={customer.status === 'active' ? 'حظر' : 'تنشيط'}
                                             >
                                                 <span className={`material-symbols-outlined text-[20px] ${customer.status === 'active' ? 'text-red-400' : 'text-emerald-400'}`}>
                                                     {customer.status === 'active' ? 'block' : 'check_circle'}
                                                 </span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingCustomer(customer);
+                                                }}
+                                                className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition-colors"
+                                                title="تعديل"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(customer);
+                                                }}
+                                                className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                                                title="حذف"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">delete</span>
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -278,6 +321,97 @@ export function CustomersManagement() {
                 </div>
             </div>
 
+            {/* Edit Customer Modal */}
+            {editingCustomer && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-[#1e2330] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white">تعديل بيانات العميل</h3>
+                            <button onClick={() => setEditingCustomer(null)} className="text-slate-400 hover:text-white">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">الاسم الكامل</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editingCustomer.name}
+                                    onChange={e => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all placeholder:text-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">البريد الإلكتروني</label>
+                                <input
+                                    type="email"
+                                    value={editingCustomer.email}
+                                    onChange={e => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all placeholder:text-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={editingCustomer.phone}
+                                    onChange={e => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all placeholder:text-slate-600"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
+                                    <select
+                                        value={editingCustomer.governorate || ''}
+                                        onChange={e => setEditingCustomer({ ...editingCustomer, governorate: e.target.value })}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
+                                    >
+                                        <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
+                                        {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-1">المدينة</label>
+                                    <input
+                                        type="text"
+                                        value={editingCustomer.city || ''}
+                                        onChange={e => setEditingCustomer({ ...editingCustomer, city: e.target.value })}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">العنوان بالتفصيل</label>
+                                <input
+                                    type="text"
+                                    value={editingCustomer.address || ''}
+                                    onChange={e => setEditingCustomer({ ...editingCustomer, address: e.target.value })}
+                                    className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
+                                />
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingCustomer(null)}
+                                    className="flex-1 h-11 bg-white/5 hover:bg-white/10 text-white rounded-lg font-bold transition-all"
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-[2] h-11 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold shadow-lg shadow-primary/20 transition-all"
+                                >
+                                    حفظ التغييرات
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {isAddCustomerOpen && (
                 <AddCustomerModal
                     onClose={() => setIsAddCustomerOpen(false)}
@@ -295,6 +429,8 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
         phone: '',
         password: '',
         address: '',
+        governorate: '',
+        city: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -335,8 +471,29 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
                         <label className="block text-xs font-bold text-slate-400 mb-1">كلمة المرور</label>
                         <input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
+                            <select
+                                value={formData.governorate}
+                                onChange={e => setFormData({ ...formData, governorate: e.target.value })}
+                                className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none transition-all"
+                            >
+                                <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
+                                {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-400 mb-1">المدينة</label>
+                            <input
+                                value={formData.city}
+                                onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary"
+                            />
+                        </div>
+                    </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-400 mb-1">العنوان</label>
+                        <label className="block text-xs font-bold text-slate-400 mb-1">العنوان بالتفصيل</label>
                         <input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
                     </div>
                     <div className="pt-4 flex justify-end gap-3">

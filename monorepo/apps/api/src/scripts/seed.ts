@@ -27,12 +27,27 @@ async function seed() {
 
         // 2. Create Categories
         console.log('Creating categories...');
-        const categoriesData = [
-            { name: 'أجهزة نقاط البيع', slug: 'pos-systems' },
-            { name: 'طابعات الباركود', slug: 'printers' },
-            { name: 'ماسحات الباركود', slug: 'scanners' },
+        const categoriesData: any[] = [
+            { name: 'أجهزة نقاط البيع', slug: 'pos-systems', attributesSchema: [
+                { name: 'OS', type: 'single-select', options: ['Windows', 'Android'] },
+                { name: 'Screen Size', type: 'single-select', options: ['15"', '11"'] },
+                { name: 'RAM', type: 'single-select', options: ['4GB', '8GB'] }
+            ] },
+            { name: 'طابعات الباركود', slug: 'printers', attributesSchema: [
+                { name: 'Print Width', type: 'single-select', options: ['58mm', '80mm'] },
+                { name: 'Connectivity', type: 'multi-select', options: ['USB', 'LAN', 'Bluetooth', 'Wi-Fi'] },
+                { name: 'Type', type: 'single-select', options: ['Receipt', 'Barcode'] }
+            ] },
+            { name: 'ماسحات الباركود', slug: 'scanners', attributesSchema: [
+                { name: 'Scanner Type', type: 'single-select', options: ['1D', '2D'] },
+                { name: 'Connection', type: 'single-select', options: ['Wired', 'Wireless'] },
+                { name: 'Stand', type: 'single-select', options: ['Included', 'None'] }
+            ] },
             { name: 'أدراج النقدية', slug: 'drawers' },
-            { name: 'الموازين الإلكترونية', slug: 'scales' },
+            { name: 'الموازين الإلكترونية', slug: 'scales', attributesSchema: [
+                { name: 'Max Weight', type: 'single-select', options: ['15kg', '30kg'] },
+                { name: 'Type', type: 'single-select', options: ['Barcode', 'Standard'] }
+            ] },
         ];
 
         const createdCategories = await db.insert(categories).values(categoriesData).returning();
@@ -62,7 +77,7 @@ async function seed() {
 
         // 4. Create Sample Products
         console.log('Creating products...');
-        const productsData = [
+        const productsData: any[] = [
             {
                 name: 'Sunmi V2 Pro جهاز كاشير ذكي',
                 description: 'جهاز كاشير ذكي بنظام أندرويد، شاشة 5.5 بوصة، طابعة حرارية مدمجة، قارئ باركود 1D/2D مدمج. مثالي للمحلات الصغيرة والمتوسطة.',
@@ -82,6 +97,7 @@ async function seed() {
                     { key: 'الطابعة', value: '58mm حرارية' },
                     { key: 'البطارية', value: '3500mAh' },
                 ],
+                dynamicAttributes: { 'OS': 'Android', 'Screen Size': '11"', 'RAM': '4GB' },
                 tags: ['جديد', 'الأكثر مبيعاً', 'محمول'],
                 videos: [],
                 metaTitle: 'Sunmi V2 Pro - جهاز كاشير ذكي محمول',
@@ -107,6 +123,7 @@ async function seed() {
                     { key: 'المدى', value: 'حتى 50 سم' },
                     { key: 'الضمان', value: 'سنتان' },
                 ],
+                dynamicAttributes: { 'Scanner Type': '2D', 'Connection': 'Wired', 'Stand': 'Included' },
                 tags: ['عرض خاص', '2D', 'احترافي'],
                 videos: [],
                 metaTitle: 'Zebra DS2208 - قارئ باركود 2D احترافي',
@@ -132,6 +149,7 @@ async function seed() {
                     { key: 'القص', value: 'قص آلي' },
                     { key: 'الاتصال', value: 'USB + Ethernet' },
                 ],
+                dynamicAttributes: { 'Print Width': '80mm', 'Connectivity': ['USB', 'LAN'], 'Type': 'Receipt' },
                 tags: ['طابعة', 'سريعة'],
                 videos: [],
                 metaTitle: 'Epson TM-T20III - طابعة فواتير حرارية',
@@ -157,6 +175,7 @@ async function seed() {
                     { key: 'الطباعة', value: 'ملصقات باركود حرارية' },
                     { key: 'الشاشة', value: 'LCD مزدوجة' },
                 ],
+                dynamicAttributes: { 'Max Weight': '30kg', 'Type': 'Barcode' },
                 tags: ['ميزان', 'باركود', 'طباعة'],
                 videos: [],
                 metaTitle: 'ميزان باركود 30 كجم مع طابعة ملصقات',
@@ -182,6 +201,7 @@ async function seed() {
                     { key: 'الدقة', value: '1024x768' },
                     { key: 'الاتصال', value: 'HDMI + VGA + USB' },
                 ],
+                dynamicAttributes: { 'OS': 'Windows', 'Screen Size': '15"', 'RAM': '8GB' },
                 tags: ['شاشة', 'لمس', 'احترافي'],
                 videos: [],
                 metaTitle: 'شاشة لمس POS 15 بوصة Capacitive',

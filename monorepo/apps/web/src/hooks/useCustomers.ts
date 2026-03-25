@@ -14,6 +14,8 @@ export interface Customer {
     joinDate: string;
     loyaltyPoints: number;
     location?: string;
+    governorate?: string;
+    city?: string;
     type: 'registered' | 'guest';
 }
 
@@ -63,7 +65,9 @@ export function useCustomers(params?: { page?: number; limit?: number }) {
         status: customer.status || 'active',
         joinDate: customer.joinDate ? new Date(customer.joinDate).toLocaleDateString('ar-EG') : 'غير معروف',
         loyaltyPoints: customer.loyaltyPoints || 0,
-        location: customer.address || 'غير محدد',
+        location: customer.governorate ? `${customer.governorate}${customer.city ? ` - ${customer.city}` : ''}` : (customer.address || 'غير محدد'),
+        governorate: customer.governorate,
+        city: customer.city,
         type: (customer as any).type || 'registered',
     }));
 
@@ -90,12 +94,48 @@ export function useCustomers(params?: { page?: number; limit?: number }) {
         return createCustomerMutation.mutateAsync(data);
     };
 
+    const updateCustomerMutation = useMutation({
+        mutationFn: async ({ id, data }: { id: string; data: Partial<Customer> }) => {
+            await api.put(`/users/${id}`, data);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            toast.success('تم تحديث بيانات العميل بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء تحديث بيانات العميل');
+        }
+    });
+
+    const updateCustomer = async (id: string, data: Partial<Customer>) => {
+        return updateCustomerMutation.mutateAsync({ id, data });
+    };
+
+    const deleteCustomerMutation = useMutation({
+        mutationFn: async (id: string) => {
+            await api.delete(`/users/${id}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+            toast.success('تم حذف العميل بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء حذف العميل');
+        }
+    });
+
+    const deleteCustomer = async (id: string) => {
+        return deleteCustomerMutation.mutateAsync(id);
+    };
+
     return {
         customers,
         isLoading: query.isLoading,
         error: query.error?.message || null,
         updateStatus,
         createCustomer,
+        updateCustomer,
+        deleteCustomer,
         pagination: query.data?.pagination,
     };
 }

@@ -37,6 +37,7 @@ export interface Product {
     brand: { id: string; name: string } | null;
     images: { id: string; url: string; isPrimary: boolean }[];
     specifications?: any;
+    dynamicAttributes?: Record<string, string | string[]>;
     tags?: string[];
     salesCount?: number;
     reviewCount?: number;
@@ -71,6 +72,7 @@ interface UseProductsParams {
     categories?: string | string[];
     search?: string;
     featured?: boolean;
+    dynamicFilters?: string;
 }
 
 export function useProducts(params?: UseProductsParams) {

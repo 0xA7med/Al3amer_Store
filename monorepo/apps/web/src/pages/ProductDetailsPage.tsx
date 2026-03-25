@@ -480,24 +480,49 @@ export const ProductDetailsPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 flex flex-col gap-8">
                         {activeTab === 'specs' && (
-                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center gap-2">
-                                    <Cpu className="w-5 h-5 text-primary" />
-                                    <h3 className="text-lg font-bold text-white">تفاصيل الجهاز التقنية</h3>
+                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
+                                <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
+                                    <Cpu className="w-6 h-6 text-primary" />
+                                    <h3 className="text-xl font-bold text-white">المواصفات الفنية</h3>
                                 </div>
-                                <div className="divide-y divide-white/5 text-sm md:text-base">
-                                    {specifications.length > 0 ? specifications.map((spec, idx) => (
-                                        <div key={idx} className={`grid grid-cols-1 md:grid-cols-3 p-4 hover:bg-white/5 transition-colors group ${idx % 2 !== 0 ? 'bg-surface-dark/30' : ''}`}>
-                                            <span className="text-slate-400 font-medium md:col-span-1 flex items-center gap-2">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors"></span>
-                                                {displayLabelMap[spec.key.toLowerCase()] || spec.key}
-                                            </span>
-                                            <span className="text-white font-medium mt-1 md:mt-0 md:col-span-2 break-words">{spec.value}</span>
+                                
+                                {(() => {
+                                    // Merge dynamicAttributes and legacy specifications
+                                    const dynamicSpecs = Object.entries(product.dynamicAttributes || {}).map(([k, v]) => ({
+                                        key: k,
+                                        value: Array.isArray(v) ? v.join(' ، ') : String(v)
+                                    }));
+                                    
+                                    const merged = [...dynamicSpecs];
+                                    specifications.forEach(spec => {
+                                        if (!merged.some(m => m.key.toLowerCase() === spec.key.toLowerCase())) {
+                                            merged.push(spec);
+                                        }
+                                    });
+
+                                    if (merged.length === 0) {
+                                        return <div className="p-8 text-center text-slate-500 italic">لا توجد مواصفات فنية لهذا المنتج حالياً.</div>;
+                                    }
+
+                                    return (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {merged.map((spec, idx) => (
+                                                <div 
+                                                    key={idx} 
+                                                    className="p-4 bg-[#101622]/80 backdrop-blur rounded-xl border border-white/5 hover:border-primary/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group"
+                                                >
+                                                    <span className="text-slate-400 font-medium text-sm flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors"></span>
+                                                        {displayLabelMap[spec.key.toLowerCase()] || spec.key}
+                                                    </span>
+                                                    <span className="text-white font-bold text-sm sm:text-right break-words max-w-[70%]">
+                                                        {spec.value}
+                                                    </span>
+                                                </div>
+                                            ))}
                                         </div>
-                                    )) : (
-                                        <div className="p-8 text-center text-slate-500 italic">لا توجد مواصفات فنية لهذا المنتج حالياً.</div>
-                                    )}
-                                </div>
+                                    );
+                                })()}
                             </div>
                         )}
 

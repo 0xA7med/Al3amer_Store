@@ -67,6 +67,7 @@ export class ProductsController {
                 hasDiscount,
                 sort,
                 exclude,
+                dynamicFilters,
             } = req.query;
 
             const pageNum = parseInt(page as string);
@@ -111,6 +112,20 @@ export class ProductsController {
 
             if (minPrice) {
                 conditions.push(gte(products.price, minPrice as string));
+            }
+
+            if (dynamicFilters) {
+                try {
+                    const filtersObj = JSON.parse(dynamicFilters as string);
+                    for (const [key, values] of Object.entries(filtersObj)) {
+                        if (Array.isArray(values) && values.length > 0) {
+                            const valueList = values.map(v => sql`${v}`);
+                            conditions.push(sql`${products.dynamicAttributes}->${key} ?| array[${sql.join(valueList, sql`, `)}]`);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to parse dynamicFilters query param:', e);
+                }
             }
 
             const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -332,6 +347,7 @@ export class ProductsController {
                 metaDescription,
                 isFeatured,
                 specifications,
+                dynamicAttributes,
                 tags,
                 images: imageUrls,
                 slug: manualSlug,
@@ -372,6 +388,7 @@ export class ProductsController {
                 metaDescription,
                 isFeatured: isFeatured || false,
                 specifications,
+                dynamicAttributes: dynamicAttributes || null,
                 tags,
             }).returning();
 
@@ -444,6 +461,7 @@ export class ProductsController {
                 metaDescription,
                 isFeatured,
                 specifications,
+                dynamicAttributes,
                 tags,
                 images,
                 slug: manualSlug,
@@ -482,6 +500,7 @@ export class ProductsController {
                 metaDescription,
                 isFeatured,
                 specifications,
+                dynamicAttributes: dynamicAttributes !== undefined ? dynamicAttributes : undefined,
                 tags,
                 updatedAt: new Date(),
             };

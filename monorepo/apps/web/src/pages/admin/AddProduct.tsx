@@ -138,6 +138,7 @@ export function AddProduct() {
     const [images, setImages] = useState<{ url: string; isPrimary: boolean }[]>([]);
     const [selectedConnectivity, setSelectedConnectivity] = useState<string[]>([]);
     const [selectedUsage, setSelectedUsage] = useState<string[]>([]);
+    const [dynamicAttributes, setDynamicAttributes] = useState<Record<string, string | string[]>>({});
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
@@ -191,6 +192,10 @@ export function AddProduct() {
             const usageSpec = finalSpecs.find(s => s.key === 'usage' || s.key === 'الاستخدام')?.value;
             if (usageSpec) setSelectedUsage(usageSpec.split(',').map(s => s.trim()));
 
+            if (productData.dynamicAttributes) {
+                setDynamicAttributes(productData.dynamicAttributes);
+            }
+
             if (productData.tags) setTags(productData.tags);
             if (productData.images) {
                 setImages(productData.images.map((img: any) => ({ url: img.url, isPrimary: img.isPrimary })));
@@ -201,8 +206,12 @@ export function AddProduct() {
     // ---- Derived ----
     const categoryOptions = useMemo(() => buildCategoryOptions(categoriesList), [categoriesList]);
 
-    // Hardware specs are always shown — this is a hardware/POS store
-    const showHardwareSpecs = true;
+    const selectedCategoryData = useMemo(() => {
+        if (!formData.category) return null;
+        return categoriesList.find((c: any) => c.id === formData.category) || null;
+    }, [formData.category, categoriesList]);
+
+    const dynamicAttributesSchema = selectedCategoryData?.attributesSchema || [];
 
     // ---- Handlers ----
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -334,6 +343,7 @@ export function AddProduct() {
             discountPrice: formData.discountPrice || null,
             cost: formData.cost || null,
             specifications: finalSpecs,
+            dynamicAttributes,
             tags,
             images,
             categoryId: formData.category || null,
@@ -778,44 +788,49 @@ export function AddProduct() {
                                 )}
                             </div>
 
-                            {/* Hardware Props (Conditional) */}
-                            {showHardwareSpecs && (
+                            {/* Dynamic Category Attributes */}
+                            {dynamicAttributesSchema.length > 0 && (
                                 <div className="glass-card border-t-2 border-t-blue-500/30">
                                     <div className="card-header">
-                                        <span className="material-symbols-outlined text-blue-400">settings_input_component</span>
-                                        <h3>خصائص الهاردوير</h3>
+                                        <span className="material-symbols-outlined text-blue-400">tune</span>
+                                        <h3>خصائص المنتج (حسب القسم)</h3>
                                     </div>
                                     <div className="space-y-6">
-                                        <div>
-                                            <label className="field-label mb-3">خيارات الاتصال (Connectivity)</label>
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                                {['USB', 'Bluetooth', 'Wi-Fi', 'Ethernet', 'RS232', 'RJ11'].map(conn => (
-                                                    <button
-                                                        key={conn}
-                                                        type="button"
-                                                        onClick={() => setSelectedConnectivity(prev => prev.includes(conn) ? prev.filter(c => c !== conn) : [...prev, conn])}
-                                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${selectedConnectivity.includes(conn) ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'}`}
-                                                    >
-                                                        {conn}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="field-label mb-3">نمط الاستخدام (Usage)</label>
-                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                                {['Handheld', 'Desktop', 'Industrial', 'Mobile', 'Wall Mount'].map(usage => (
-                                                    <button
-                                                        key={usage}
-                                                        type="button"
-                                                        onClick={() => setSelectedUsage(prev => prev.includes(usage) ? prev.filter(u => u !== usage) : [...prev, usage])}
-                                                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${selectedUsage.includes(usage) ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'}`}
-                                                    >
-                                                        {usage}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        {dynamicAttributesSchema.map((schemaBlock: any, idx: number) => {
+                                            const isMulti = schemaBlock.type === 'multi-select';
+                                            const currentValue = dynamicAttributes[schemaBlock.name];
+                                            const selectedArray = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : []);
+                                            
+                                            return (
+                                                <div key={idx}>
+                                                    <label className="field-label mb-3">{schemaBlock.name} ({isMulti ? 'متعدد' : 'اختيار واحد'})</label>
+                                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                                        {schemaBlock.options.map((opt: string) => {
+                                                            const isSelected = selectedArray.includes(opt);
+                                                            return (
+                                                                <button
+                                                                    key={opt}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setDynamicAttributes(prev => {
+                                                                            if (isMulti) {
+                                                                                const newArr = isSelected ? selectedArray.filter(x => x !== opt) : [...selectedArray, opt];
+                                                                                return { ...prev, [schemaBlock.name]: newArr };
+                                                                            } else {
+                                                                                return { ...prev, [schemaBlock.name]: isSelected ? '' : opt };
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${isSelected ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'}`}
+                                                                >
+                                                                    {opt}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

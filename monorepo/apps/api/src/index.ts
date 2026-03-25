@@ -17,6 +17,7 @@ import wishlistRouter from './routes/wishlist.js';
 import brandsRouter from './routes/brands.js';
 import webhookRouter from './routes/webhook.js';
 import debugRouter from './routes/debug.js';
+import metadataRouter from './routes/metadata.js';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/addresses', addressesRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/webhook', webhookRouter);
 app.use('/api/debug', debugRouter);
+app.use('/api/metadata', metadataRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

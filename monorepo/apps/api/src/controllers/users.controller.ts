@@ -81,6 +81,8 @@ export class UsersController {
                 status: string;
                 joinDate: string;
                 loyaltyPoints: number;
+                governorate?: string;
+                city?: string;
                 type: 'registered' | 'guest';
             }>();
 
@@ -110,6 +112,8 @@ export class UsersController {
                             status: regUser.status || 'active',
                             joinDate: (regUser.createdAt as any)?.toISOString?.() || String(regUser.createdAt),
                             loyaltyPoints: regUser.loyaltyPoints || 0,
+                            governorate: undefined, // Will be filled from order or user metadata if we had it
+                            city: undefined,
                             type: 'registered',
                         });
                     } else {
@@ -119,12 +123,14 @@ export class UsersController {
                             name: row.full_name || 'زائر',
                             email: row.email || '',
                             phone,
-                            address: null,
+                            address: row.address || null,
                             orders: 0,
                             totalSpent: 0,
-                            status: 'guest',
+                            status: 'active', // Show as active by default for guest buyers
                             joinDate: row.created_at?.toISOString?.() || String(row.created_at),
                             loyaltyPoints: 0,
+                            governorate: row.governorate,
+                            city: row.city,
                             type: 'guest',
                         });
                     }
@@ -150,6 +156,8 @@ export class UsersController {
                         status: u.status || 'active',
                         joinDate: (u.createdAt as any)?.toISOString?.() || String(u.createdAt),
                         loyaltyPoints: u.loyaltyPoints || 0,
+                        governorate: undefined,
+                        city: undefined,
                         type: 'registered',
                     });
                 }
@@ -246,6 +254,28 @@ export class UsersController {
                 return res.status(400).json({ error: 'Invalid status' });
             }
 
+            // If it's a guest ID (guest_...)
+            if (id.startsWith('guest_')) {
+                const phone = id.replace('guest_', '');
+                // 1. Check if user already exists (maybe they just registered?)
+                const existing = await db.query.users.findFirst({ where: eq(users.phone, phone) });
+                if (existing) {
+                    const [updated] = await db.update(users).set({ status }).where(eq(users.id, existing.id)).returning();
+                    return res.json(updated);
+                }
+                
+                // 2. Create a "shadow user" to persist the status
+                const [newUser] = await db.insert(users).values({
+                    name: 'زائر',
+                    email: `guest_${phone}@al3amer.store`, // Placeholder unique email
+                    phone,
+                    role: 'customer',
+                    status,
+                    password: '---', // Locked
+                }).returning();
+                return res.json(newUser);
+            }
+
             const [updatedUser] = await db.update(users).set({ status }).where(eq(users.id, id)).returning();
             if (!updatedUser) return res.status(404).json({ error: 'User not found' });
 
@@ -253,6 +283,87 @@ export class UsersController {
         } catch (error) {
             console.error('Error updating user status:', error);
             res.status(500).json({ error: 'Failed to update user status' });
+        }
+    }
+
+    // DELETE /api/users/:id - Delete user OR guest and their associations
+    static async deleteCustomer(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            if (id.startsWith('guest_')) {
+                const phone = id.replace('guest_', '');
+                // For a guest, "Delete" means deleting all their orders (associated by phone)
+                await db.delete(orders).where(eq(orders.phone, phone));
+                return res.json({ message: 'Guest orders deleted' });
+            }
+
+            const user = await db.query.users.findFirst({ where: eq(users.id, id) });
+            if (!user) return res.status(404).json({ error: 'User not found' });
+
+            // Delete user and their orders
+            await db.delete(orders).where(eq(orders.userId, id));
+            await db.delete(users).where(eq(users.id, id));
+
+            res.json({ message: 'User and associated orders deleted' });
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            res.status(500).json({ error: 'Failed to delete customer' });
+        }
+    }
+
+    // PUT /api/users/:id - Admin update user details
+    static async updateCustomer(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { name, email, phone, address, governorate, city } = req.body;
+
+            // Basic Validation
+            if (!name) return res.status(400).json({ error: 'الاسم مطلوب' });
+
+            if (id.startsWith('guest_')) {
+                const oldPhone = id.replace('guest_', '');
+                const existing = await db.query.users.findFirst({ where: eq(users.phone, oldPhone) });
+                
+                if (existing) {
+                    const updateData: any = { name, phone, address, updatedAt: new Date() };
+                    if (email) updateData.email = email;
+
+                    const [updated] = await db.update(users)
+                        .set(updateData)
+                        .where(eq(users.id, existing.id))
+                        .returning();
+                    return res.json(updated);
+                }
+
+                const [newUser] = await db.insert(users).values({
+                    name,
+                    email: email || `guest_${phone || oldPhone}@al3amer.store`,
+                    phone: phone || oldPhone,
+                    address: address || null,
+                    role: 'customer',
+                    status: 'active',
+                    password: '---'
+                }).returning();
+                return res.json(newUser);
+            }
+
+            const updateData: any = { name, phone, address, updatedAt: new Date() };
+            if (email) updateData.email = email;
+
+            const [updatedUser] = await db.update(users)
+                .set(updateData)
+                .where(eq(users.id, id))
+                .returning();
+            
+            if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+            res.json(updatedUser);
+        } catch (error: any) {
+            console.error('Update customer error:', error);
+            if (error.code === '23505') { // Postgres unique_violation
+                return res.status(400).json({ error: 'البريد الإلكتروني أو رقم الهاتف مستخدم بالفعل لعميل آخر' });
+            }
+            res.status(500).json({ error: 'حدث خطأ في النظام أثناء التحديث' });
         }
     }
 }

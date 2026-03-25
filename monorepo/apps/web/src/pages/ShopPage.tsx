@@ -126,6 +126,7 @@ interface CategoryNode {
     parentId?: string | null;
     isActive?: boolean;
     productCount?: number;
+    activeProductCount?: number;
     children?: CategoryNode[];
 }
 
@@ -142,9 +143,9 @@ function CategoryTreeItem({
     const hasChildren = node.children && node.children.length > 0;
     const isChecked = selectedCategories.includes(node.slug);
 
-    // Use productCount from node if available (from backend), fallback to calculated counts
-    const count = (node as any).productCount !== undefined 
-        ? (node as any).productCount 
+    // Use activeProductCount for customers, fallback to calculated counts
+    const count = node.activeProductCount !== undefined 
+        ? node.activeProductCount 
         : (categoryCounts[node.slug] || 0);
 
     return (
@@ -231,14 +232,14 @@ function filterEmptyCategories(nodes: CategoryNode[]): CategoryNode[] {
         const children = node.children ? filterEmptyCategories(node.children) : [];
         const hasActiveChildren = children.length > 0;
         
-        // Calculate total count for this node (direct + children)
-        const childrenCount = children.reduce((sum, child) => sum + (child.productCount || 0), 0);
-        const totalCount = (node.productCount || 0) + childrenCount;
+        // Calculate total ACTIVE count for this node (direct + children)
+        const childrenActiveCount = children.reduce((sum, child) => sum + (child.activeProductCount || 0), 0);
+        const nodeActiveCount = (node.activeProductCount || 0) + childrenActiveCount;
         
-        const hasDirectProducts = (node.productCount || 0) > 0;
+        const hasDirectActiveProducts = (node.activeProductCount || 0) > 0;
 
-        if (hasDirectProducts || hasActiveChildren) {
-            acc.push({ ...node, children, productCount: totalCount });
+        if (hasDirectActiveProducts || hasActiveChildren) {
+            acc.push({ ...node, children, activeProductCount: nodeActiveCount });
         }
         return acc;
     }, []);
@@ -274,8 +275,6 @@ const SPEC_LABEL_MAP: Record<string, string> = {
 const FILTERABLE_SPEC_KEYS = new Set([
     'connectivity', 'اتصال',
     'usage', 'الاستخدام',
-    'نظام التشغيل',
-    'الشاشة',
 ]);
 
 // =========================================================
@@ -337,10 +336,21 @@ export function ShopPage() {
         return Array.from(new Set(allSlugs));
     }, [selectedCategories, activeCategories]);
 
+    const dynamicFiltersParam = useMemo(() => {
+        const filters: Record<string, string[]> = {};
+        for (const [key, values] of Object.entries(selectedSpecs)) {
+            if (values.length > 0) {
+                filters[key] = values;
+            }
+        }
+        return Object.keys(filters).length > 0 ? JSON.stringify(filters) : undefined;
+    }, [selectedSpecs]);
+
     const { data: productsData, isLoading } = useProducts({
         limit: 1000,
         categories: expandedCategories,
-        search: querySearch
+        search: querySearch,
+        dynamicFilters: dynamicFiltersParam
     });
 
     const products = productsData?.data || [];
@@ -367,34 +377,90 @@ export function ShopPage() {
 
     // ── Dynamic Spec Facets (Amazon-style) ──
     const specFacets = useMemo(() => {
+        // Priority 1: Use Category attributesSchema if a specific category is selected
+        if (selectedCategories.length === 1) {
+            const cat = activeCategories.find((c: any) => c.slug === selectedCategories[0]);
+            if (cat && cat.attributesSchema && Array.isArray(cat.attributesSchema) && cat.attributesSchema.length > 0) {
+                // Map schema to facets
+                const schemaFacets = cat.attributesSchema.map((block: any) => ({
+                    key: block.name,
+                    label: block.name,
+                    values: block.options || []
+                }));
+
+                // ONLY show options that actually exist in the current filtered products for this category
+                // (Optional but recommended for better UX)
+                const availableValues = new Map<string, Set<string>>();
+                products.forEach(p => {
+                    const attrs = p.dynamicAttributes || {};
+                    Object.entries(attrs).forEach(([k, v]) => {
+                        if (!availableValues.has(k)) availableValues.set(k, new Set());
+                        const vals = Array.isArray(v) ? v : [v];
+                        vals.forEach(val => availableValues.get(k)!.add(String(val)));
+                    });
+                });
+
+                return schemaFacets.map(f => ({
+                    ...f,
+                    values: f.values.filter(v => availableValues.get(f.key)?.has(v))
+                })).filter(f => f.values.length > 0);
+            }
+        }
+
+        // Priority 2: Fallback to inferring from products (for multi-category or no schema)
         const facetMap = new Map<string, Set<string>>();
 
         products.forEach(product => {
+            // New dynamicAttributes structure
+            if (product.dynamicAttributes && typeof product.dynamicAttributes === 'object') {
+                Object.entries(product.dynamicAttributes).forEach(([key, value]) => {
+                    if (!value) return;
+                    if (!facetMap.has(key)) facetMap.set(key, new Set());
+                    
+                    const values = Array.isArray(value) ? value : [value];
+                    values.forEach(v => {
+                        const strVal = String(v).trim();
+                        if (strVal) facetMap.get(key)!.add(strVal);
+                    });
+                });
+            }
+
+            // Fallback: Legacy specifications array (only for common keys)
             const specs = product.specifications;
-            if (!specs || !Array.isArray(specs)) return;
+            if (specs && Array.isArray(specs)) {
+                specs.forEach((spec: any) => {
+                    const key = spec.key?.trim();
+                    if (!key || !spec.value) return;
 
-            specs.forEach((spec: any) => {
-                const key = spec.key?.toLowerCase().trim();
-                if (!key || !spec.value) return;
+                    // Only build facets for known filterable keys from legacy
+                    if (!FILTERABLE_SPEC_KEYS.has(key.toLowerCase())) return;
 
-                // Only build facets for known filterable keys
-                if (!FILTERABLE_SPEC_KEYS.has(key)) return;
-
-                if (!facetMap.has(key)) facetMap.set(key, new Set());
-
-                // Split comma-separated values (e.g. "USB, Bluetooth")
-                const values = String(spec.value).split(/[,،]/).map(v => v.trim()).filter(Boolean);
-                values.forEach(v => facetMap.get(key)!.add(v));
-            });
+                    if (!facetMap.has(key)) facetMap.set(key, new Set());
+                    const values = String(spec.value).split(/[,،]/).map(v => v.trim()).filter(Boolean);
+                    values.forEach(v => facetMap.get(key)!.add(v));
+                });
+            }
         });
 
-        // Convert to array of facet groups
-        return Array.from(facetMap.entries()).map(([key, values]) => ({
-            key,
-            label: SPEC_LABEL_MAP[key] || key,
-            values: Array.from(values).sort()
+        // Convert to array of facet groups, merging those with same label
+        const groupsByLabel = new Map<string, { key: string; label: string; values: Set<string> }>();
+        
+        facetMap.forEach((values, key) => {
+            const label = SPEC_LABEL_MAP[key] || key;
+            if (!groupsByLabel.has(label)) {
+                groupsByLabel.set(label, { key, label, values: new Set(values) });
+            } else {
+                const group = groupsByLabel.get(label)!;
+                values.forEach(v => group.values.add(v));
+            }
+        });
+
+        return Array.from(groupsByLabel.values()).map(g => ({
+            key: g.key,
+            label: g.label,
+            values: Array.from(g.values).sort()
         })).filter(f => f.values.length > 0);
-    }, [products]);
+    }, [products, selectedCategories, activeCategories]);
 
     // ── Category Counts ──
     const categoryCounts = useMemo(() => {
@@ -435,17 +501,29 @@ export function ShopPage() {
             for (const [specKey, selectedValues] of Object.entries(selectedSpecs)) {
                 if (selectedValues.length === 0) continue;
 
-                const specs = product.specifications || [];
-                if (!Array.isArray(specs)) continue;
+                let hasMatch = false;
 
-                const spec = specs.find((s: any) =>
-                    s.key?.toLowerCase().trim() === specKey
-                );
+                // 1. Check dynamicAttributes
+                const attrs = product.dynamicAttributes;
+                if (attrs && attrs[specKey]) {
+                    const productValues = Array.isArray(attrs[specKey]) ? attrs[specKey] : [attrs[specKey]];
+                    const productValuesLower = (productValues as string[]).map(v => String(v).trim().toLowerCase());
+                    hasMatch = selectedValues.some(sv => productValuesLower.includes(sv.toLowerCase()));
+                }
 
-                if (!spec) return false;
+                // 2. Fallback to legacy specifications list
+                if (!hasMatch) {
+                    const specs = product.specifications || [];
+                    if (Array.isArray(specs)) {
+                        /* We check case insensitive matching for key if fallback */
+                        const spec = specs.find((s: any) => s.key?.trim().toLowerCase() === specKey.toLowerCase());
+                        if (spec) {
+                            const productValues = String(spec.value).split(/[,،]/).map(v => v.trim().toLowerCase());
+                            hasMatch = selectedValues.some(sv => productValues.includes(sv.toLowerCase()));
+                        }
+                    }
+                }
 
-                const productValues = String(spec.value).split(/[,،]/).map(v => v.trim().toLowerCase());
-                const hasMatch = selectedValues.some(sv => productValues.includes(sv.toLowerCase()));
                 if (!hasMatch) return false;
             }
 
@@ -630,10 +708,10 @@ export function ShopPage() {
                         )}
 
                         {/* ── Dynamic Spec Facets (Amazon-style) ── */}
-                        {specFacets.map(facet => (
+                        {specFacets.map((facet: { key: string; label: string; values: string[] }) => (
                             <FilterSection key={facet.key} title={facet.label} icon="tune" defaultOpen={false}>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {facet.values.map(value => {
+                                    {facet.values.map((value: string) => {
                                         const isActive = (selectedSpecs[facet.key] || []).includes(value);
                                         return (
                                             <button
