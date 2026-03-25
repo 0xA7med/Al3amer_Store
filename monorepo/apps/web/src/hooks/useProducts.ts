@@ -98,6 +98,16 @@ export function useFeaturedProducts(limit = 8) {
     });
 }
 
+export function useBestSellers(limit = 8) {
+    return useQuery({
+        queryKey: ['products', 'best-selling', limit],
+        queryFn: async () => {
+            const { data } = await api.get<ProductsResponse>(`/products?sort=bestselling&status=active&limit=${limit}`);
+            return data.data;
+        }
+    });
+}
+
 export function useNewArrivals(limit = 8) {
     return useQuery({
         queryKey: ['products', 'newest', limit],
@@ -134,6 +144,16 @@ export function useCategories() {
         queryKey: ['categories'],
         queryFn: async () => {
             const { data } = await api.get('/categories');
+            return data;
+        },
+    });
+}
+
+export function useBrands() {
+    return useQuery({
+        queryKey: ['brands'],
+        queryFn: async () => {
+            const { data } = await api.get('/brands');
             return data;
         },
     });

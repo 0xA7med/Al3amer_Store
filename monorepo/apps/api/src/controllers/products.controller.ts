@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { products, productImages, categories, brands, reviews, orderItems, settings } from '../db/schema.js';
-import { eq, like, and, gte, ilike, or, inArray, sql } from 'drizzle-orm';
+import { eq, like, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
 import { AIService } from '../services/ai.service.js';
 
@@ -115,30 +115,70 @@ export class ProductsController {
 
             const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-            const productsList = await db.query.products.findMany({
-                where,
-                limit: limitNum,
-                offset,
-                orderBy: (products, { desc, asc }) => {
-                    if (sort === 'newest') return [desc(products.createdAt)];
-                    if (sort === 'price_asc') return [asc(products.price)];
-                    if (sort === 'price_desc') return [desc(products.price)];
-                    return [desc(products.createdAt)]; // Default to newest
-                },
-                with: {
-                    category: {
+            let productsList: any[] = [];
+            if (sort === 'bestselling') {
+                const results = await db.select({
+                    id: products.id,
+                    totalSales: sql<number>`COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`,
+                })
+                    .from(products)
+                    .leftJoin(orderItems, eq(products.id, orderItems.productId))
+                    .where(where)
+                    .groupBy(products.id)
+                    .orderBy(desc(sql`totalSales`), desc(products.createdAt))
+                    .limit(limitNum)
+                    .offset(offset);
+
+                const ids = results.map(r => r.id);
+                if (ids.length === 0) {
+                    productsList = [];
+                } else {
+                    const detailedProducts = await db.query.products.findMany({
+                        where: inArray(products.id, ids),
                         with: {
-                            parent: {
-                                with: { parent: true }
+                            category: {
+                                with: {
+                                    parent: {
+                                        with: { parent: true }
+                                    }
+                                }
+                            },
+                            brand: true,
+                            images: {
+                                orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                            },
+                        },
+                    });
+                    // Reorder because findMany where inArray doesn't preserve incoming array order
+                    productsList = ids.map(id => detailedProducts.find(p => p.id === id)).filter(Boolean);
+                }
+            } else {
+                productsList = await db.query.products.findMany({
+                    where,
+                    limit: limitNum,
+                    offset,
+                    orderBy: (products, { desc, asc }) => {
+                        if (sort === 'newest') return [desc(products.createdAt)];
+                        if (sort === 'price_asc') return [asc(products.price)];
+                        if (sort === 'price_desc') return [desc(products.price)];
+                        return [desc(products.createdAt)]; // Default to newest
+                    },
+                    with: {
+                        category: {
+                            with: {
+                                parent: {
+                                    with: { parent: true }
+                                }
                             }
-                        }
+                        },
+                        brand: true,
+                        images: {
+                            orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                        },
                     },
-                    brand: true,
-                    images: {
-                        orderBy: (images, { asc }) => [asc(images.sortOrder)],
-                    },
-                },
-            });
+                });
+            }
+
 
             res.json({
                 data: productsList,

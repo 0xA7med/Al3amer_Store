@@ -28,6 +28,7 @@ import ProductList from './pages/admin/ProductList';
 import AddProduct from './pages/admin/AddProduct';
 import OrdersManagement from './pages/admin/OrdersManagement';
 import CustomersManagement from './pages/admin/CustomersManagement';
+import CustomerProfile from './pages/admin/CustomerProfile';
 import CategoriesManagement from './pages/admin/CategoriesManagement';
 import CouponsManagement from './pages/admin/CouponsManagement';
 import ReviewsModeration from './pages/admin/ReviewsModeration';
@@ -114,6 +115,7 @@ function App() {
                 <Route path="products/:id" element={<AddProduct />} />
                 <Route path="orders" element={<OrdersManagement />} />
                 <Route path="customers" element={<CustomersManagement />} />
+                <Route path="customers/:phone" element={<CustomerProfile />} />
                 <Route path="categories" element={<CategoriesManagement />} />
                 <Route path="coupons" element={<CouponsManagement />} />
                 <Route path="reviews" element={<ReviewsModeration />} />

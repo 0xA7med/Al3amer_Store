@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useProduct, useCategories } from '../../hooks/useProducts';
+import { useProduct, useCategories, useBrands } from '../../hooks/useProducts';
 import { useCreateProduct, useUpdateProduct } from '../../hooks/useAdmin';
 import { useCategories as useCategoriesHook } from '../../hooks/useCategories';
 import { CustomSelect } from '../../components/ui/CustomSelect';
+import { BrandSelect } from '../../components/admin/BrandSelect';
 import { CategoryModal } from './CategoriesManagement';
 import toast from 'react-hot-toast';
 
@@ -101,7 +102,9 @@ export function AddProduct() {
     // Queries & Mutations
     const { data: productData, isLoading: isLoadingProduct } = useProduct(id || '');
     const { data: categoriesData } = useCategories();
+    const { data: brandsData } = useBrands();
     const categoriesList: any[] = Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.data || [];
+    const brandsList: any[] = Array.isArray(brandsData) ? brandsData : (brandsData as any)?.data || [];
     const createProductMutation = useCreateProduct();
     const updateProductMutation = useUpdateProduct();
     const { createCategory, isCreating: isCreatingCategory } = useCategoriesHook();
@@ -869,19 +872,15 @@ export function AddProduct() {
                                             placeholder="اختر القسم..."
                                         />
                                     </div>
- 
-                                    {/* Brand (Manual text for now as no Brand Management exists) */}
-                                    <div>
-                                        <label className="field-label">العلامة التجارية (Brand)</label>
-                                        <input
-                                            type="text"
-                                            name="brand"
-                                            value={formData.brand}
-                                            onChange={handleInputChange}
-                                            className="input-field text-sm"
-                                            placeholder="مثال: Sunmi, HP, Canon..."
-                                        />
-                                    </div>
+
+                                    {/* Brand Selection */}
+                                    <BrandSelect
+                                        label="العلامة التجارية (Brand)"
+                                        value={formData.brand}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, brand: val }))}
+                                        brands={brandsList}
+                                        placeholder="مثال: Sunmi, HP, Canon..."
+                                    />
 
                                     {/* Tags */}
                                     <div>

@@ -1,28 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import { ProductCard } from '../components/products';
 
-import { useFeaturedProducts, useCategories, useNewArrivals, useOffers } from '../hooks/useProducts';
+import { useCategories, useNewArrivals, useOffers, useBestSellers, useFeaturedProducts } from '../hooks/useProducts';
+
+
 
 export function HomePage() {
-    const { data: featuredProducts, isLoading: isFeaturedLoading } = useFeaturedProducts(12); // Fetch more for hero + grid
-    const { data: newArrivals, isLoading: isNewLoading } = useNewArrivals(4);
+    const { data: bestSellers, isLoading: isBestSellersLoading } = useBestSellers(10);
+    const { data: featuredProducts, isLoading: isFeaturedLoading } = useFeaturedProducts(10);
+    const { data: newArrivals, isLoading: isNewLoading } = useNewArrivals(10);
+
     const { data: offerProducts, isLoading: isOffersLoading } = useOffers(4);
     const { data: categories } = useCategories();
 
     const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+
+    // Combine all sources for a rich hero display, ensuring we always have data to cycle
+    const heroProducts = useMemo(() => {
+        const combined = [
+            ...(bestSellers || []), 
+            ...(featuredProducts || []), 
+            ...(newArrivals || [])
+        ];
+        const uniqueIds = Array.from(new Set(combined.map(p => p.id)));
+        return uniqueIds
+            .map(id => combined.find(p => p.id === id))
+            .filter(Boolean)
+            .slice(0, 10);
+    }, [bestSellers, featuredProducts, newArrivals]);
 
     useEffect(() => {
-        if (!featuredProducts || featuredProducts.length <= 1) return;
+        if (heroProducts.length <= 1 || isPaused) return;
         
-        const maxItems = Math.min(featuredProducts.length, 8); // Cycle through up to 8 products
         const interval = setInterval(() => {
-            setCurrentHeroIndex(prev => (prev + 1) % maxItems);
-        }, 5000); // Change product every 5 seconds
+            setCurrentHeroIndex(prev => (prev + 1) % heroProducts.length);
+        }, 3000);
         
         return () => clearInterval(interval);
-    }, [featuredProducts]);
+    }, [heroProducts.length, currentHeroIndex, isPaused]);
+
+
+
+
 
     return (
         <>
@@ -83,78 +107,118 @@ export function HomePage() {
                             </div>
                         </div>
 
-                        {/* Hero Image Design Provided by User - Now Dynamic */}
-                        <div className="relative hidden lg:block">
+                        <div 
+                            className="relative hidden lg:block"
+                            onMouseEnter={() => setIsPaused(true)}
+                            onMouseLeave={() => setIsPaused(false)}
+                        >
+
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px]"></div>
                             
-                            {isFeaturedLoading ? (
+                            {(isBestSellersLoading || isFeaturedLoading || isNewLoading) ? (
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                                 </div>
-                            ) : featuredProducts && featuredProducts.length > 0 ? (
-                                (() => {
-                                    const topProduct = featuredProducts[currentHeroIndex] || featuredProducts[0];
-                                    const imageUrl = topProduct.images.find(i => i.isPrimary)?.url || topProduct.images[0]?.url || '';
-                                    const hasDiscount = !!topProduct.discountPrice;
-                                    const price = parseFloat(topProduct.price);
-                                    const discountPrice = hasDiscount ? parseFloat(topProduct.discountPrice as string) : price;
-                                    const discountPercent = hasDiscount && price > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
-                                    
-                                    return (
-                                        <Link to={`/product/${topProduct.slug}`} className="block relative glass-card p-4 rounded-2xl border border-white/10 rotate-[-2deg] hover:rotate-0 transition-all duration-500 group">
-                                            <div 
-                                                className="w-full aspect-[4/3] bg-[#000000]/40 rounded-xl overflow-hidden group-hover:scale-[1.02] transition-transform duration-500" 
-                                                style={{ 
-                                                    backgroundImage: `url('${imageUrl}')`, 
-                                                    backgroundSize: 'contain', 
-                                                    backgroundRepeat: 'no-repeat',
-                                                    backgroundPosition: 'center' 
-                                                }}>
-                                            </div>
-                                            
-                                            {/* Name / Price Toast */}
-                                            <div className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 glass-panel px-4 py-3 rounded-xl flex flex-col items-start gap-1 shadow-[0_10px_40px_-10px_rgba(19,91,236,0.4)] border border-white/10 backdrop-blur-xl z-20 transition-transform group-hover:-translate-y-2">
-                                                <p className="text-white font-bold text-sm max-w-[200px] truncate text-right w-full" dir="rtl" title={topProduct.name}>
-                                                    {topProduct.name}
-                                                </p>
-                                                <div className="flex items-center flex-row-reverse justify-end gap-3 w-full" dir="ltr">
-                                                    {hasDiscount && (
-                                                        <div className="flex items-baseline gap-1 text-gray-400/80 line-through decoration-red-500/50">
-                                                            <span className="text-xs">ج.م</span>
-                                                            <span className="text-sm">{price.toLocaleString()}</span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-baseline gap-1 text-blue-400 font-black">
-                                                        <span className="text-xs">ج.م</span>
-                                                        <span className="text-lg">{discountPrice.toLocaleString()}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                            ) : heroProducts.length > 0 ? (
+                                <div 
+                                    className="flex items-center gap-8 translate-x-10"
+                                    onMouseEnter={() => setIsPaused(true)}
+                                    onMouseLeave={() => setIsPaused(false)}
+                                >
 
-                                            {(hasDiscount && discountPercent > 0) ? (
-                                                <div className="absolute -bottom-6 -right-6 glass-panel p-4 rounded-xl flex items-center gap-3 shadow-xl animate-bounce" style={{ animationDuration: '3s' }}>
-                                                    <div className="bg-green-500/20 p-2 rounded-full text-green-400">
-                                                        <span className="material-symbols-outlined">percent</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-400">خصم خاص</p>
-                                                        <p className="text-white font-bold">يصل إلى {discountPercent}٪</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="absolute -bottom-6 -right-6 glass-panel p-4 rounded-xl flex items-center gap-3 shadow-xl animate-pulse" style={{ animationDuration: '4s' }}>
-                                                    <div className="bg-primary/20 p-2 rounded-full text-primary">
-                                                        <span className="material-symbols-outlined">star</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-400">المنتج المميز</p>
-                                                        <p className="text-white font-bold">الأكثر طلباً</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </Link>
-                                    );
-                                })()
+                                    {/* Pagination Dots */}
+                                    <div className="hidden sm:flex flex-col gap-3">
+                                        {heroProducts.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentHeroIndex(idx)}
+                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                                    idx === currentHeroIndex 
+                                                    ? 'h-8 bg-primary shadow-[0_0_10px_rgba(19,91,236,0.8)]' 
+                                                    : 'bg-white/20 hover:bg-white/40'
+                                                }`}
+                                                aria-label={`Go to slide ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <AnimatePresence mode="popLayout" initial={false}>
+                                        {(() => {
+                                            const topProduct = heroProducts[currentHeroIndex]!;
+                                            const imageUrl = topProduct.images.find(i => i.isPrimary)?.url || topProduct.images[0]?.url || '';
+                                            const hasDiscount = !!topProduct.discountPrice;
+                                            const price = parseFloat(topProduct.price);
+                                            const discountPrice = hasDiscount ? parseFloat(topProduct.discountPrice as string) : price;
+                                            const discountPercent = hasDiscount && price > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
+                                            
+                                            return (
+                                                <motion.div
+                                                    key={topProduct.id}
+                                                    initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)', x: 30 }}
+                                                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', x: 0 }}
+                                                    exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)', x: -30 }}
+                                                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                                                    className="relative"
+                                                >
+                                                    <Link to={`/product/${topProduct.slug}`} className="block relative glass-card p-4 rounded-2xl border border-white/10 rotate-[-1deg] hover:rotate-0 transition-all duration-700 group">
+                                                        <div 
+                                                            className="w-[450px] aspect-[4/3] bg-gradient-to-br from-black/60 to-black/20 rounded-xl overflow-hidden group-hover:scale-[1.02] transition-transform duration-700 flex items-center justify-center p-6" 
+                                                        >
+                                                            <img 
+                                                            src={imageUrl} 
+                                                            alt={topProduct.name}
+                                                            className="max-w-full max-h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+                                                            />
+                                                        </div>
+                                                        
+                                                        {/* Name / Price Toast */}
+                                                        <div className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 glass-panel px-5 py-4 rounded-2xl flex flex-col items-start gap-1 shadow-[0_20px_40px_-10px_rgba(19,91,236,0.5)] border border-white/20 backdrop-blur-2xl z-20 transition-transform group-hover:-translate-y-2">
+                                                            <p className="text-white font-bold text-base max-w-[220px] truncate text-right w-full mb-1" dir="rtl" title={topProduct.name}>
+                                                                {topProduct.name}
+                                                            </p>
+                                                            <div className="flex items-center flex-row-reverse justify-end gap-3 w-full" dir="ltr">
+                                                                {hasDiscount && (
+                                                                    <div className="flex items-baseline gap-1 text-gray-400/60 line-through decoration-red-500/40">
+                                                                        <span className="text-[10px]">ج.م</span>
+                                                                        <span className="text-xs font-medium">{price.toLocaleString()}</span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-baseline gap-1 text-primary-light font-black">
+                                                                    <span className="text-xs">ج.م</span>
+                                                                    <span className="text-xl">{discountPrice.toLocaleString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {(hasDiscount && discountPercent > 0) ? (
+                                                            <div className="absolute -bottom-6 -right-6 glass-panel px-5 py-4 rounded-2xl flex items-center gap-3 shadow-2xl border border-green-500/20 bg-green-500/5 animate-bounce-subtle">
+                                                                <div className="bg-green-500/20 p-2.5 rounded-full text-green-400">
+                                                                    <span className="material-symbols-outlined text-xl">percent</span>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">عرض حصري</p>
+                                                                    <p className="text-white font-black text-lg">وفر {discountPercent}٪</p>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="absolute -bottom-6 -right-6 glass-panel px-5 py-4 rounded-2xl flex items-center gap-3 shadow-2xl border border-primary/20 bg-primary/5 animate-pulse-subtle">
+                                                                <div className="bg-primary/20 p-2.5 rounded-full text-primary">
+                                                                    <span className="material-symbols-outlined text-xl">trending_up</span>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">طلب مرتفع</p>
+                                                                    <p className="text-white font-black text-lg">الأكثر مبيعاً</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </Link>
+                                                </motion.div>
+                                            );
+                                        })()}
+                                    </AnimatePresence>
+                                </div>
+
+
                             ) : (
                                 <div className="relative glass-card p-4 rounded-2xl border border-white/10 rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
                                     <div 
@@ -177,6 +241,7 @@ export function HomePage() {
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </div>
             </section>
@@ -268,12 +333,12 @@ export function HomePage() {
                         </h2>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {isFeaturedLoading ? (
+                        {isBestSellersLoading ? (
                             <div className="col-span-full flex justify-center py-12">
                                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         ) : (
-                            featuredProducts?.slice(0, 4).map((product) => (
+                            bestSellers?.slice(0, 4).map((product) => (
                                 <ProductCard
                                     key={product.id}
                                     id={product.id}
@@ -289,6 +354,7 @@ export function HomePage() {
                             ))
                         )}
                     </div>
+
                 </div>
             </section>
 
@@ -308,8 +374,9 @@ export function HomePage() {
                                 {[1,2,3,4].map(n => <div key={n} className="h-80 bg-gray-800/50 rounded-xl animate-pulse"></div>)}
                             </div>
                         ) : (
-                            newArrivals?.map((product) => (
+                            newArrivals?.slice(0, 4).map((product) => (
                                 <ProductCard
+
                                     key={product.id}
                                     id={product.id}
                                     name={product.name}

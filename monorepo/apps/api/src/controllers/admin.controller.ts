@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { orders, products, users, aiBundleLogs } from '../db/schema.js';
+import { orders, products, users, aiBundleLogs, productImages } from '../db/schema.js';
 import { eq, sql, count, sum, lt, or, inArray } from 'drizzle-orm';
 
 export class AdminController {
@@ -66,7 +66,18 @@ export class AdminController {
                 orderBy: (orders, { desc }) => [desc(orders.createdAt)],
                 with: {
                     user: true,
-                    items: true,
+                    items: {
+                        with: {
+                            product: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             });
 
@@ -242,6 +253,9 @@ export class AdminController {
             for (const order of periodOrders) {
                 const items = order.items || [];
                 for (const item of items) {
+                    // Phase 5 Fix: skip if product was filtered out by the WHERE clause or is inactive
+                    if (!item.product || item.product.status !== 'active') continue;
+
                     const price = Number(item.price || 0);
                     const qty = item.quantity || 1;
                     const total = price * qty;

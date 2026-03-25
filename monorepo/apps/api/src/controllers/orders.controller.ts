@@ -349,6 +349,42 @@ export class OrdersController {
         }
     }
 
+    // GET /api/orders/user/by-phone/:phone - List all orders for a specific phone number
+    static async getByPhone(req: Request, res: Response) {
+        try {
+            const { phone } = req.params;
+            
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
+
+            const ordersList = await db.query.orders.findMany({
+                where: eq(orders.phone, phone),
+                with: {
+                    items: {
+                        with: {
+                            product: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    user: true, 
+                },
+                orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+            });
+
+            res.json(ordersList);
+        } catch (error) {
+            console.error('Error fetching orders by phone:', error);
+            res.status(500).json({ error: 'Failed to fetch customer orders' });
+        }
+    }
+
     // GET /api/orders/:id - Get single order
     static async getOne(req: Request, res: Response) {
         try {
@@ -380,6 +416,47 @@ export class OrdersController {
         } catch (error) {
             console.error('Error fetching order:', error);
             res.status(500).json({ error: 'Failed to fetch order' });
+        }
+    }
+
+    // PUT /api/orders/:id - Update full order details
+    static async updateOrder(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { 
+                status,
+                fullName,
+                phone,
+                email,
+                governorate,
+                city,
+                address,
+                notes
+            } = req.body;
+
+            const [updatedOrder] = await db.update(orders)
+                .set({
+                    status,
+                    fullName,
+                    phone,
+                    email,
+                    governorate,
+                    city,
+                    address,
+                    notes,
+                    updatedAt: new Date()
+                })
+                .where(eq(orders.id, id))
+                .returning();
+
+            if (!updatedOrder) {
+                return res.status(404).json({ error: 'الطلب غير موجود' });
+            }
+
+            res.json(updatedOrder);
+        } catch (error) {
+            console.error('Error updating order:', error);
+            res.status(500).json({ error: 'Failed to update order details' });
         }
     }
 
@@ -498,6 +575,46 @@ export class OrdersController {
         } catch (error) {
             console.error('Get Status Error:', error);
             return res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+
+    // POST /api/orders/bulk-delete - Delete multiple orders
+    static async bulkDelete(req: Request, res: Response) {
+        try {
+            const { orderIds } = req.body;
+            if (!Array.isArray(orderIds) || orderIds.length === 0) {
+                return res.status(400).json({ error: 'orderIds array is required' });
+            }
+
+            // First delete order items to respect foreign keys
+            await db.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
+            
+            // Then delete orders
+            await db.delete(orders).where(inArray(orders.id, orderIds));
+
+            res.json({ message: 'Orders deleted successfully' });
+        } catch (error) {
+            console.error('Error bulk deleting orders:', error);
+            res.status(500).json({ error: 'Failed to delete orders' });
+        }
+    }
+
+    // PATCH /api/orders/bulk-status - Update status for multiple orders
+    static async bulkUpdateStatus(req: Request, res: Response) {
+        try {
+            const { orderIds, status } = req.body;
+            if (!Array.isArray(orderIds) || orderIds.length === 0 || !status) {
+                return res.status(400).json({ error: 'orderIds array and status are required' });
+            }
+
+            await db.update(orders)
+                .set({ status, updatedAt: new Date() })
+                .where(inArray(orders.id, orderIds));
+
+            res.json({ message: 'Orders status updated successfully' });
+        } catch (error) {
+            console.error('Error bulk updating order status:', error);
+            res.status(500).json({ error: 'Failed to update orders status' });
         }
     }
 }

@@ -10,11 +10,11 @@ export interface Customer {
     address: string | null;
     orders: number;
     totalSpent: number;
-    status: 'active' | 'inactive' | 'blocked';
+    status: 'active' | 'inactive' | 'blocked' | 'guest';
     joinDate: string;
     loyaltyPoints: number;
-    avatar?: string;
     location?: string;
+    type: 'registered' | 'guest';
 }
 
 interface CustomersResponse {
@@ -55,7 +55,7 @@ export function useCustomers(params?: { page?: number; limit?: number }) {
     const customers: Customer[] = (query.data?.data || []).map(customer => ({
         id: customer.id,
         name: customer.name,
-        email: customer.email,
+        email: customer.email || '',
         phone: customer.phone,
         address: customer.address,
         orders: customer.orders || 0,
@@ -64,9 +64,8 @@ export function useCustomers(params?: { page?: number; limit?: number }) {
         joinDate: customer.joinDate ? new Date(customer.joinDate).toLocaleDateString('ar-EG') : 'غير معروف',
         loyaltyPoints: customer.loyaltyPoints || 0,
         location: customer.address || 'غير محدد',
-        avatar: `https://i.pravatar.cc/150?u=${customer.id}`,
-        lastActive: 'نشط',
-    })) as any;
+        type: (customer as any).type || 'registered',
+    }));
 
     const updateStatus = (id: string | number, newStatus: 'active' | 'inactive' | 'blocked') => {
         updateStatusMutation.mutate({ id: String(id), status: newStatus });
@@ -99,4 +98,16 @@ export function useCustomers(params?: { page?: number; limit?: number }) {
         createCustomer,
         pagination: query.data?.pagination,
     };
+}
+
+export function useCustomerOrders(phone?: string) {
+    return useQuery({
+        queryKey: ['customer-orders', phone],
+        queryFn: async () => {
+            if (!phone) return [];
+            const { data } = await api.get(`/orders/user/by-phone/${encodeURIComponent(phone)}`);
+            return data;
+        },
+        enabled: !!phone,
+    });
 }

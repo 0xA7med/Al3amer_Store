@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Express } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import productsRouter from './routes/products.js';
@@ -13,12 +14,13 @@ import couponsRouter from './routes/coupons.js';
 import reviewsRouter from './routes/reviews.js';
 import addressesRouter from './routes/addresses.js';
 import wishlistRouter from './routes/wishlist.js';
+import brandsRouter from './routes/brands.js';
 import webhookRouter from './routes/webhook.js';
 import debugRouter from './routes/debug.js';
 
 dotenv.config();
 
-const app = express();
+const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -29,6 +31,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 
 app.use('/api/products', productsRouter);
+app.use('/api/brands', brandsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/ai-bundle', aiBundleRouter);
 app.use('/api/orders', ordersRouter);

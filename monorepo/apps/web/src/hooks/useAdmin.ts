@@ -207,6 +207,26 @@ export function useUpdateOrderStatus() {
     });
 }
 
+export function useUpdateOrder() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ orderId, data }: { orderId: string; data: Partial<Order> }) => {
+            const response = await api.put(`/orders/${orderId}`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-order'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+            toast.success('تم تحديث الطلب بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء تحديث أصل الطلب');
+        }
+    });
+}
+
 export function useUpdateProduct() {
     const queryClient = useQueryClient();
 
@@ -279,6 +299,44 @@ export function useBulkAction() {
         },
         onError: (error: any) => {
             toast.error(error?.response?.data?.error || 'حدث خطأ أثناء تنفيذ الإجراء');
+        }
+    });
+}
+
+export function useBulkDeleteOrders() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (orderIds: string[]) => {
+            const { data } = await api.delete('/orders', { data: { orderIds } });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+            toast.success('تم حذف الطلبات بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء حذف الطلبات');
+        }
+    });
+}
+
+export function useBulkUpdateOrdersStatus() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+            const { data } = await api.patch('/orders/status', { orderIds, status });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+            toast.success('تم تحديث حالة الطلبات بنجاح');
+        },
+        onError: () => {
+            toast.error('حدث خطأ أثناء تحديث حالة الطلبات');
         }
     });
 }

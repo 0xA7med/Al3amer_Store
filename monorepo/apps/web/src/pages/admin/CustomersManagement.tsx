@@ -164,14 +164,21 @@ export function CustomersManagement() {
                                 <tr
                                     key={customer.id}
                                     className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                    onClick={() => navigate(`/admin/orders?userId=${customer.id}`)}
+                                    onClick={() => navigate(`/admin/customers/${customer.phone}`)}
                                 >
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-full bg-slate-700 bg-cover bg-center border border-white/10" style={{ backgroundImage: `url(${customer.avatar})` }}></div>
+                                            <div className="size-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                                                <span className="material-symbols-outlined text-slate-400">person</span>
+                                            </div>
                                             <div>
-                                                <p className="font-bold text-white">{customer.name}</p>
-                                                <p className="text-xs text-slate-500 mt-1 font-mono dir-ltr">{new Date(customer.joinDate).toLocaleString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-white">{customer.name}</p>
+                                                    {customer.type === 'guest' && (
+                                                        <span className="text-[10px] bg-slate-500/20 text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20">زائر</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-1 font-mono dir-ltr">{customer.joinDate}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -218,7 +225,10 @@ export function CustomersManagement() {
                                     <td className="px-6 py-4 text-left">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
-                                                onClick={() => toggleStatus(customer.id, customer.status)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleStatus(customer.id, customer.status);
+                                                }}
                                                 className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                                                 title={customer.status === 'active' ? 'حظر' : 'تنشيط'}
                                             >
@@ -227,14 +237,18 @@ export function CustomersManagement() {
                                                 </span>
                                             </button>
                                             <button
-                                                onClick={() => navigate(`/admin/orders?userId=${customer.id}`)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/admin/customers/${customer.phone}`);
+                                                }}
                                                 className="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"
-                                                title="عرض الطلبات"
+                                                title="ملف العميل"
                                             >
-                                                <span className="material-symbols-outlined text-[20px]">list_alt</span>
+                                                <span className="material-symbols-outlined text-[20px]">person</span>
                                             </button>
                                             <a
                                                 href={`mailto:${customer.email}`}
+                                                onClick={(e) => e.stopPropagation()}
                                                 className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                                                 title="مراسلة"
                                             >
