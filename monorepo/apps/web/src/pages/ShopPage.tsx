@@ -400,10 +400,10 @@ export function ShopPage() {
                     });
                 });
 
-                return schemaFacets.map(f => ({
+                return schemaFacets.map((f: any) => ({
                     ...f,
-                    values: f.values.filter(v => availableValues.get(f.key)?.has(v))
-                })).filter(f => f.values.length > 0);
+                    values: f.values.filter((v: any) => availableValues.get(f.key)?.has(v))
+                })).filter((f: any) => f.values.length > 0);
             }
         }
 

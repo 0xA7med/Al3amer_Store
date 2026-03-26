@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
-import { useAdminOrders, useUpdateOrderStatus, useAdminProducts, useBulkDeleteOrders, useBulkUpdateOrdersStatus, type Order } from '../../hooks/useAdmin';
+import { useAdminOrders, useAdminProducts, useBulkDeleteOrders, useBulkUpdateOrdersStatus, type Order } from '../../hooks/useAdmin';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import OrdersTable, { STATUS_CONFIG } from '../../components/admin/OrdersTable';
