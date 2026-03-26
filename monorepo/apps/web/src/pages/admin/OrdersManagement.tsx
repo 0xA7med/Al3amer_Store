@@ -92,6 +92,7 @@ export default function OrdersManagement() {
     // ─── Per-status counts for filter tabs ───
     const counts: Record<string, number> = {
         all:        orders.length,
+        pending_payment: orders.filter(o => o.status === 'pending_payment').length,
         pending:    orders.filter(o => o.status === 'pending').length,
         processing: orders.filter(o => o.status === 'processing').length,
         shipped:    orders.filter(o => o.status === 'shipped').length,
@@ -248,6 +249,8 @@ export default function OrdersManagement() {
                                 <div className="flex items-center gap-1 bg-[#0f1115]/50 rounded-lg border border-white/10 p-1 overflow-x-auto max-w-full no-scrollbar">
                                     {[
                                         { key: 'all',        label: 'الكل' },
+                                        { key: 'pending_payment', label: 'بانتظار الدفع' },
+                                        { key: 'pending',    label: 'جديد' },
                                         { key: 'processing', label: 'قيد المعالجة' },
                                         { key: 'shipped',    label: 'جاري التوصيل' },
                                         { key: 'delivered',  label: 'مكتمل' },

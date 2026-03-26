@@ -193,7 +193,7 @@ export function DashboardOverview() {
                         orders={recentOrders}
                         onViewDetails={handleViewDetails}
                         showCheckboxes={false}
-                        showPayment={false}
+                        showPayment={true}
                     />
                 </div>
             </motion.div>

@@ -7,6 +7,7 @@ import { type Order, useUpdateOrderStatus } from '../../hooks/useAdmin';
 // ─────────────────────────────────────────────
 export const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
     pending:    { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',   label: 'قيد الانتظار',   icon: 'pending' },
+    pending_payment: { color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', label: 'بانتظار الدفع', icon: 'hourglass_empty' },
     processing: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',   label: 'قيد المعالجة',   icon: 'sync' },
     shipped:    { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',          label: 'جاري التوصيل',   icon: 'local_shipping' },
     delivered:  { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'مكتمل',          icon: 'check_circle' },

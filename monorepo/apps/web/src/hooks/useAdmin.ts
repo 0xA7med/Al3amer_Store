@@ -35,7 +35,7 @@ export interface ProductsResponse {
 export interface Order {
     id: string;
     orderNumber: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: 'pending' | 'pending_payment' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
     total: string;
     subtotal: string;
     shippingCost: string;

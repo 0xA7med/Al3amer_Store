@@ -153,7 +153,7 @@ export class OrdersController {
                 taxAmount: taxAmount.toString(),
                 extraFee: extraFee.toString(),
                 total: total.toString(),
-                status: 'pending',
+                status: (paymentMethod === 'paymob' || paymentMethod === 'paymob_wallet' || paymentMethod === 'online') ? 'pending_payment' : 'pending',
             }).returning();
 
             // Create order items
