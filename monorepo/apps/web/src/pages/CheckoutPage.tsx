@@ -285,6 +285,37 @@ export function CheckoutPage() {
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Step 1 Validations
+        if (step === 1) {
+            // Validate Full Name (at least 2 words)
+            const nameWords = formData.fullName.trim().split(/\s+/);
+            if (nameWords.length < 2) {
+                setError('يرجى إدخال الاسم الثنائي على الأقل (الاسم واسم العائلة).');
+                return;
+            }
+
+            // Validate Phone Number
+            const phoneRegex = /^01[0125][0-9]{8}$/;
+            const dummyPhoneRegex = /^01[0125]0{8}$/;
+
+            if (!phoneRegex.test(formData.phone) || dummyPhoneRegex.test(formData.phone)) {
+                setError('يرجى إدخال رقم هاتف صحيح (11 رقم يبدأ بـ 01 ولا يكون كله أصفار).');
+                return;
+            }
+
+            // Validate Phone 2 if exists
+            if (formData.phone_2) {
+                if (!phoneRegex.test(formData.phone_2) || dummyPhoneRegex.test(formData.phone_2)) {
+                    setError('رقم الهاتف الإضافي غير صحيح.');
+                    return;
+                }
+                if (formData.phone === formData.phone_2) {
+                    setError('رقم الهاتف الإضافي يجب أن يكون مختلفاً عن الرقم الأساسي.');
+                    return;
+                }
+            }
+        }
+
         // Validation for Wallet on Payment Step
         if (step === 2 && formData.paymentMethod === 'paymob_wallet') {
             const walletRegex = /^01[0125][0-9]{8}$/;
