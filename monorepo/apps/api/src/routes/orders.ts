@@ -12,5 +12,6 @@ router.get('/:id', OrdersController.getOne);
 router.put('/:id', OrdersController.updateOrder);
 router.put('/:id/status', OrdersController.updateStatus);
 router.post('/:id/verify-payment', OrdersController.verifyPayment);
+router.post('/:id/retry-payment', OrdersController.retryPayment);
 
 export default router;

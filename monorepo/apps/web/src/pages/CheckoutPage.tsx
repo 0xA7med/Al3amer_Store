@@ -282,35 +282,40 @@ export function CheckoutPage() {
         setCouponCode('');
     };
 
+    // Helper: Egyptian phone validation
+    const isValidEgyptianPhone = (phone: string): boolean => {
+        const phoneRegex = /^01[0125][0-9]{8}$/;
+        // Block dummy numbers like 01200000000, 01111111111, 01000000000
+        const allSameDigit = /^01[0125](\d)\1{7}$/;
+        return phoneRegex.test(phone) && !allSameDigit.test(phone);
+    };
+
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
         // Step 1 Validations
         if (step === 1) {
-            // Validate Full Name (at least 2 words)
-            const nameWords = formData.fullName.trim().split(/\s+/);
+            // Validate Full Name (at least 2 words, each 2+ chars)
+            const nameWords = formData.fullName.trim().split(/\s+/).filter(w => w.length >= 2);
             if (nameWords.length < 2) {
-                setError('يرجى إدخال الاسم الثنائي على الأقل (الاسم واسم العائلة).');
+                setError('برجاء إدخال الاسم ثنائي على الأقل');
                 return;
             }
 
             // Validate Phone Number
-            const phoneRegex = /^01[0125][0-9]{8}$/;
-            const dummyPhoneRegex = /^01[0125]0{8}$/;
-
-            if (!phoneRegex.test(formData.phone) || dummyPhoneRegex.test(formData.phone)) {
-                setError('يرجى إدخال رقم هاتف صحيح (11 رقم يبدأ بـ 01 ولا يكون كله أصفار).');
+            if (!isValidEgyptianPhone(formData.phone)) {
+                setError('برجاء إدخال رقم هاتف صحيح');
                 return;
             }
 
-            // Validate Phone 2 if exists
+            // Validate Phone 2 if provided
             if (formData.phone_2) {
-                if (!phoneRegex.test(formData.phone_2) || dummyPhoneRegex.test(formData.phone_2)) {
-                    setError('رقم الهاتف الإضافي غير صحيح.');
+                if (!isValidEgyptianPhone(formData.phone_2)) {
+                    setError('رقم الهاتف الإضافي غير صحيح');
                     return;
                 }
                 if (formData.phone === formData.phone_2) {
-                    setError('رقم الهاتف الإضافي يجب أن يكون مختلفاً عن الرقم الأساسي.');
+                    setError('رقم الهاتف الإضافي يجب أن يكون مختلفاً عن الأساسي');
                     return;
                 }
             }
@@ -318,9 +323,8 @@ export function CheckoutPage() {
 
         // Validation for Wallet on Payment Step
         if (step === 2 && formData.paymentMethod === 'paymob_wallet') {
-            const walletRegex = /^01[0125][0-9]{8}$/;
-            if (!walletRegex.test(formData.walletNumber)) {
-                setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
+            if (!isValidEgyptianPhone(formData.walletNumber)) {
+                setError('برجاء إدخال رقم محفظة صحيح');
                 return;
             }
         }
@@ -341,40 +345,55 @@ export function CheckoutPage() {
         try {
             // Validation for Wallet Number
             if (formData.paymentMethod === 'paymob_wallet') {
-                if (!formData.walletNumber || formData.walletNumber.length !== 11 || !formData.walletNumber.startsWith('01')) {
-                    setError('يرجى إدخال رقم محفظة صحيح (11 رقم)');
+                if (!isValidEgyptianPhone(formData.walletNumber)) {
+                    setError('برجاء إدخال رقم محفظة صحيح');
                     setIsSubmitting(false);
                     return;
                 }
             }
 
-            // Create order payload - Flattened structure to match 'orders' table
+            // ─── RETRY LOGIC: If order already exists (e.g. user closed payment modal), ───
+            // ─── re-use that order instead of creating a new one.                       ───
+            const isOnlinePayment = formData.paymentMethod === 'paymob' || formData.paymentMethod === 'paymob_wallet' || formData.paymentMethod === 'online';
+
+            if (createdOrderId && isOnlinePayment) {
+                // Retry payment for the already-created order
+                const { data: retryData } = await api.post(`/orders/${createdOrderId}/retry-payment`, {
+                    walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
+                });
+
+                if (retryData.redirect_url) {
+                    setIframeUrl(retryData.redirect_url);
+                    setShowPaymentModal(true);
+                    return;
+                }
+
+                // Already paid
+                if (retryData.status === 'paid' || retryData.status === 'processing') {
+                    clearCart();
+                    navigate(`/order-success/${createdOrderId}`);
+                    return;
+                }
+            }
+
+            // ─── CREATE NEW ORDER ───
             const finalNotes = (formData.phone_2 ? `Phone 2: ${formData.phone_2}\n` : '') + (formData.notes || '');
 
             const orderData = {
-                // Customer Info
                 fullName: formData.fullName,
                 phone: formData.phone,
                 email: formData.email,
-
-                // Address Info
                 governorate: formData.governorate,
                 city: formData.city,
                 address: formData.address,
                 notes: finalNotes,
-
-                // Order Details
                 paymentMethod: formData.paymentMethod,
-
-                // Items
                 items: items.map(item => ({
                     productId: item.id,
                     name: item.name,
                     quantity: item.quantity,
                     price: item.price
                 })),
-
-
                 shippingCost,
                 taxAmount: vatAmount,
                 extraFee: codExtraFee,
@@ -385,28 +404,23 @@ export function CheckoutPage() {
                 userId: user?.id,
             };
 
-            // Call API
             const { data: responseData } = await api.post('/orders', orderData);
 
-            // Handle Redirection/Modal for Online Payment
+            // Handle Online Payment → open modal
             if (responseData.redirect_url) {
-                // Unify presentation: All Paymob flows (Card & Wallet) open in Modal as requested
-                // Note: Wallets typically use a redirect, but loading it in an iframe *might* work depending on security policies.
-                // User requested this specifically.
                 setIframeUrl(responseData.redirect_url);
-                setCreatedOrderId(responseData.id); // Save for polling
+                setCreatedOrderId(responseData.id);
                 setShowPaymentModal(true);
-
-                // DO NOT clear cart here. Wait for success page or user action.
                 return;
             }
 
-            // Redirect to success for COD
+            // COD → go to success
             clearCart();
             navigate(`/order-success/${(responseData as any).id || 'success'}`);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Checkout error:', err);
-            setError('حدث خطأ أثناء معالجة الطلب. الرجاء المحاولة مرة أخرى.');
+            const serverMsg = err?.response?.data?.error;
+            setError(serverMsg || 'حدث خطأ أثناء معالجة الطلب. الرجاء المحاولة مرة أخرى.');
         } finally {
             setIsSubmitting(false);
         }

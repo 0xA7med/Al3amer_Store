@@ -556,6 +556,103 @@ export class OrdersController {
             res.status(500).json({ error: 'Failed to verify payment' });
         }
     }
+
+    // POST /api/orders/:id/retry-payment — Re-generate payment URL for existing pending_payment order
+    static async retryPayment(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { walletNumber } = req.body;
+
+            // 1. Get Order
+            const order = await db.query.orders.findFirst({
+                where: eq(orders.id, id),
+            });
+
+            if (!order) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            // Only allow retry for pending_payment orders
+            if (order.status !== 'pending_payment') {
+                if (order.status === 'paid' || order.status === 'processing' || order.status === 'delivered') {
+                    return res.json({ status: order.status, message: 'تم دفع هذا الطلب بالفعل' });
+                }
+                return res.status(400).json({ error: 'لا يمكن إعادة محاولة الدفع لهذا الطلب' });
+            }
+
+            // 2. Get Settings for Paymob keys
+            const appSettings = await db.query.settings.findFirst();
+            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+                return res.status(500).json({ error: 'Paymob is not configured' });
+            }
+
+            const isWallet = order.paymentMethod === 'paymob_wallet';
+            const integrationId = isWallet ? appSettings.paymobIntegrationWallet : appSettings.paymobIntegrationCard;
+
+            if (!integrationId) {
+                return res.status(400).json({ error: 'Payment integration not configured' });
+            }
+
+            if (!isWallet && !appSettings.paymobIframeId) {
+                return res.status(400).json({ error: 'Paymob Iframe ID is not configured' });
+            }
+
+            const total = parseFloat(order.total);
+
+            // 3. Generate new payment key (creates a new Paymob order, links to same our order)
+            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
+                appSettings.paymobApiKey,
+                integrationId,
+                total,
+                order.orderNumber, // Same order number
+                'EGP',
+                {
+                    first_name: order.fullName.split(' ')[0] || 'Guest',
+                    last_name: order.fullName.split(' ').slice(1).join(' ') || 'Guest',
+                    email: order.email || 'guest@example.com',
+                    start_date: 'NA',
+                    phone_number: order.phone,
+                    apartment: 'NA',
+                    floor: 'NA',
+                    street: order.address,
+                    building: 'NA',
+                    shipping_method: 'PKG',
+                    postal_code: 'NA',
+                    city: order.city,
+                    country: 'EGY',
+                    state: order.governorate,
+                }
+            );
+
+            // 4. Update Paymob Order ID in DB
+            await db.update(orders)
+                .set({ paymobOrderId: paymobOrderId })
+                .where(eq(orders.id, id));
+
+            console.log(`🔄 Retry Payment: New Paymob Order ID ${paymobOrderId} for Order #${order.orderNumber}`);
+
+            // 5. Build redirect URL
+            let redirectUrl = '';
+            if (isWallet) {
+                const targetPhone = walletNumber || order.phone;
+                redirectUrl = await PaymobService.payWithWallet(paymentToken, targetPhone);
+            } else {
+                redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
+            }
+
+            return res.json({
+                id: order.id,
+                orderNumber: order.orderNumber,
+                redirect_url: redirectUrl,
+                status: 'pending_payment'
+            });
+
+        } catch (error: any) {
+            console.error('Retry Payment Error:', error?.message || error);
+            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع' });
+        }
+    }
+
     // GET /api/orders/:id/status - Get order status (for polling)
     public static async getStatus(req: Request, res: Response) {
         try {
