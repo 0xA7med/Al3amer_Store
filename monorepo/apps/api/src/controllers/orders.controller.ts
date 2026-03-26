@@ -557,7 +557,7 @@ export class OrdersController {
         }
     }
 
-    // POST /api/orders/:id/retry-payment — Re-generate payment URL for existing pending_payment order
+    // POST /api/orders/:id/retry-payment — Re-generate payment URL for existing order
     static async retryPayment(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -572,12 +572,21 @@ export class OrdersController {
                 return res.status(404).json({ error: 'Order not found' });
             }
 
-            // Only allow retry for pending_payment orders
-            if (order.status !== 'pending_payment') {
+            console.log(`🔄 Retry Payment requested for Order #${order.orderNumber}, Status: ${order.status}, Method: ${order.paymentMethod}`);
+
+            // Allow retry for pending_payment OR pending (legacy orders before code change)
+            const allowedStatuses = ['pending_payment', 'pending'];
+            if (!allowedStatuses.includes(order.status)) {
                 if (order.status === 'paid' || order.status === 'processing' || order.status === 'delivered') {
                     return res.json({ status: order.status, message: 'تم دفع هذا الطلب بالفعل' });
                 }
                 return res.status(400).json({ error: 'لا يمكن إعادة محاولة الدفع لهذا الطلب' });
+            }
+
+            // Ensure it's an online payment method
+            const onlineMethods = ['paymob', 'paymob_wallet', 'online'];
+            if (!onlineMethods.includes(order.paymentMethod)) {
+                return res.status(400).json({ error: 'هذا الطلب ليس دفع إلكتروني' });
             }
 
             // 2. Get Settings for Paymob keys
@@ -599,12 +608,15 @@ export class OrdersController {
 
             const total = parseFloat(order.total);
 
-            // 3. Generate new payment key (creates a new Paymob order, links to same our order)
+            // Use a unique merchant_order_id suffix for each retry to avoid Paymob duplicate rejection
+            const retryMerchantId = `${order.orderNumber}-R${Date.now().toString().slice(-4)}`;
+
+            // 3. Generate new payment key
             const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
                 appSettings.paymobApiKey,
                 integrationId,
                 total,
-                order.orderNumber, // Same order number
+                retryMerchantId,
                 'EGP',
                 {
                     first_name: order.fullName.split(' ')[0] || 'Guest',
@@ -624,12 +636,12 @@ export class OrdersController {
                 }
             );
 
-            // 4. Update Paymob Order ID in DB
+            // 4. Update Paymob Order ID + ensure status is pending_payment
             await db.update(orders)
-                .set({ paymobOrderId: paymobOrderId })
+                .set({ paymobOrderId: paymobOrderId, status: 'pending_payment' })
                 .where(eq(orders.id, id));
 
-            console.log(`🔄 Retry Payment: New Paymob Order ID ${paymobOrderId} for Order #${order.orderNumber}`);
+            console.log(`✅ Retry Payment: New Paymob Order ID ${paymobOrderId} for Order #${order.orderNumber} (Merchant: ${retryMerchantId})`);
 
             // 5. Build redirect URL
             let redirectUrl = '';
@@ -648,8 +660,8 @@ export class OrdersController {
             });
 
         } catch (error: any) {
-            console.error('Retry Payment Error:', error?.message || error);
-            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع' });
+            console.error('❌ Retry Payment Error:', error?.response?.data || error?.message || error);
+            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.' });
         }
     }
 
