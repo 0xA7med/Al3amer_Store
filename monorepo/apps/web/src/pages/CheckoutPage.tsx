@@ -129,7 +129,19 @@ export function CheckoutPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
+    const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+
+    // Helper: Abandon (delete) an unpaid order from the database
+    const abandonOrder = async (orderId: string | null) => {
+        if (!orderId) return;
+        try {
+            await api.delete('/orders', { data: { orderIds: [orderId] } });
+            console.log(`🗑️ Abandoned unpaid order: ${orderId}`);
+        } catch (err) {
+            // Silent fail — order might already be paid/deleted
+            console.warn('Could not abandon order:', orderId, err);
+        }
+    };
 
     // Coupon State
     const [couponCode, setCouponCode] = useState('');
@@ -335,15 +347,39 @@ export function CheckoutPage() {
     };
 
     const handlePrevStep = () => {
+        // Delete the unpaid order from DB when going back
+        if (createdOrderId) {
+            abandonOrder(createdOrderId);
+            setCreatedOrderId(null);
+        }
+        setError('');
         setStep(prev => Math.max(prev - 1, 1) as 1 | 2 | 3);
     };
+
+    // Delete unpaid order when payment method changes
+    useEffect(() => {
+        if (createdOrderId) {
+            abandonOrder(createdOrderId);
+            setCreatedOrderId(null);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.paymentMethod]);
+
+    // Delete unpaid order when cart changes
+    useEffect(() => {
+        if (createdOrderId) {
+            abandonOrder(createdOrderId);
+            setCreatedOrderId(null);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [items.length, totalPrice]);
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
         setError('');
 
         try {
-            // Validation for Wallet Number
+            // Wallet validation
             if (formData.paymentMethod === 'paymob_wallet') {
                 if (!isValidEgyptianPhone(formData.walletNumber)) {
                     setError('برجاء إدخال رقم محفظة صحيح');
@@ -352,27 +388,30 @@ export function CheckoutPage() {
                 }
             }
 
-            // ─── RETRY LOGIC: If order already exists (e.g. user closed payment modal), ───
-            // ─── re-use that order instead of creating a new one.                       ───
-            const isOnlinePayment = formData.paymentMethod === 'paymob' || formData.paymentMethod === 'paymob_wallet' || formData.paymentMethod === 'online';
+            const isOnlinePayment = ['paymob', 'paymob_wallet', 'online'].includes(formData.paymentMethod);
 
+            // ─── RETRY: Same order, just re-open payment ───
             if (createdOrderId && isOnlinePayment) {
-                // Retry payment for the already-created order
-                const { data: retryData } = await api.post(`/orders/${createdOrderId}/retry-payment`, {
-                    walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
-                });
+                try {
+                    const { data: retryData } = await api.post(`/orders/${createdOrderId}/retry-payment`, {
+                        walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
+                    });
 
-                if (retryData.redirect_url) {
-                    setIframeUrl(retryData.redirect_url);
-                    setShowPaymentModal(true);
-                    return;
-                }
+                    if (retryData.redirect_url) {
+                        setIframeUrl(retryData.redirect_url);
+                        setShowPaymentModal(true);
+                        return;
+                    }
 
-                // Already paid
-                if (retryData.status === 'paid' || retryData.status === 'processing') {
-                    clearCart();
-                    navigate(`/order-success/${createdOrderId}`);
-                    return;
+                    if (retryData.status === 'paid' || retryData.status === 'processing') {
+                        clearCart();
+                        navigate(`/order-success/${createdOrderId}`);
+                        return;
+                    }
+                } catch (retryErr: any) {
+                    console.warn('Retry failed, abandoning old order and creating new:', retryErr?.response?.data || retryErr?.message);
+                    await abandonOrder(createdOrderId);
+                    setCreatedOrderId(null);
                 }
             }
 
@@ -406,7 +445,6 @@ export function CheckoutPage() {
 
             const { data: responseData } = await api.post('/orders', orderData);
 
-            // Handle Online Payment → open modal
             if (responseData.redirect_url) {
                 setIframeUrl(responseData.redirect_url);
                 setCreatedOrderId(responseData.id);
@@ -414,9 +452,9 @@ export function CheckoutPage() {
                 return;
             }
 
-            // COD → go to success
+            // COD → success
             clearCart();
-            navigate(`/order-success/${(responseData as any).id || 'success'}`);
+            navigate(`/order-success/${responseData.id || 'success'}`);
         } catch (err: any) {
             console.error('Checkout error:', err);
             const serverMsg = err?.response?.data?.error;
