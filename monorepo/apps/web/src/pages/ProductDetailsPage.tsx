@@ -429,11 +429,11 @@ export const ProductDetailsPage = () => {
                         <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
                             <div className="flex flex-col items-center justify-center text-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors">
                                 <ShieldCheck className="w-6 h-6 text-primary" />
-                                <span className="text-[10px] text-slate-400">ضمان لمدة سنة</span>
+                                <span className="text-[10px] text-slate-400">ضمان العامر ستور</span>
                             </div>
                             <div className="flex flex-col items-center justify-center text-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors">
                                 <Truck className="w-6 h-6 text-primary" />
-                                <span className="text-[10px] text-slate-400">شحن سريع</span>
+                                <span className="text-[10px] text-slate-400">شحن سريع لحد الباب</span>
                             </div>
                             <div className="flex flex-col items-center justify-center text-center gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors">
                                 <CreditCard className="w-6 h-6 text-primary" />
