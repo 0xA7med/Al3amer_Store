@@ -1,5 +1,5 @@
 import { db } from '../db/index.js';
-import { orders, products, users, aiBundleLogs } from '../db/schema.js';
+import { orders, products, users, aiBundleLogs, productImages } from '../db/schema.js';
 import { eq, sql, count, sum, lt, or } from 'drizzle-orm';
 export class AdminController {
     // GET /api/admin/stats - Dashboard statistics
@@ -54,7 +54,18 @@ export class AdminController {
                 orderBy: (orders, { desc }) => [desc(orders.createdAt)],
                 with: {
                     user: true,
-                    items: true,
+                    items: {
+                        with: {
+                            product: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             });
             res.json({
@@ -129,13 +140,13 @@ export class AdminController {
                 // Assuming we fetch full orders for detailed breakdown is expensive.
                 // Let's stick to the previous logic but safe:
             }).from(orders)
-                .where(sql `${orders.createdAt} >= ${startDate}`);
+                .where(sql `${orders.createdAt} >= ${startDate.toISOString()}`);
             // Previous Period Stats (for Growth)
             const [previousStats] = await db.select({
                 totalRevenue: sql `COALESCE(SUM(CAST(${orders.total} AS DECIMAL)), 0)`,
                 totalOrders: count(),
             }).from(orders)
-                .where(sql `${orders.createdAt} >= ${previousStartDate} AND ${orders.createdAt} < ${previousEndDate}`);
+                .where(sql `${orders.createdAt} >= ${previousStartDate.toISOString()} AND ${orders.createdAt} < ${previousEndDate.toISOString()}`);
             // 3. Robust Calculation Helpers
             const safeDiv = (num, den) => (den === 0 ? 0 : num / den);
             const calcGrowth = (current, previous) => {
@@ -150,7 +161,7 @@ export class AdminController {
             // New Customers (Last 30 Days fixed for 'Growth' metric usually)
             const [newCustomersResult] = await db.select({ count: count() })
                 .from(users)
-                .where(sql `${users.createdAt} >= ${startDate} AND ${users.role} = 'customer'`);
+                .where(sql `${users.createdAt} >= ${startDate.toISOString()} AND ${users.role} = 'customer'`);
             const newCustomersCount = newCustomersResult?.count || 0;
             // 4. Daily Sales Chart (Last 30 Days guaranteed)
             // Using a generating series approach in code to ensure no gaps
@@ -160,7 +171,7 @@ export class AdminController {
                     COALESCE(SUM(CAST(total AS DECIMAL)), 0) as revenue,
                     COUNT(*) as orders
                 FROM orders
-                WHERE created_at >= ${startDate}
+                WHERE created_at >= ${startDate.toISOString()}
                 GROUP BY DATE(created_at)
                 ORDER BY date ASC
             `);
@@ -195,7 +206,7 @@ export class AdminController {
             // Note: `db.query.orders.findMany` is what we had. It's OK for medium scale.
             // Let's optimize it by selecting only needed fields for aggregation.
             const periodOrders = await db.query.orders.findMany({
-                where: sql `${orders.createdAt} >= ${startDate}`,
+                where: sql `${orders.createdAt} >= ${startDate.toISOString()}`,
                 with: {
                     items: {
                         with: {
@@ -213,6 +224,9 @@ export class AdminController {
             for (const order of periodOrders) {
                 const items = order.items || [];
                 for (const item of items) {
+                    // Phase 5 Fix: skip if product was filtered out by the WHERE clause or is inactive
+                    if (!item.product || item.product.status !== 'active')
+                        continue;
                     const price = Number(item.price || 0);
                     const qty = item.quantity || 1;
                     const total = price * qty;

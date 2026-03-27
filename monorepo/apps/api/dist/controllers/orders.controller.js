@@ -1,33 +1,66 @@
 import { db } from '../db/index.js';
-import { orders, orderItems, productImages, coupons } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { orders, orderItems, products, productImages, coupons } from '../db/schema.js';
+import { eq, and, inArray } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
 export class OrdersController {
     // POST /api/orders - Create new order
     static async create(req, res) {
         try {
-            const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, walletNumber, } = req.body;
+            const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
+             } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
-            // Relaxed validation - Log what is missing but don't crash hard if optional stuff like phone_2 is weird
+            // Validation
             if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
                 console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0, governorate, city, address });
                 return res.status(400).json({ error: 'Missing required fields: fullName, items, governorate, city, address' });
             }
-            // Ensure phone is a string
             const safePhone = phone ? String(phone) : '0000000000';
-            // Calculate totals
-            let subtotal = 0;
-            console.log('Calculating subtotal for items:', JSON.stringify(items));
-            for (const item of items) {
-                // Ensure price is a number
-                const price = typeof item.price === 'string' ? parseFloat(item.price) : Number(item.price);
-                if (isNaN(price)) {
-                    console.error(`Invalid price for item: ${JSON.stringify(item)}`);
-                    return res.status(400).json({ error: `Invalid price for item ${item.name || 'Unknown'}: ${item.price}` });
+            const isOnlinePayment = ['paymob', 'paymob_wallet', 'online'].includes(paymentMethod);
+            // ─── ONLINE PAYMENT: Verify payment before creating order ───
+            if (isOnlinePayment) {
+                if (!paymobOrderId) {
+                    return res.status(400).json({ error: 'الدفع الإلكتروني يتطلب إتمام عملية الدفع أولاً' });
                 }
-                // Update item price to be string if it was number, for consistency if needed downstream, 
-                // but local calculation uses number.
-                subtotal += price * Number(item.quantity);
+                // Verify with Paymob that payment was actually made
+                const appSettings = await db.query.settings.findFirst();
+                if (!appSettings?.paymobApiKey) {
+                    return res.status(500).json({ error: 'Paymob not configured' });
+                }
+                const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+                if (!isPaid) {
+                    return res.status(402).json({ error: 'لم يتم تأكيد الدفع. يرجى إتمام عملية الدفع أولاً.' });
+                }
+                console.log(`✅ [Orders] Online payment verified for PaymobOrderID=${paymobOrderId}`);
+            }
+            // Fetch fresh product data from DB
+            const productIds = items.map((i) => i.productId);
+            const validProducts = await db.query.products.findMany({
+                where: and(inArray(products.id, productIds), eq(products.status, 'active')),
+                columns: {
+                    id: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    name: true,
+                }
+            });
+            // Calculate totals using DB source-of-truth prices
+            let subtotal = 0;
+            const finalOrderItems = [];
+            for (const item of items) {
+                const dbProduct = validProducts.find(p => p.id === item.productId);
+                if (!dbProduct) {
+                    console.error(`Product ID ${item.productId} (${item.name || 'Unknown'}) not found or inactive`);
+                    return res.status(400).json({ error: "One or more products in your cart are no longer available. Please refresh your cart." });
+                }
+                const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
+                const quantity = Number(item.quantity) || 1;
+                subtotal += effectivePrice * quantity;
+                finalOrderItems.push({
+                    ...item,
+                    price: effectivePrice,
+                    name: dbProduct.name,
+                });
             }
             // Calculate discount if coupon provided
             let discountAmount = 0;
@@ -37,14 +70,11 @@ export class OrdersController {
                 });
                 if (coupon) {
                     const now = new Date();
-                    // Basic Validation (Expiry, Start Date, Usage Limit)
                     const isValid = (!coupon.expiryDate || new Date(coupon.expiryDate) > now) &&
                         (!coupon.startDate || new Date(coupon.startDate) <= now) &&
                         (!coupon.usageLimit || !coupon.usageCount || coupon.usageCount < coupon.usageLimit);
                     if (isValid) {
-                        // Check Min Order
                         if (!coupon.minOrder || subtotal >= parseFloat(coupon.minOrder)) {
-                            // Calculate Discount
                             if (coupon.type === 'free_shipping') {
                                 discountAmount = parseFloat(shippingCost.toString());
                             }
@@ -54,7 +84,6 @@ export class OrdersController {
                             else if (coupon.type === 'fixed') {
                                 discountAmount = parseFloat(coupon.discount);
                             }
-                            // Increment usage count (optional but good practice)
                             try {
                                 await db.update(coupons)
                                     .set({ usageCount: (coupon.usageCount || 0) + 1 })
@@ -68,15 +97,18 @@ export class OrdersController {
                 }
             }
             // Calculate final total
-            // Total = Subtotal + Shipping + Tax + Extra - Discount
             let total = subtotal + parseFloat(shippingCost.toString()) + parseFloat(taxAmount.toString()) + parseFloat(extraFee.toString()) - discountAmount;
-            total = Math.max(0, total); // Ensure non-negative
+            total = Math.max(0, total);
             // Generate order number
             const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
+            // Determine status:
+            // - COD → 'pending' (awaiting fulfillment)
+            // - Online (pre-verified) → 'processing' (payment confirmed)
+            const orderStatus = isOnlinePayment ? 'processing' : 'pending';
             // Create order
             const [order] = await db.insert(orders).values({
                 orderNumber,
-                userId: userId ? String(userId) : null, // Ensure valid type or null
+                userId: userId ? String(userId) : null,
                 fullName,
                 phone: safePhone,
                 email,
@@ -90,10 +122,11 @@ export class OrdersController {
                 taxAmount: taxAmount.toString(),
                 extraFee: extraFee.toString(),
                 total: total.toString(),
-                status: 'pending',
+                status: orderStatus,
+                paymobOrderId: paymobOrderId || null,
             }).returning();
             // Create order items
-            const orderItemsData = items.map((item) => ({
+            const orderItemsData = finalOrderItems.map((item) => ({
                 orderId: order.id,
                 productId: item.productId,
                 name: item.name,
@@ -101,72 +134,7 @@ export class OrdersController {
                 quantity: item.quantity,
             }));
             await db.insert(orderItems).values(orderItemsData);
-            // Handle Paymob Payment (Card or Wallet)
-            if (paymentMethod === 'paymob' || paymentMethod === 'paymob_wallet' || paymentMethod === 'online') {
-                const appSettings = await db.query.settings.findFirst();
-                if (appSettings?.paymobEnabled && appSettings.paymobApiKey) {
-                    const isWallet = paymentMethod === 'paymob_wallet';
-                    const integrationId = isWallet ? appSettings.paymobIntegrationWallet : appSettings.paymobIntegrationCard;
-                    console.log(`💳 Payment Method: ${paymentMethod}, Selected Integration ID: ${integrationId} (Wallet: ${appSettings.paymobIntegrationWallet}, Card: ${appSettings.paymobIntegrationCard})`);
-                    if (!integrationId) {
-                        return res.status(400).json({ error: isWallet ? 'Paymob Wallet Integration ID is not configured' : 'Paymob Card Integration ID is not configured' });
-                    }
-                    // For Card Iframe, we need the Iframe ID
-                    if (!isWallet && !appSettings.paymobIframeId) {
-                        return res.status(400).json({ error: 'Paymob Iframe ID is not configured' });
-                    }
-                    try {
-                        const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(appSettings.paymobApiKey, integrationId, total, orderNumber, // CRITICAL: Pass our order number to Paymob
-                        'EGP', {
-                            first_name: fullName.split(' ')[0] || 'Guest',
-                            last_name: fullName.split(' ')[1] || 'Guest',
-                            email: email || 'guest@example.com',
-                            start_date: 'NA', // Placeholder if needed
-                            phone_number: safePhone,
-                            apartment: 'NA',
-                            floor: 'NA',
-                            street: address,
-                            building: 'NA',
-                            shipping_method: 'PKG',
-                            postal_code: 'NA',
-                            city: city,
-                            country: 'EGY',
-                            state: governorate,
-                        });
-                        console.log(`💳 Paymob Key Generated. Token length: ${paymentToken.length}, Order ID: ${paymobOrderId}`);
-                        // Save Paymob Order ID to database
-                        await db.update(orders)
-                            .set({ paymobOrderId: paymobOrderId })
-                            .where(eq(orders.id, order.id));
-                        console.log(`✅ Paymob Order ID ${paymobOrderId} saved to DB for Order #${orderNumber}`);
-                        let redirectUrl = '';
-                        if (isWallet) {
-                            // Wallet: Steps 1-3 done (Auth, Order, Key). 
-                            // Step 4: Pay Request -> returns redirect URL
-                            // Use provided walletNumber or fallback to order phone (though frontend should require it)
-                            const targetPhone = walletNumber || safePhone;
-                            console.log(`📱 Initiating Wallet Payment for: ${targetPhone} (Wallet Input: ${walletNumber}, SafePhone: ${safePhone})`);
-                            redirectUrl = await PaymobService.payWithWallet(paymentToken, targetPhone);
-                        }
-                        else {
-                            // Card: Steps 1-3 done.
-                            // Use Iframe URL
-                            redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
-                        }
-                        return res.status(201).json({
-                            id: order.id,
-                            orderNumber: order.orderNumber,
-                            redirect_url: redirectUrl,
-                            status: 'pending_payment'
-                        });
-                    }
-                    catch (paymobError) {
-                        console.error('Paymob Error:', paymobError?.message || paymobError);
-                        // Fallback or error
-                        return res.status(500).json({ error: 'Failed to initialize online payment' });
-                    }
-                }
-            }
+            console.log(`✅ [Orders] Order #${orderNumber} created — Status: ${orderStatus}, Method: ${paymentMethod}`);
             // Fetch complete order with items
             const completeOrder = await db.query.orders.findFirst({
                 where: eq(orders.id, order.id),
@@ -257,6 +225,39 @@ export class OrdersController {
             res.status(500).json({ error: 'Failed to fetch orders' });
         }
     }
+    // GET /api/orders/user/by-phone/:phone - List all orders for a specific phone number
+    static async getByPhone(req, res) {
+        try {
+            const { phone } = req.params;
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
+            const ordersList = await db.query.orders.findMany({
+                where: eq(orders.phone, phone),
+                with: {
+                    items: {
+                        with: {
+                            product: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    user: true,
+                },
+                orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+            });
+            res.json(ordersList);
+        }
+        catch (error) {
+            console.error('Error fetching orders by phone:', error);
+            res.status(500).json({ error: 'Failed to fetch customer orders' });
+        }
+    }
     // GET /api/orders/:id - Get single order
     static async getOne(req, res) {
         try {
@@ -286,6 +287,35 @@ export class OrdersController {
         catch (error) {
             console.error('Error fetching order:', error);
             res.status(500).json({ error: 'Failed to fetch order' });
+        }
+    }
+    // PUT /api/orders/:id - Update full order details
+    static async updateOrder(req, res) {
+        try {
+            const { id } = req.params;
+            const { status, fullName, phone, email, governorate, city, address, notes } = req.body;
+            const [updatedOrder] = await db.update(orders)
+                .set({
+                status,
+                fullName,
+                phone,
+                email,
+                governorate,
+                city,
+                address,
+                notes,
+                updatedAt: new Date()
+            })
+                .where(eq(orders.id, id))
+                .returning();
+            if (!updatedOrder) {
+                return res.status(404).json({ error: 'الطلب غير موجود' });
+            }
+            res.json(updatedOrder);
+        }
+        catch (error) {
+            console.error('Error updating order:', error);
+            res.status(500).json({ error: 'Failed to update order details' });
         }
     }
     // PUT /api/orders/:id/status - Update order status
@@ -372,6 +402,92 @@ export class OrdersController {
             res.status(500).json({ error: 'Failed to verify payment' });
         }
     }
+    // POST /api/orders/:id/retry-payment — Re-generate payment URL for existing order
+    static async retryPayment(req, res) {
+        try {
+            const { id } = req.params;
+            const { walletNumber } = req.body;
+            // 1. Get Order
+            const order = await db.query.orders.findFirst({
+                where: eq(orders.id, id),
+            });
+            if (!order) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+            console.log(`🔄 Retry Payment requested for Order #${order.orderNumber}, Status: ${order.status}, Method: ${order.paymentMethod}`);
+            // Allow retry for pending_payment OR pending (legacy orders before code change)
+            const allowedStatuses = ['pending_payment', 'pending'];
+            const currentStatus = order.status || 'pending';
+            if (!allowedStatuses.includes(currentStatus)) {
+                if (order.status === 'paid' || order.status === 'processing' || order.status === 'delivered') {
+                    return res.json({ status: order.status, message: 'تم دفع هذا الطلب بالفعل' });
+                }
+                return res.status(400).json({ error: 'لا يمكن إعادة محاولة الدفع لهذا الطلب' });
+            }
+            // Ensure it's an online payment method
+            const onlineMethods = ['paymob', 'paymob_wallet', 'online'];
+            if (!onlineMethods.includes(order.paymentMethod)) {
+                return res.status(400).json({ error: 'هذا الطلب ليس دفع إلكتروني' });
+            }
+            // 2. Get Settings for Paymob keys
+            const appSettings = await db.query.settings.findFirst();
+            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+                return res.status(500).json({ error: 'Paymob is not configured' });
+            }
+            const isWallet = order.paymentMethod === 'paymob_wallet';
+            const integrationId = isWallet ? appSettings.paymobIntegrationWallet : appSettings.paymobIntegrationCard;
+            if (!integrationId) {
+                return res.status(400).json({ error: 'Payment integration not configured' });
+            }
+            if (!isWallet && !appSettings.paymobIframeId) {
+                return res.status(400).json({ error: 'Paymob Iframe ID is not configured' });
+            }
+            const total = parseFloat(order.total);
+            // Use a unique merchant_order_id suffix for each retry to avoid Paymob duplicate rejection
+            const retryMerchantId = `${order.orderNumber}-R${Date.now().toString().slice(-4)}`;
+            // 3. Generate new payment key
+            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(appSettings.paymobApiKey, integrationId, total, retryMerchantId, 'EGP', {
+                first_name: order.fullName.split(' ')[0] || 'Guest',
+                last_name: order.fullName.split(' ').slice(1).join(' ') || 'Guest',
+                email: order.email || 'guest@example.com',
+                start_date: 'NA',
+                phone_number: order.phone,
+                apartment: 'NA',
+                floor: 'NA',
+                street: order.address,
+                building: 'NA',
+                shipping_method: 'PKG',
+                postal_code: 'NA',
+                city: order.city,
+                country: 'EGY',
+                state: order.governorate,
+            });
+            // 4. Update Paymob Order ID + ensure status is pending_payment
+            await db.update(orders)
+                .set({ paymobOrderId: paymobOrderId, status: 'pending_payment' })
+                .where(eq(orders.id, id));
+            console.log(`✅ Retry Payment: New Paymob Order ID ${paymobOrderId} for Order #${order.orderNumber} (Merchant: ${retryMerchantId})`);
+            // 5. Build redirect URL
+            let redirectUrl = '';
+            if (isWallet) {
+                const targetPhone = walletNumber || order.phone;
+                redirectUrl = await PaymobService.payWithWallet(paymentToken, targetPhone);
+            }
+            else {
+                redirectUrl = `https://accept.paymob.com/api/acceptance/iframes/${appSettings.paymobIframeId}?payment_token=${paymentToken}`;
+            }
+            return res.json({
+                id: order.id,
+                orderNumber: order.orderNumber,
+                redirect_url: redirectUrl,
+                status: 'pending_payment'
+            });
+        }
+        catch (error) {
+            console.error('❌ Retry Payment Error:', error?.response?.data || error?.message || error);
+            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.' });
+        }
+    }
     // GET /api/orders/:id/status - Get order status (for polling)
     static async getStatus(req, res) {
         try {
@@ -390,6 +506,41 @@ export class OrdersController {
         catch (error) {
             console.error('Get Status Error:', error);
             return res.status(500).json({ message: 'Internal Server Error' });
+        }
+    }
+    // POST /api/orders/bulk-delete - Delete multiple orders
+    static async bulkDelete(req, res) {
+        try {
+            const { orderIds } = req.body;
+            if (!Array.isArray(orderIds) || orderIds.length === 0) {
+                return res.status(400).json({ error: 'orderIds array is required' });
+            }
+            // First delete order items to respect foreign keys
+            await db.delete(orderItems).where(inArray(orderItems.orderId, orderIds));
+            // Then delete orders
+            await db.delete(orders).where(inArray(orders.id, orderIds));
+            res.json({ message: 'Orders deleted successfully' });
+        }
+        catch (error) {
+            console.error('Error bulk deleting orders:', error);
+            res.status(500).json({ error: 'Failed to delete orders' });
+        }
+    }
+    // PATCH /api/orders/bulk-status - Update status for multiple orders
+    static async bulkUpdateStatus(req, res) {
+        try {
+            const { orderIds, status } = req.body;
+            if (!Array.isArray(orderIds) || orderIds.length === 0 || !status) {
+                return res.status(400).json({ error: 'orderIds array and status are required' });
+            }
+            await db.update(orders)
+                .set({ status, updatedAt: new Date() })
+                .where(inArray(orders.id, orderIds));
+            res.json({ message: 'Orders status updated successfully' });
+        }
+        catch (error) {
+            console.error('Error bulk updating order status:', error);
+            res.status(500).json({ error: 'Failed to update orders status' });
         }
     }
 }

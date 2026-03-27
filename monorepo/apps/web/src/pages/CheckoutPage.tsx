@@ -941,13 +941,33 @@ export function CheckoutPage() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 w-full h-full bg-white relative">
-                            <iframe
-                                src={iframeUrl}
-                                className="w-full h-full border-0"
-                                title="Paymob Checkout"
-                                allow="payment"
-                            ></iframe>
+                        <div className="flex-1 w-full h-full bg-slate-50 relative flex flex-col items-center justify-center">
+                            {formData.paymentMethod === 'paymob_wallet' ? (
+                                <div className="p-8 text-center max-w-md mx-auto">
+                                    <div className="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <span className="material-symbols-outlined text-4xl">account_balance_wallet</span>
+                                    </div>
+                                    <h4 className="text-xl font-bold text-slate-800 mb-4">الدفع بواسطة المحفظة</h4>
+                                    <p className="text-slate-600 mb-8 leading-relaxed">
+                                        لإتمام عملية الدفع بأمان، يرجى الضغط على الزر أدناه لفتح صفحة محفظتك في نافذة جديدة. 
+                                        سيتلقى هذا المتصفح التأكيد تلقائياً بمجرد إتمامك للدفع.
+                                    </p>
+                                    <button
+                                        onClick={() => window.open(iframeUrl, '_blank')}
+                                        className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-lg"
+                                    >
+                                        افتح صفحة الدفع الآن
+                                        <span className="material-symbols-outlined">open_in_new</span>
+                                    </button>
+                                </div>
+                            ) : (
+                                <iframe
+                                    src={iframeUrl}
+                                    className="w-full h-full border-0"
+                                    title="Paymob Checkout"
+                                    allow="payment"
+                                ></iframe>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -8,6 +8,8 @@ export declare class ProductsController {
     static create(req: Request, res: Response): Promise<void>;
     static update(req: Request, res: Response): Promise<void>;
     static bulkUpdate(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static bulkAction(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    static validateCart(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static delete(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=products.controller.d.ts.map

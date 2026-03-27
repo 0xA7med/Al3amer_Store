@@ -136,7 +136,7 @@ export class SettingsController {
             res.status(500).json({ error: 'Failed to update settings' });
         }
     }
-    // POST /api/settings/test-gemini - Test Gemini API connection
+    // POST /api/settings/test-gemini - Test Gemini API connection with Dynamic Discovery
     static async testGemini(req, res) {
         try {
             const { apiKey } = req.body;
@@ -147,18 +147,24 @@ export class SettingsController {
                 });
             }
             const cleanKey = apiKey.trim();
-            const CANDIDATE_MODELS = [
-                "gemini-1.5-flash", // Priority 1: Best free tier on v1beta
-                "gemini-2.0-flash-exp", // Priority 2: Experimental
-                "gemini-1.5-pro", // Priority 3: Pro
-                "gemini-pro" // Priority 4: Legacy
-            ];
+            console.log("🚀 Starting Dynamic Model Discovery Test...");
+            // Step 1: Discover available models
+            const { ModelDiscoveryService } = await import('../services/model-discovery.service');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
+            if (availableModels.length === 0) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'لم يتم العثور على نماذج متاحة',
+                    details: ['No models available for this API key']
+                });
+            }
+            console.log(`✅ Found ${availableModels.length} available models:`, availableModels);
+            // Step 2: Test the first available model
             const errorLogs = [];
-            console.log("🚀 Starting v1beta REST Waterfall Test...");
-            for (const modelName of CANDIDATE_MODELS) {
+            for (const modelName of availableModels) {
                 try {
-                    console.log(`🧪 Testing model (REST v1beta): ${modelName}`);
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
+                    console.log(`🧪 Testing model: ${modelName}`);
+                    const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${cleanKey}`;
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: {
@@ -176,8 +182,10 @@ export class SettingsController {
                         console.log(`✅ Success with model: ${modelName}`);
                         return res.json({
                             success: true,
-                            message: 'تم الاتصال بنجاح عبر REST v1beta!',
+                            message: 'تم الاتصال بنجاح! (Dynamic Discovery)',
                             modelUsed: modelName,
+                            totalModelsFound: availableModels.length,
+                            allAvailableModels: availableModels,
                             response: text?.trim() || 'No text content'
                         });
                     }
@@ -191,19 +199,21 @@ export class SettingsController {
                     errorLogs.push(`${modelName}: ${errorMsg}`);
                 }
             }
-            // If we are here, all models failed
-            console.error("❌ All v1beta models failed.");
+            // If we are here, all discovered models failed
+            console.error("❌ All discovered models failed.");
             return res.status(500).json({
                 success: false,
-                error: 'فشلت جميع محاولات REST v1beta للاتصال',
+                error: 'فشلت جميع النماذج المكتشفة',
+                totalModelsFound: availableModels.length,
+                allAvailableModels: availableModels,
                 details: errorLogs
             });
         }
         catch (error) {
-            console.error('Critical failure in testGemini controller (REST):', error);
+            console.error('Critical failure in testGemini controller:', error);
             res.status(500).json({
                 success: false,
-                error: 'خطأ داخلي أثناء اختبار الاتصال (REST)',
+                error: 'خطأ داخلي أثناء اختبار الاتصال',
                 details: [error.message]
             });
         }

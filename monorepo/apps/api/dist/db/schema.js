@@ -73,6 +73,8 @@ export const categories = pgTable('categories', {
     image: text('image'),
     icon: text('icon'),
     isActive: boolean('is_active').default(true),
+    isFeatured: boolean('is_featured').default(false),
+    attributesSchema: jsonb('attributes_schema').$type().default([]),
 });
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
     parent: one(categories, {
@@ -106,13 +108,12 @@ export const products = pgTable('products', {
     brandId: uuid('brand_id').references(() => brands.id),
     slug: text('slug').notNull().unique(),
     status: text('status').default('active'), // active | draft | archived
-    videoUrl: text('video_url'),
-    videoTitle: text('video_title'),
-    videoDescription: text('video_description'),
+    videos: jsonb('videos').$type().default([]),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
     isFeatured: boolean('is_featured').default(false),
     specifications: jsonb('specifications').$type(),
+    dynamicAttributes: jsonb('dynamic_attributes').$type().default({}),
     tags: text('tags').array(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),

@@ -157,6 +157,9 @@ export class InventorySyncController {
                     const existingPrice = parseFloat(existing.price?.toString() || '0');
                     const existingStock = existing.stock || 0;
                     const existingCost = parseFloat(existing.cost?.toString() || '0');
+                    if (existing.name !== excelRow.name) {
+                        changes.name = { old: existing.name, new: excelRow.name };
+                    }
                     if (Math.abs(existingPrice - excelRow.price) > 0.01) {
                         changes.price = { old: existingPrice, new: excelRow.price };
                     }
@@ -174,6 +177,11 @@ export class InventorySyncController {
                             status: 'update',
                             existingProductId: existing.id,
                             changes,
+                            currentData: {
+                                price: existingPrice,
+                                stock: existingStock,
+                                cost: existingCost,
+                            }
                         });
                         updateCount++;
                     }
@@ -243,6 +251,9 @@ export class InventorySyncController {
                                 const updateData = {
                                     updatedAt: new Date(),
                                 };
+                                if (item.changes.name !== undefined && item.changes.name !== null) {
+                                    updateData.name = item.changes.name.new;
+                                }
                                 if (item.changes.price !== undefined && item.changes.price !== null) {
                                     updateData.price = item.changes.price.new.toString();
                                 }
@@ -278,7 +289,7 @@ export class InventorySyncController {
                                     cost: item.newData.cost?.toString() || '0',
                                     slug: slug,
                                     categoryId: defaultCategoryId,
-                                    status: 'draft', // Requires admin review before publishing
+                                    status: 'draft', // Products imported from Excel are hidden by default
                                     isFeatured: false,
                                 });
                                 results.created++;

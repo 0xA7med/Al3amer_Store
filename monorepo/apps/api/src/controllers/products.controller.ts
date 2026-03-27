@@ -134,13 +134,13 @@ export class ProductsController {
             if (sort === 'bestselling') {
                 const results = await db.select({
                     id: products.id,
-                    totalSales: sql<number>`COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`,
+                    total_sales: sql<number>`COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`,
                 })
                     .from(products)
                     .leftJoin(orderItems, eq(products.id, orderItems.productId))
                     .where(where)
                     .groupBy(products.id)
-                    .orderBy(desc(sql`totalSales`), desc(products.createdAt))
+                    .orderBy(desc(sql`total_sales`), desc(products.createdAt))
                     .limit(limitNum)
                     .offset(offset);
 

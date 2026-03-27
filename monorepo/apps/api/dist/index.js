@@ -13,8 +13,11 @@ import couponsRouter from './routes/coupons.js';
 import reviewsRouter from './routes/reviews.js';
 import addressesRouter from './routes/addresses.js';
 import wishlistRouter from './routes/wishlist.js';
+import brandsRouter from './routes/brands.js';
 import webhookRouter from './routes/webhook.js';
 import debugRouter from './routes/debug.js';
+import metadataRouter from './routes/metadata.js';
+import checkoutRouter from './routes/checkout.js';
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,6 +27,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 app.use('/api/products', productsRouter);
+app.use('/api/brands', brandsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/ai-bundle', aiBundleRouter);
 app.use('/api/orders', ordersRouter);
@@ -37,6 +41,8 @@ app.use('/api/addresses', addressesRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/webhook', webhookRouter);
 app.use('/api/debug', debugRouter);
+app.use('/api/metadata', metadataRouter);
+app.use('/api/checkout', checkoutRouter);
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', message: 'Al3amer API is running' });

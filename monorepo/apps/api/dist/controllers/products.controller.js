@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
-import { products, productImages, categories, reviews } from '../db/schema.js';
-import { eq, and, gte, ilike, or, inArray } from 'drizzle-orm';
+import { products, productImages, categories, brands, reviews, orderItems } from '../db/schema.js';
+import { eq, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
 import { AIService } from '../services/ai.service.js';
 export class ProductsController {
@@ -19,7 +19,7 @@ export class ProductsController {
     // Generate AI Content
     static async aiGenerate(req, res) {
         try {
-            const { name } = req.body;
+            const { name, section = 'all', category, brand } = req.body;
             if (!name) {
                 return res.status(400).json({ error: 'Product name is required' });
             }
@@ -30,24 +30,33 @@ export class ProductsController {
                 return res.status(400).json({ error: 'Google API Key is not configured' });
             }
             const aiService = new AIService(apiKey);
-            const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium');
+            const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium', section, category, brand);
             return res.json(result);
         }
         catch (error) {
             console.error('AI Generate Error:', error);
-            return res.status(500).json({ error: 'Failed to generate content' });
+            return res.status(500).json({ error: error?.message || 'Failed to generate content' });
         }
     }
     // GET /api/products - List products with pagination and filtering
     static async list(req, res) {
         try {
-            const { page = '1', limit = '10', categories: categoriesParam, search, minPrice, status = 'active', } = req.query;
+            const { page = '1', limit = '10', categories: categoriesParam, search, minPrice, status = 'active', featured, hasDiscount, sort, exclude, dynamicFilters, } = req.query;
             const pageNum = parseInt(page);
             const limitNum = parseInt(limit);
             const offset = (pageNum - 1) * limitNum;
             const conditions = [];
             if (status) {
                 conditions.push(eq(products.status, status));
+            }
+            if (featured === 'true') {
+                conditions.push(eq(products.isFeatured, true));
+            }
+            if (hasDiscount === 'true') {
+                conditions.push(sql `${products.discountPrice} IS NOT NULL`);
+            }
+            if (exclude) {
+                conditions.push(sql `${products.id} != ${exclude}`);
             }
             if (categoriesParam) {
                 const categorySlugs = categoriesParam.split(',');
@@ -65,19 +74,88 @@ export class ProductsController {
             if (minPrice) {
                 conditions.push(gte(products.price, minPrice));
             }
+            if (dynamicFilters) {
+                try {
+                    const filtersObj = JSON.parse(dynamicFilters);
+                    for (const [key, values] of Object.entries(filtersObj)) {
+                        if (Array.isArray(values) && values.length > 0) {
+                            const valueList = values.map(v => sql `${v}`);
+                            conditions.push(sql `${products.dynamicAttributes}->${key} ?| array[${sql.join(valueList, sql `, `)}]`);
+                        }
+                    }
+                }
+                catch (e) {
+                    console.error('Failed to parse dynamicFilters query param:', e);
+                }
+            }
             const where = conditions.length > 0 ? and(...conditions) : undefined;
-            const productsList = await db.query.products.findMany({
-                where,
-                limit: limitNum,
-                offset,
-                with: {
-                    category: true,
-                    brand: true,
-                    images: {
-                        orderBy: (images, { asc }) => [asc(images.sortOrder)],
+            let productsList = [];
+            if (sort === 'bestselling') {
+                const results = await db.select({
+                    id: products.id,
+                    total_sales: sql `COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`,
+                })
+                    .from(products)
+                    .leftJoin(orderItems, eq(products.id, orderItems.productId))
+                    .where(where)
+                    .groupBy(products.id)
+                    .orderBy(desc(sql `total_sales`), desc(products.createdAt))
+                    .limit(limitNum)
+                    .offset(offset);
+                const ids = results.map(r => r.id);
+                if (ids.length === 0) {
+                    productsList = [];
+                }
+                else {
+                    const detailedProducts = await db.query.products.findMany({
+                        where: inArray(products.id, ids),
+                        with: {
+                            category: {
+                                with: {
+                                    parent: {
+                                        with: { parent: true }
+                                    }
+                                }
+                            },
+                            brand: true,
+                            images: {
+                                orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                            },
+                        },
+                    });
+                    // Reorder because findMany where inArray doesn't preserve incoming array order
+                    productsList = ids.map(id => detailedProducts.find(p => p.id === id)).filter(Boolean);
+                }
+            }
+            else {
+                productsList = await db.query.products.findMany({
+                    where,
+                    limit: limitNum,
+                    offset,
+                    orderBy: (products, { desc, asc }) => {
+                        if (sort === 'newest')
+                            return [desc(products.createdAt)];
+                        if (sort === 'price_asc')
+                            return [asc(products.price)];
+                        if (sort === 'price_desc')
+                            return [desc(products.price)];
+                        return [desc(products.createdAt)]; // Default to newest
                     },
-                },
-            });
+                    with: {
+                        category: {
+                            with: {
+                                parent: {
+                                    with: { parent: true }
+                                }
+                            }
+                        },
+                        brand: true,
+                        images: {
+                            orderBy: (images, { asc }) => [asc(images.sortOrder)],
+                        },
+                    },
+                });
+            }
             res.json({
                 data: productsList,
                 pagination: {
@@ -141,7 +219,13 @@ export class ProductsController {
             const product = await db.query.products.findFirst({
                 where: condition,
                 with: {
-                    category: true,
+                    category: {
+                        with: {
+                            parent: {
+                                with: { parent: true }
+                            }
+                        }
+                    },
                     brand: true,
                     images: {
                         orderBy: (images, { asc }) => [asc(images.sortOrder)],
@@ -191,7 +275,22 @@ export class ProductsController {
     // POST /api/products - Create new product
     static async create(req, res) {
         try {
-            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images: imageUrls, slug: manualSlug, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images: imageUrls, slug: manualSlug, brand: brandName, // Allow name for auto-resolution
+             } = req.body;
+            // Resolve brand name to ID if brandName is provided
+            let resolvedBrandId = brandId;
+            if (brandName && !brandId) {
+                const existingBrand = await db.query.brands.findFirst({
+                    where: ilike(brands.name, brandName)
+                });
+                if (existingBrand) {
+                    resolvedBrandId = existingBrand.id;
+                }
+                else {
+                    const [newBrand] = await db.insert(brands).values({ name: brandName }).returning();
+                    resolvedBrandId = newBrand.id;
+                }
+            }
             // Insert the product
             const [newProduct] = await db.insert(products).values({
                 name,
@@ -204,16 +303,15 @@ export class ProductsController {
                 stock: stock || 0,
                 barcode,
                 categoryId,
-                brandId,
+                brandId: resolvedBrandId || null,
                 slug: manualSlug || ProductsController.slugify(name), // Manual slug or auto-generate
                 status: status || 'active',
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos: videos || [],
                 metaTitle,
                 metaDescription,
                 isFeatured: isFeatured || false,
                 specifications,
+                dynamicAttributes: dynamicAttributes || null,
                 tags,
             }).returning();
             // Insert product images if provided
@@ -221,13 +319,18 @@ export class ProductsController {
                 const hasExplicitPrimary = imageUrls.some((u) => typeof u === 'object' && u.isPrimary);
                 const imagesData = await Promise.all(imageUrls.map(async (img, index) => {
                     let url = typeof img === 'string' ? img : img.url;
-                    // If url is base64, upload to cloudinary
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            }
+                            else {
+                                url = await uploadToCloudinary(url);
+                            }
                         }
                         catch (err) {
-                            console.error('Failed to upload image to cloudinary, falling back to base64:', err);
+                            console.error('❌ Failed to upload image to cloudinary, falling back to base64 string:', err);
                         }
                     }
                     return {
@@ -259,7 +362,22 @@ export class ProductsController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videoUrl, videoTitle, videoDescription, metaTitle, metaDescription, isFeatured, specifications, tags, images, slug: manualSlug, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images, slug: manualSlug, brand: brandName, // Allow name for auto-resolution
+             } = req.body;
+            // Resolve brand name to ID if brandName is provided
+            let resolvedBrandId = brandId;
+            if (brandName && !brandId) {
+                const existingBrand = await db.query.brands.findFirst({
+                    where: ilike(brands.name, brandName)
+                });
+                if (existingBrand) {
+                    resolvedBrandId = existingBrand.id;
+                }
+                else {
+                    const [newBrand] = await db.insert(brands).values({ name: brandName }).returning();
+                    resolvedBrandId = newBrand.id;
+                }
+            }
             const updateData = {
                 name,
                 description,
@@ -271,15 +389,14 @@ export class ProductsController {
                 stock: stock !== undefined ? Number(stock) : undefined,
                 barcode,
                 categoryId: categoryId || null,
-                brandId: brandId || null,
+                brandId: resolvedBrandId || brandId || null,
                 status,
-                videoUrl,
-                videoTitle,
-                videoDescription,
+                videos,
                 metaTitle,
                 metaDescription,
                 isFeatured,
                 specifications,
+                dynamicAttributes: dynamicAttributes !== undefined ? dynamicAttributes : undefined,
                 tags,
                 updatedAt: new Date(),
             };
@@ -303,13 +420,18 @@ export class ProductsController {
                 const hasExplicitPrimary = req.body.images.some((u) => typeof u === 'object' && u.isPrimary);
                 const imagesData = await Promise.all(req.body.images.map(async (img, index) => {
                     let url = typeof img === 'string' ? img : img.url;
-                    // If url is base64, upload to cloudinary
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            }
+                            else {
+                                url = await uploadToCloudinary(url);
+                            }
                         }
                         catch (err) {
-                            console.error('Failed to upload update image to cloudinary:', err);
+                            console.error('❌ Failed to upload update image to cloudinary, falling back to base64 string:', err);
                         }
                     }
                     return {
@@ -343,7 +465,7 @@ export class ProductsController {
             });
         }
     }
-    // PATCH /api/products/bulk - Bulk update products
+    // PATCH /api/products/bulk - Bulk update products (inline price/stock edits)
     static async bulkUpdate(req, res) {
         try {
             const { updates } = req.body; // Array of { id, price, stock }
@@ -363,6 +485,160 @@ export class ProductsController {
         catch (error) {
             console.error('Error in bulk update:', error);
             res.status(500).json({ error: 'Failed to perform bulk update' });
+        }
+    }
+    // POST /api/products/bulk-action - Comprehensive bulk actions
+    static async bulkAction(req, res) {
+        try {
+            const { ids, action, payload } = req.body;
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ error: 'No product IDs provided' });
+            }
+            if (!action) {
+                return res.status(400).json({ error: 'Action is required' });
+            }
+            let affected = 0;
+            if (action === 'delete') {
+                await db.delete(products).where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else if (action === 'show') {
+                await db.update(products)
+                    .set({ status: 'active', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else if (action === 'hide') {
+                await db.update(products)
+                    .set({ status: 'draft', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else if (action === 'category') {
+                if (!payload?.categoryId)
+                    return res.status(400).json({ error: 'categoryId is required' });
+                await db.update(products)
+                    .set({ categoryId: payload.categoryId, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else if (action === 'price') {
+                if (!payload?.priceMode || payload.priceValue === undefined) {
+                    return res.status(400).json({ error: 'priceMode and priceValue are required' });
+                }
+                const val = payload.priceValue;
+                const mode = payload.priceMode;
+                // Build a single SQL expression based on the mode — no row-by-row loop
+                let priceExpr;
+                if (mode === 'add_fixed') {
+                    priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) + ${val})::TEXT`;
+                }
+                else if (mode === 'subtract_fixed') {
+                    priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) - ${val})::TEXT`;
+                }
+                else if (mode === 'add_percent') {
+                    priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 + ${val} / 100.0))::TEXT`;
+                }
+                else if (mode === 'subtract_percent') {
+                    priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 - ${val} / 100.0))::TEXT`;
+                }
+                else if (mode === 'set_fixed') {
+                    priceExpr = sql `${val.toString()}`;
+                }
+                else {
+                    return res.status(400).json({ error: 'Invalid priceMode' });
+                }
+                await db.update(products)
+                    .set({ price: priceExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else if (action === 'stock') {
+                if (!payload?.stockMode || payload.stockValue === undefined) {
+                    return res.status(400).json({ error: 'stockMode and stockValue are required' });
+                }
+                const val = payload.stockValue;
+                const mode = payload.stockMode;
+                let stockExpr;
+                if (mode === 'add') {
+                    stockExpr = sql `GREATEST(0, COALESCE(${products.stock}, 0) + ${val})`;
+                }
+                else if (mode === 'subtract') {
+                    stockExpr = sql `GREATEST(0, COALESCE(${products.stock}, 0) - ${val})`;
+                }
+                else if (mode === 'set') {
+                    stockExpr = sql `${val}`;
+                }
+                else {
+                    return res.status(400).json({ error: 'Invalid stockMode' });
+                }
+                await db.update(products)
+                    .set({ stock: stockExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
+                affected = ids.length;
+            }
+            else {
+                return res.status(400).json({ error: `Unknown action: ${action}` });
+            }
+            res.json({ success: true, affected, message: `تم تطبيق الإجراء على ${affected} منتج` });
+        }
+        catch (error) {
+            console.error('Error in bulk action:', error);
+            res.status(500).json({ error: 'Failed to perform bulk action' });
+        }
+    }
+    // POST /api/products/validate-cart - Validate cart items still exist and return fresh data
+    static async validateCart(req, res) {
+        try {
+            const { productIds } = req.body;
+            if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+                return res.status(400).json({ error: 'productIds must be a non-empty array' });
+            }
+            // Fetch all matching products in a single DB query
+            const foundProducts = await db.query.products.findMany({
+                where: inArray(products.id, productIds),
+                with: {
+                    images: {
+                        where: eq(productImages.isPrimary, true),
+                        limit: 1,
+                    },
+                },
+                columns: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    status: true,
+                },
+            });
+            // Build a Set of found IDs for fast lookup
+            const foundIdSet = new Set(foundProducts.map(p => p.id));
+            // Determine which requested IDs are missing or inactive
+            const invalidIds = productIds.filter(id => !foundIdSet.has(id));
+            // Map to a clean response shape
+            const validProducts = foundProducts
+                .filter(p => p.status === 'active')
+                .map(p => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                discountPrice: p.discountPrice,
+                stock: p.stock,
+                image: p.images[0]?.url || null,
+            }));
+            // Products that exist but are inactive (draft/hidden) are also "invalid" from cart perspective
+            const inactiveIds = foundProducts
+                .filter(p => p.status !== 'active')
+                .map(p => p.id);
+            return res.json({
+                validProducts,
+                invalidIds: [...invalidIds, ...inactiveIds],
+            });
+        }
+        catch (error) {
+            console.error('Error validating cart:', error);
+            res.status(500).json({ error: 'Failed to validate cart' });
         }
     }
     // DELETE /api/products/:id - Delete product

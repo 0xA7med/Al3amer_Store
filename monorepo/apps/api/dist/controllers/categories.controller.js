@@ -1,14 +1,47 @@
 import { db } from '../db/index.js';
-import { categories } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { categories, products } from '../db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 export class CategoriesController {
     async list(req, res) {
         try {
-            const result = await db.query.categories.findMany({
+            // Get all categories with their parent info
+            const allCategories = await db.query.categories.findMany({
                 with: {
                     parent: true,
                 }
             });
+            // Get total product counts (including drafts)
+            const totalCounts = await db.select({
+                categoryId: products.categoryId,
+                count: sql `count(*)`
+            })
+                .from(products)
+                .groupBy(products.categoryId);
+            // Get active product counts only
+            const activeCounts = await db.select({
+                categoryId: products.categoryId,
+                count: sql `count(*)`
+            })
+                .from(products)
+                .where(eq(products.status, 'active'))
+                .groupBy(products.categoryId);
+            // Create maps for easy lookup
+            const totalCountMap = {};
+            totalCounts.forEach(c => {
+                if (c.categoryId)
+                    totalCountMap[c.categoryId] = Number(c.count);
+            });
+            const activeCountMap = {};
+            activeCounts.forEach(c => {
+                if (c.categoryId)
+                    activeCountMap[c.categoryId] = Number(c.count);
+            });
+            // Attach counts to categories
+            const result = allCategories.map(cat => ({
+                ...cat,
+                productCount: totalCountMap[cat.id] || 0,
+                activeProductCount: activeCountMap[cat.id] || 0
+            }));
             res.json(result);
         }
         catch (error) {
@@ -38,9 +71,12 @@ export class CategoriesController {
     }
     async create(req, res) {
         try {
-            const { name, parentId, image, icon, isActive } = req.body;
-            // simple slug generation
-            const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF\-]+/g, '') + '-' + Date.now();
+            const { name, parentId, image, icon, isActive, isFeatured, slug: customSlug, attributesSchema } = req.body;
+            // Use custom slug if provided, otherwise generate one
+            let slug = customSlug;
+            if (!slug) {
+                slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF\-]+/g, '') + '-' + Date.now();
+            }
             const [newCategory] = await db.insert(categories).values({
                 name,
                 slug,
@@ -48,6 +84,8 @@ export class CategoriesController {
                 image,
                 icon,
                 isActive: isActive ?? true,
+                isFeatured: isFeatured ?? false,
+                attributesSchema,
             }).returning();
             res.status(201).json(newCategory);
         }
@@ -59,16 +97,29 @@ export class CategoriesController {
     async update(req, res) {
         try {
             const { id } = req.params;
-            const { name, parentId, image, icon, isActive } = req.body;
+            const { name, parentId, image, icon, isActive, isFeatured, slug, attributesSchema } = req.body;
+            const updateData = {};
+            if (name !== undefined)
+                updateData.name = name;
+            if (slug !== undefined)
+                updateData.slug = slug;
+            if (parentId !== undefined)
+                updateData.parentId = parentId; // Can be null to remove parent
+            if (image !== undefined)
+                updateData.image = image;
+            if (icon !== undefined)
+                updateData.icon = icon;
+            if (isActive !== undefined)
+                updateData.isActive = isActive;
+            if (isFeatured !== undefined)
+                updateData.isFeatured = isFeatured;
+            if (attributesSchema !== undefined)
+                updateData.attributesSchema = attributesSchema;
+            if (Object.keys(updateData).length === 0) {
+                return res.json({ message: 'No fields to update' });
+            }
             const [updatedCategory] = await db.update(categories)
-                .set({
-                name,
-                parentId: parentId || null,
-                image,
-                icon,
-                isActive,
-                // optionally update slug if name changes, but usually slugs are permanent. Let's keep slug stable.
-            })
+                .set(updateData)
                 .where(eq(categories.id, id))
                 .returning();
             if (!updatedCategory) {
@@ -84,21 +135,31 @@ export class CategoriesController {
     async delete(req, res) {
         try {
             const { id } = req.params;
-            // Check if has children? The DB might restrict if FK constraint? 
-            // Drizzle doesn't enforce FK in app unless defined in DB.
-            // If checking for children/products safety is needed, do it here.
-            // For now, straightforward delete.
+            // Check if category has subcategories
+            const subCategoriesCount = await db.select({ count: sql `count(*)` })
+                .from(categories)
+                .where(eq(categories.parentId, id));
+            if (Number(subCategoriesCount[0].count) > 0) {
+                return res.status(400).json({ error: 'لا يمكن حذف القسم لأنه يحتوي على أقسام فرعية. يرجى حذفها أولاً.' });
+            }
+            // Check if category has products
+            const productsCount = await db.select({ count: sql `count(*)` })
+                .from(products)
+                .where(eq(products.categoryId, id));
+            if (Number(productsCount[0].count) > 0) {
+                return res.status(400).json({ error: 'لا يمكن حذف القسم لأنه مرتبط بمنتجات. يرجى نقل أو حذف المنتجات أولاً.' });
+            }
             const [deletedCategory] = await db.delete(categories)
                 .where(eq(categories.id, id))
                 .returning();
             if (!deletedCategory) {
-                return res.status(404).json({ error: 'Category not found' });
+                return res.status(404).json({ error: 'القسم غير موجود' });
             }
             res.json({ message: 'Category deleted successfully' });
         }
         catch (error) {
             console.error('Error deleting category:', error);
-            res.status(500).json({ error: 'Failed to delete category' });
+            res.status(500).json({ error: 'حدث خطأ أثناء حذف القسم' });
         }
     }
 }

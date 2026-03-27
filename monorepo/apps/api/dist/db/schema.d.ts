@@ -631,6 +631,50 @@ export declare const categories: import("drizzle-orm/pg-core").PgTableWithColumn
             identity: undefined;
             generated: undefined;
         }, {}, {}>;
+        isFeatured: import("drizzle-orm/pg-core").PgColumn<{
+            name: "is_featured";
+            tableName: "categories";
+            dataType: "boolean";
+            columnType: "PgBoolean";
+            data: boolean;
+            driverParam: boolean;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        attributesSchema: import("drizzle-orm/pg-core").PgColumn<{
+            name: "attributes_schema";
+            tableName: "categories";
+            dataType: "json";
+            columnType: "PgJsonb";
+            data: {
+                name: string;
+                type: "single-select" | "multi-select";
+                options: string[];
+            }[];
+            driverParam: unknown;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {
+            $type: {
+                name: string;
+                type: "single-select" | "multi-select";
+                options: string[];
+            }[];
+        }>;
     };
     dialect: "pg";
 }>;
@@ -941,57 +985,33 @@ export declare const products: import("drizzle-orm/pg-core").PgTableWithColumns<
             identity: undefined;
             generated: undefined;
         }, {}, {}>;
-        videoUrl: import("drizzle-orm/pg-core").PgColumn<{
-            name: "video_url";
+        videos: import("drizzle-orm/pg-core").PgColumn<{
+            name: "videos";
             tableName: "products";
-            dataType: "string";
-            columnType: "PgText";
-            data: string;
-            driverParam: string;
+            dataType: "json";
+            columnType: "PgJsonb";
+            data: {
+                url: string;
+                title: string;
+                is_featured: boolean;
+            }[];
+            driverParam: unknown;
             notNull: false;
-            hasDefault: false;
+            hasDefault: true;
             isPrimaryKey: false;
             isAutoincrement: false;
             hasRuntimeDefault: false;
-            enumValues: [string, ...string[]];
+            enumValues: undefined;
             baseColumn: never;
             identity: undefined;
             generated: undefined;
-        }, {}, {}>;
-        videoTitle: import("drizzle-orm/pg-core").PgColumn<{
-            name: "video_title";
-            tableName: "products";
-            dataType: "string";
-            columnType: "PgText";
-            data: string;
-            driverParam: string;
-            notNull: false;
-            hasDefault: false;
-            isPrimaryKey: false;
-            isAutoincrement: false;
-            hasRuntimeDefault: false;
-            enumValues: [string, ...string[]];
-            baseColumn: never;
-            identity: undefined;
-            generated: undefined;
-        }, {}, {}>;
-        videoDescription: import("drizzle-orm/pg-core").PgColumn<{
-            name: "video_description";
-            tableName: "products";
-            dataType: "string";
-            columnType: "PgText";
-            data: string;
-            driverParam: string;
-            notNull: false;
-            hasDefault: false;
-            isPrimaryKey: false;
-            isAutoincrement: false;
-            hasRuntimeDefault: false;
-            enumValues: [string, ...string[]];
-            baseColumn: never;
-            identity: undefined;
-            generated: undefined;
-        }, {}, {}>;
+        }, {}, {
+            $type: {
+                url: string;
+                title: string;
+                is_featured: boolean;
+            }[];
+        }>;
         metaTitle: import("drizzle-orm/pg-core").PgColumn<{
             name: "meta_title";
             tableName: "products";
@@ -1067,6 +1087,25 @@ export declare const products: import("drizzle-orm/pg-core").PgTableWithColumns<
                 key: string;
                 value: string;
             }[];
+        }>;
+        dynamicAttributes: import("drizzle-orm/pg-core").PgColumn<{
+            name: "dynamic_attributes";
+            tableName: "products";
+            dataType: "json";
+            columnType: "PgJsonb";
+            data: Record<string, string | string[]>;
+            driverParam: unknown;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {
+            $type: Record<string, string | string[]>;
         }>;
         tags: import("drizzle-orm/pg-core").PgColumn<{
             name: "tags";

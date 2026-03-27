@@ -1,3 +1,4 @@
-declare const router: import("express-serve-static-core").Router;
+import { type IRouter } from 'express';
+declare const router: IRouter;
 export default router;
 //# sourceMappingURL=products.d.ts.map
