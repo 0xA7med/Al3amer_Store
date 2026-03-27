@@ -898,16 +898,15 @@ export function CheckoutPage() {
                                     onClick={async () => {
                                         setIsCheckingPayment(true);
                                         try {
-                                            if (!createdOrderId) return;
-                                            const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
+                                            if (!paymobOrderId) return;
+                                            const { data } = await api.post('/checkout/verify', { paymobOrderId });
 
-                                            if (data.status === 'paid') {
+                                            if (data.paid) {
                                                 setShowPaymentModal(false);
+                                                const order = await createOrder({ paymobOrderId });
                                                 clearCart();
-                                                navigate(`/order-success/${createdOrderId}`);
+                                                navigate(`/order-success/${order.id}`);
                                             } else {
-                                                // Show simplified error (toast would be better but alert is quick for now or we set error state)
-                                                // Using basic alert for this modal context or just updating button text temporarily
                                                 const originalError = error;
                                                 setError('لم يتم تأكيد الدفع بعد. الرجاء المحاولة مرة أخرى أو التواصل مع الدعم.');
                                                 setTimeout(() => setError(originalError), 5000);

@@ -507,7 +507,8 @@ export class OrdersController {
 
             // Allow retry for pending_payment OR pending (legacy orders before code change)
             const allowedStatuses = ['pending_payment', 'pending'];
-            if (!allowedStatuses.includes(order.status)) {
+            const currentStatus = order.status || 'pending';
+            if (!allowedStatuses.includes(currentStatus)) {
                 if (order.status === 'paid' || order.status === 'processing' || order.status === 'delivered') {
                     return res.json({ status: order.status, message: 'تم دفع هذا الطلب بالفعل' });
                 }
