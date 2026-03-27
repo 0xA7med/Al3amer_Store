@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { CheckoutController } from '../controllers/checkout.controller.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.post('/initiate-payment', CheckoutController.initiatePayment);
 router.post('/verify', CheckoutController.verifyPayment);

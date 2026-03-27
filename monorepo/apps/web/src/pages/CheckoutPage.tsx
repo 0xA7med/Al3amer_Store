@@ -223,10 +223,13 @@ export function CheckoutPage() {
                         console.error('Failed to create order after payment:', err);
                         setError('تم الدفع بنجاح ولكن حدث خطأ في إنشاء الطلب. يرجى التواصل مع الدعم.');
                     });
-            } else if (event.data === 'PAYMOB_FAILED') {
-                console.log('PAYMOB_FAILED received.');
+            } else if (event.data === 'PAYMOB_FAILED' || (typeof event.data === 'object' && event.data?.type === 'PAYMOB_FAILED')) {
+                console.log('PAYMOB_FAILED received.', event.data);
+                const errorMessage = event.data?.message || 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.';
+                setIframeUrl('');
                 setShowPaymentModal(false);
-                setError('فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.');
+                setIsSubmitting(false);
+                setError(errorMessage);
             }
         };
         window.addEventListener('message', handleMessage);
@@ -952,39 +955,18 @@ export function CheckoutPage() {
                                 </button>
                                 <button
                                     onClick={() => setShowPaymentModal(false)}
-                                    className="text-slate-400 hover:text-white transition-colors"
                                 >
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
                         </div>
                         <div className="flex-1 w-full h-full bg-slate-50 relative flex flex-col items-center justify-center">
-                            {formData.paymentMethod === 'paymob_wallet' ? (
-                                <div className="p-8 text-center max-w-md mx-auto">
-                                    <div className="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <span className="material-symbols-outlined text-4xl">account_balance_wallet</span>
-                                    </div>
-                                    <h4 className="text-xl font-bold text-slate-800 mb-4">الدفع بواسطة المحفظة</h4>
-                                    <p className="text-slate-600 mb-8 leading-relaxed">
-                                        لإتمام عملية الدفع بأمان، يرجى الضغط على الزر أدناه لفتح صفحة محفظتك في نافذة جديدة. 
-                                        سيتلقى هذا المتصفح التأكيد تلقائياً بمجرد إتمامك للدفع.
-                                    </p>
-                                    <button
-                                        onClick={() => window.open(iframeUrl, '_blank')}
-                                        className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 text-lg"
-                                    >
-                                        افتح صفحة الدفع الآن
-                                        <span className="material-symbols-outlined">open_in_new</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <iframe
-                                    src={iframeUrl}
-                                    className="w-full h-full border-0"
-                                    title="Paymob Checkout"
-                                    allow="payment"
-                                ></iframe>
-                            )}
+                            <iframe
+                                src={iframeUrl}
+                                className="w-full h-full border-0"
+                                title="Paymob Checkout"
+                                allow="payment"
+                            ></iframe>
                         </div>
                     </div>
                 </div>

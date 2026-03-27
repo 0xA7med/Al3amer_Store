@@ -91,15 +91,16 @@ export class ProductsController {
             const where = conditions.length > 0 ? and(...conditions) : undefined;
             let productsList = [];
             if (sort === 'bestselling') {
+                const totalSalesExpr = sql `COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`;
                 const results = await db.select({
                     id: products.id,
-                    total_sales: sql `COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`,
+                    total_sales: totalSalesExpr,
                 })
                     .from(products)
                     .leftJoin(orderItems, eq(products.id, orderItems.productId))
                     .where(where)
                     .groupBy(products.id)
-                    .orderBy(desc(sql `total_sales`), desc(products.createdAt))
+                    .orderBy(desc(totalSalesExpr), desc(products.createdAt))
                     .limit(limitNum)
                     .offset(offset);
                 const ids = results.map(r => r.id);

@@ -31,7 +31,7 @@ export function PaymentCallbackPage() {
             setStatus('failed');
             setMessage(dataMessage || 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
             if (window.opener) {
-                window.opener.postMessage('PAYMOB_FAILED', '*');
+                window.opener.postMessage({ type: 'PAYMOB_FAILED', message: dataMessage }, '*');
             }
         }
     }, [searchParams]);

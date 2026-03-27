@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { SettingsController } from '../controllers/settings.controller.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Public route (no auth required)
 router.get('/public', SettingsController.getPublic);

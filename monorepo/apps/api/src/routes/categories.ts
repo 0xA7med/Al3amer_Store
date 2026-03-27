@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { CategoriesController } from '../controllers/categories.controller.js';
 
-const router = Router();
+const router: Router = Router();
 const controller = new CategoriesController();
 
 router.get('/', controller.list);

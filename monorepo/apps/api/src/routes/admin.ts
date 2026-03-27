@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.get('/stats', AdminController.getStats);
 router.get('/reports', AdminController.getReports);

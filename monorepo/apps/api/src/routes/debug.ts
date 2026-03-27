@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { settings } from '../db/schema.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Use raw fetch to bypass SDK versioning constraints and test v1beta
 export const listAvailableModels = async (req: Request, res: Response) => {

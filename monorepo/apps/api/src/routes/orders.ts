@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { OrdersController } from '../controllers/orders.controller.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.delete('/', OrdersController.bulkDelete);
 router.patch('/status', OrdersController.bulkUpdateStatus);

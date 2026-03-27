@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { WishlistController } from '../controllers/wishlist.controller.js';
 import { verifyToken } from '../lib/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 // All routes require authentication except check (optional)
 router.get('/', verifyToken, WishlistController.list);

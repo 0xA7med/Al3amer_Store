@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { AddressesController } from '../controllers/addresses.controller.js';
 import { verifyToken } from '../lib/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 // All routes require authentication
 router.use(verifyToken);
