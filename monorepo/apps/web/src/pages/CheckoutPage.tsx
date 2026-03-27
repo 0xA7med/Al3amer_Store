@@ -14,6 +14,27 @@ const GOVERNORATES = [
     'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
 ];
 
+const isValidEgyptianPhone = (phone: string) => {
+    // Basic Egyptian phone format: 010/011/012/015 followed by 8 digits
+    // More permissive to allow user to input correctly without frustration
+    let cleaned = phone.trim().replace(/[\s\(\)\-]/g, '');
+    
+    // Remove +20 or 20 or 0020 prefix if exists
+    if (cleaned.startsWith('+20')) cleaned = '0' + cleaned.substring(3);
+    else if (cleaned.startsWith('20')) cleaned = '0' + cleaned.substring(2);
+    else if (cleaned.startsWith('0020')) cleaned = '0' + cleaned.substring(4);
+    
+    // Ensure it starts with 0
+    if (!cleaned.startsWith('0') && cleaned.length === 10) cleaned = '0' + cleaned;
+
+    const regex = /^01[0-2,5]\d{8}$/;
+    const isValid = regex.test(cleaned);
+    if (!isValid && cleaned) {
+        console.log('💳 [Validation] Invalid Egyptian phone:', cleaned);
+    }
+    return isValid;
+};
+
 export function CheckoutPage() {
     const navigate = useNavigate();
     const { items, totalPrice, clearCart } = useCart();
