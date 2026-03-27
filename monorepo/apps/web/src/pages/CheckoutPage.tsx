@@ -153,19 +153,25 @@ export function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // Paymob session tracking (NOT an order — no order exists in DB yet)
-    const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
+    // Draft Order tracking (to prevent duplicates)
+    const [draftOrderId, setDraftOrderId] = useState<string | null>(localStorage.getItem('checkout_draft_order_id'));
+
+    // Check for Paymob external errors returning via URL
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const externalError = urlParams.get('error');
+        if (externalError) {
+            setError(externalError);
+            // Optionally remove it from the URL so it doesn't linger on reload
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
 
     // Coupon State
     const [couponCode, setCouponCode] = useState('');
     const [couponError, setCouponError] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string; discount: number; type: 'percentage' | 'fixed' | 'free_shipping' } | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-
-    // State for Payment Modal
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [iframeUrl, setIframeUrl] = useState('');
-    const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
     // Build the order payload (reused by both COD and post-payment flows)
     const buildOrderData = () => {
@@ -196,76 +202,6 @@ export function CheckoutPage() {
         };
     };
 
-    // Create actual order in DB (called for COD directly, or after payment is verified)
-    const createOrder = async (extraData: Record<string, any> = {}) => {
-        const orderData = { ...buildOrderData(), ...extraData };
-        const { data } = await api.post('/orders', orderData);
-        return data;
-    };
-
-    // ─── Payment Modal: PostMessage listener + Polling ───
-    useEffect(() => {
-        let intervalId: any;
-
-        const handleMessage = (event: MessageEvent) => {
-            console.log('Checkout Page received message:', event.data, 'from:', event.origin);
-
-            if (event.data === 'PAYMOB_SUCCESS' && paymobOrderId) {
-                console.log('PAYMOB_SUCCESS received. Creating order...');
-                setShowPaymentModal(false);
-                // Create the order now that payment is confirmed
-                createOrder({ paymobOrderId })
-                    .then(order => {
-                        clearCart();
-                        navigate(`/order-success/${order.id}`);
-                    })
-                    .catch(err => {
-                        console.error('Failed to create order after payment:', err);
-                        setError('تم الدفع بنجاح ولكن حدث خطأ في إنشاء الطلب. يرجى التواصل مع الدعم.');
-                    });
-            } else if (event.data === 'PAYMOB_FAILED' || (typeof event.data === 'object' && event.data?.type === 'PAYMOB_FAILED')) {
-                console.log('PAYMOB_FAILED received.', event.data);
-                const errorMessage = event.data?.message || 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.';
-                setIframeUrl('');
-                setShowPaymentModal(false);
-                setIsSubmitting(false);
-                setError(errorMessage);
-            }
-        };
-        window.addEventListener('message', handleMessage);
-
-        let pollCount = 0;
-        const MAX_POLL_ATTEMPTS = 120;
-
-        if (showPaymentModal && paymobOrderId) {
-            intervalId = setInterval(async () => {
-                pollCount++;
-                if (pollCount > MAX_POLL_ATTEMPTS) {
-                    clearInterval(intervalId);
-                    return;
-                }
-
-                try {
-                    const { data } = await api.post('/checkout/verify', { paymobOrderId });
-                    if (data.paid) {
-                        clearInterval(intervalId);
-                        setShowPaymentModal(false);
-                        // Payment confirmed — now create the order
-                        const order = await createOrder({ paymobOrderId });
-                        clearCart();
-                        navigate(`/order-success/${order.id}`);
-                    }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                }
-            }, 5000);
-        }
-
-        return () => {
-            window.removeEventListener('message', handleMessage);
-            if (intervalId) clearInterval(intervalId);
-        };
-    }, [showPaymentModal, paymobOrderId, navigate, clearCart]);
 
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
@@ -346,8 +282,6 @@ export function CheckoutPage() {
         setCouponCode('');
     };
 
-
-
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -397,12 +331,12 @@ export function CheckoutPage() {
         setStep(prev => Math.max(prev - 1, 1) as 1 | 2 | 3);
     };
 
+    // Upsert the Draft Order and Handle Payment
     const handleSubmit = async () => {
         setIsSubmitting(true);
         setError('');
 
         try {
-            // Wallet validation
             if (formData.paymentMethod === 'paymob_wallet') {
                 if (!isValidEgyptianPhone(formData.walletNumber)) {
                     setError('برجاء إدخال رقم محفظة صحيح');
@@ -411,11 +345,25 @@ export function CheckoutPage() {
                 }
             }
 
+            const orderPayload = buildOrderData();
+
+            // 1. Create or Update Draft Order (UPSERT)
+            const endpoint = draftOrderId ? `/orders/${draftOrderId}` : '/orders';
+            const method = draftOrderId ? api.put : api.post;
+
+            const orderRes = await method(endpoint, orderPayload);
+            const savedOrderId = orderRes.data.id;
+
+            // Save to prevent duplicates on retry
+            setDraftOrderId(savedOrderId);
+            localStorage.setItem('checkout_draft_order_id', savedOrderId);
+
             const isOnlinePayment = ['paymob', 'paymob_wallet', 'online'].includes(formData.paymentMethod);
 
             if (isOnlinePayment) {
-                // ─── ONLINE PAYMENT: Just create a Paymob session, NO order in DB ───
+                // 2. Initiate Paymob Payment for this actual Order
                 const { data } = await api.post('/checkout/initiate-payment', {
+                    orderId: savedOrderId,
                     amount: finalTotal,
                     paymentMethod: formData.paymentMethod,
                     walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
@@ -427,15 +375,13 @@ export function CheckoutPage() {
                     governorate: formData.governorate,
                 });
 
-                // Save the Paymob session ID (for polling/verification later)
-                setPaymobOrderId(data.paymobOrderId);
-                setIframeUrl(data.paymentUrl);
-                setShowPaymentModal(true);
+                // 3. FULL PAGE REDIRECT (Solves 3D Secure / Iframe bugs completely)
+                window.location.href = data.paymentUrl;
             } else {
-                // ─── COD: Create order directly ───
-                const order = await createOrder();
+                // COD: We are done!
+                localStorage.removeItem('checkout_draft_order_id');
                 clearCart();
-                navigate(`/order-success/${order.id || 'success'}`);
+                navigate(`/order-success/${savedOrderId}`);
             }
         } catch (err: any) {
             console.error('Checkout error:', err);
@@ -904,76 +850,8 @@ export function CheckoutPage() {
                 </div>
             </div>
 
-            {/* Paymob Iframe Modal */}
-            {showPaymentModal && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-[#181a20] w-full max-w-4xl h-[650px] rounded-2xl border border-white/10 flex flex-col overflow-hidden relative shadow-2xl">
-                        <div className="flex justify-between items-center p-4 border-b border-white/10 bg-[#1e232d]">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">credit_card</span>
-                                الدفع الآمن
-                            </h3>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={async () => {
-                                        setIsCheckingPayment(true);
-                                        try {
-                                            if (!paymobOrderId) return;
-                                            const { data } = await api.post('/checkout/verify', { paymobOrderId });
-
-                                            if (data.paid) {
-                                                setShowPaymentModal(false);
-                                                const order = await createOrder({ paymobOrderId });
-                                                clearCart();
-                                                navigate(`/order-success/${order.id}`);
-                                            } else {
-                                                const originalError = error;
-                                                setError('لم يتم تأكيد الدفع بعد. الرجاء المحاولة مرة أخرى أو التواصل مع الدعم.');
-                                                setTimeout(() => setError(originalError), 5000);
-                                            }
-                                        } catch (err) {
-                                            console.error('Verification failed', err);
-                                            // Handle error
-                                        } finally {
-                                            setIsCheckingPayment(false);
-                                        }
-                                    }}
-                                    disabled={isCheckingPayment}
-                                    className="text-emerald-400 hover:text-emerald-300 text-sm font-bold border border-emerald-500/30 px-3 py-1.5 rounded-lg transition-colors hover:bg-emerald-500/10 flex items-center gap-2 disabled:opacity-50"
-                                >
-                                    {isCheckingPayment ? (
-                                        <>
-                                            <div className="size-3 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                                            جاري التحقق...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="material-symbols-outlined text-sm">sync</span>
-                                            تحقق من الدفع
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={() => setShowPaymentModal(false)}
-                                >
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex-1 w-full h-full bg-slate-50 relative flex flex-col items-center justify-center">
-                            <iframe
-                                src={iframeUrl}
-                                className="w-full h-full border-0"
-                                title="Paymob Checkout"
-                                allow="payment"
-                            ></iframe>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Full Screen Loading Overlay */}
-            {isSubmitting && !showPaymentModal && (
+            {isSubmitting && (
                 <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
                     <div className="size-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
                     <h3 className="text-xl font-bold text-white mb-2">جاري تنفيذ الطلب...</h3>

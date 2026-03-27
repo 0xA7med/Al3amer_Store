@@ -36,27 +36,6 @@ export class OrdersController {
             }
 
             const safePhone = phone ? String(phone) : '0000000000';
-            const isOnlinePayment = ['paymob', 'paymob_wallet', 'online'].includes(paymentMethod);
-
-            // ─── ONLINE PAYMENT: Verify payment before creating order ───
-            if (isOnlinePayment) {
-                if (!paymobOrderId) {
-                    return res.status(400).json({ error: 'الدفع الإلكتروني يتطلب إتمام عملية الدفع أولاً' });
-                }
-
-                // Verify with Paymob that payment was actually made
-                const appSettings = await db.query.settings.findFirst();
-                if (!appSettings?.paymobApiKey) {
-                    return res.status(500).json({ error: 'Paymob not configured' });
-                }
-
-                const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
-                if (!isPaid) {
-                    return res.status(402).json({ error: 'لم يتم تأكيد الدفع. يرجى إتمام عملية الدفع أولاً.' });
-                }
-
-                console.log(`✅ [Orders] Online payment verified for PaymobOrderID=${paymobOrderId}`);
-            }
 
             // Fetch fresh product data from DB
             const productIds = items.map((i: any) => i.productId);
@@ -141,10 +120,8 @@ export class OrdersController {
             // Generate order number
             const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
 
-            // Determine status:
-            // - COD → 'pending' (awaiting fulfillment)
-            // - Online (pre-verified) → 'processing' (payment confirmed)
-            const orderStatus = isOnlinePayment ? 'processing' : 'pending';
+            // Determine status: Initial status is always pending
+            const orderStatus = 'pending';
 
             // Create order
             const [order] = await db.insert(orders).values({
@@ -164,7 +141,7 @@ export class OrdersController {
                 extraFee: extraFee.toString(),
                 total: total.toString(),
                 status: orderStatus,
-                paymobOrderId: paymobOrderId || null,
+                paymobOrderId: null, // Will be set during payment verification
             }).returning();
 
             // Create order items
@@ -197,6 +174,151 @@ export class OrdersController {
                 error: error.message || 'Unknown error',
                 details: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
+        }
+    }
+
+    // PUT /api/orders/:id - Upsert (Update) pending order
+    static async updatePendingOrder(req: Request, res: Response) {
+        try {
+            const orderId = req.params.id;
+            const {
+                fullName,
+                phone,
+                email,
+                governorate,
+                city,
+                address,
+                notes,
+                paymentMethod,
+                items,
+                shippingCost = 0,
+                taxAmount = 0,
+                extraFee = 0,
+                couponCode,
+            } = req.body;
+
+            console.log(`📦 [PUT /orders/${orderId}] Updating draft order`);
+
+            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
+
+            const safePhone = phone ? String(phone) : '0000000000';
+
+            // Verify order exists and is pending
+            const existingOrder = await db.query.orders.findFirst({
+                where: eq(orders.id, orderId)
+            });
+
+            if (!existingOrder) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            if (existingOrder.status !== 'pending') {
+                return res.status(400).json({ error: 'Cannot modify a processed order' });
+            }
+
+            // Fetch fresh product data from DB
+            const productIds = items.map((i: any) => i.productId);
+            const validProducts = await db.query.products.findMany({
+                where: and(
+                    inArray(products.id, productIds),
+                    eq(products.status, 'active')
+                ),
+                columns: {
+                    id: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    name: true,
+                }
+            });
+
+            let subtotal = 0;
+            const finalOrderItems = [];
+            
+            for (const item of items) {
+                const dbProduct = validProducts.find(p => p.id === item.productId);
+                
+                if (!dbProduct) {
+                    return res.status(400).json({ error: "One or more products in your cart are no longer available. Please refresh your cart." });
+                }
+
+                const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
+                const quantity = Number(item.quantity) || 1;
+                subtotal += effectivePrice * quantity;
+                finalOrderItems.push({
+                   ...item,
+                   price: effectivePrice,
+                   name: dbProduct.name,
+                });
+            }
+
+            let discountAmount = 0;
+            if (couponCode) {
+                const coupon = await db.query.coupons.findFirst({
+                    where: eq(coupons.code, couponCode.toUpperCase()),
+                });
+
+                if (coupon) {
+                    const now = new Date();
+                    const isValid =
+                        (!coupon.expiryDate || new Date(coupon.expiryDate) > now) &&
+                        (!coupon.startDate || new Date(coupon.startDate) <= now) &&
+                        (!coupon.usageLimit || !coupon.usageCount || coupon.usageCount < coupon.usageLimit);
+
+                    if (isValid && (!coupon.minOrder || subtotal >= parseFloat(coupon.minOrder))) {
+                        if (coupon.type === 'free_shipping') discountAmount = parseFloat(shippingCost.toString());
+                        else if (coupon.type === 'percentage') discountAmount = subtotal * (parseFloat(coupon.discount) / 100);
+                        else if (coupon.type === 'fixed') discountAmount = parseFloat(coupon.discount);
+                    }
+                }
+            }
+
+            let total = subtotal + parseFloat(shippingCost.toString()) + parseFloat(taxAmount.toString()) + parseFloat(extraFee.toString()) - discountAmount;
+            total = Math.max(0, total);
+
+            // Update order
+            await db.update(orders).set({
+                fullName,
+                phone: safePhone,
+                email,
+                governorate,
+                city,
+                address,
+                notes,
+                paymentMethod,
+                subtotal: subtotal.toString(),
+                shippingCost: shippingCost.toString(),
+                taxAmount: taxAmount.toString(),
+                extraFee: extraFee.toString(),
+                total: total.toString(),
+                status: 'pending',
+                paymobOrderId: null // Reset payment ID since cart changed
+            }).where(eq(orders.id, orderId));
+
+            // Overwrite items
+            await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+            const orderItemsData = finalOrderItems.map((item: any) => ({
+                orderId: orderId,
+                productId: item.productId,
+                name: item.name,
+                price: item.price.toString(),
+                quantity: item.quantity,
+            }));
+            await db.insert(orderItems).values(orderItemsData);
+
+            console.log(`✅ [Orders] Draft Order updated: ID=${orderId}`);
+
+            const completeOrder = await db.query.orders.findFirst({
+                where: eq(orders.id, orderId),
+                with: { items: true },
+            });
+
+            res.status(200).json(completeOrder);
+        } catch (error: any) {
+            console.error('SERVER ERROR: Update Draft Order Failed:', error);
+            res.status(500).json({ message: 'Failed to update order', error: error.message });
         }
     }
 

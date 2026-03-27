@@ -1,55 +1,73 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import api from '../lib/api';
 
 export function PaymentCallbackPage() {
     const [searchParams] = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading');
-    const [message, setMessage] = useState('');
+    const [message, setMessage] = useState('جاري التحقق من الدفع...');
 
     useEffect(() => {
-        // Parse Paymob params
-        // Paymob typically sends: success=true/false, id, order, merchant_order_id, etc.
-        const success = searchParams.get('success') === 'true';
-        const isPending = searchParams.get('pending') === 'true';
-        const dataMessage = searchParams.get('data.message');
+        const verifyPayment = async () => {
+            try {
+                const success = searchParams.get('success') === 'true';
+                const isPending = searchParams.get('pending') === 'true';
+                const dataMessage = searchParams.get('data.message');
+                const orderId = searchParams.get('order'); // Paymob's order ID
+                const merchantOrderId = searchParams.get('merchant_order_id'); // Our internal UUID
 
-        if (success && !isPending) {
-            setStatus('success');
-            setMessage('تمت عملية الدفع بنجاح! جاري تحويلك...');
-            // Notify parent window
-            if (window.opener) {
-                window.opener.postMessage('PAYMOB_SUCCESS', '*');
+                // 1. Check if Paymob marked it as failed
+                if (!success && !isPending) {
+                    setStatus('failed');
+                    setMessage(dataMessage || 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
+                    setTimeout(() => {
+                        window.location.replace(`/checkout?error=${encodeURIComponent(dataMessage || 'فشلت عملية الدفع')}`);
+                    }, 3000);
+                    return;
+                }
+
+                if (!orderId) {
+                    throw new Error('بيانات الطلب غير مكتملة (Missing Order ID)');
+                }
+
+                // 2. Call backend to verify and finalize order
+                const { data } = await api.post('/checkout/verify', { paymobOrderId: orderId });
+                
+                if (data.paid) {
+                    setStatus('success');
+                    setMessage('تمت عملية الدفع بنجاح! جاري تحويلك...');
+                    
+                    // Cleanup any local drafts
+                    localStorage.removeItem('checkout_draft_order_id');
+
+                    // 3. Redirect to Success Page using our UUID (merchant_order_id)
+                    setTimeout(() => {
+                        window.location.replace(`/order-success/${merchantOrderId || 'success'}`);
+                    }, 2000);
+                } else {
+                    throw new Error('لم يتم تأكيد الدفع من الخادم.');
+                }
+            } catch (err: any) {
+                console.error('Verification Error:', err);
+                setStatus('failed');
+                setMessage(err.message || 'حدث خطأ أثناء التحقق من الدفع.');
+                setTimeout(() => {
+                    window.location.replace(`/checkout?error=${encodeURIComponent(err.message || 'حدث خطأ أثناء التحقق')}`);
+                }, 3000);
             }
-        } else if (isPending) {
-            // Sometimes successful wallets return pending first
-            setStatus('success');
-            setMessage('تم استلام الدفعة بنجاح. جاري التحقق...');
-            if (window.opener) {
-                window.opener.postMessage('PAYMOB_SUCCESS', '*');
-            }
-        } else {
-            setStatus('failed');
-            setMessage(dataMessage || 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
-            if (window.opener) {
-                window.opener.postMessage({ type: 'PAYMOB_FAILED', message: dataMessage }, '*');
-            }
-        }
+        };
+
+        verifyPayment();
     }, [searchParams]);
-
-    const handleClose = () => {
-        if (window.opener) {
-            window.close();
-        }
-    };
 
     return (
         <div className="min-h-screen bg-[#0f1115] flex items-center justify-center p-4" dir="rtl">
             <div className="glass-panel p-8 rounded-2xl max-w-md w-full text-center border border-white/10 bg-[#181a20]">
-
                 {status === 'loading' && (
                     <div className="flex flex-col items-center">
                         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
                         <h2 className="text-xl font-bold text-white mb-2">جاري التحقق من الدفع...</h2>
+                        <p className="text-slate-400 text-sm">يرجى عدم إغلاق هذه الصفحة</p>
                     </div>
                 )}
 
@@ -60,7 +78,6 @@ export function PaymentCallbackPage() {
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-2">تم الدفع بنجاح</h2>
                         <p className="text-slate-400 mb-8">{message}</p>
-                        <p className="text-xs text-slate-500 animate-pulse">سيتم إغلاق هذه النافذة تلقائياً...</p>
                     </div>
                 )}
 
@@ -73,16 +90,12 @@ export function PaymentCallbackPage() {
                         <p className="text-red-400/80 mb-8 text-sm bg-red-500/5 p-3 rounded-lg border border-red-500/10">
                             {message}
                         </p>
-                        <button
-                            onClick={handleClose}
-                            className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-lg font-medium transition-colors border border-white/10"
-                        >
-                            إغلاق النافذة
-                        </button>
+                        <p className="text-xs text-slate-500 animate-pulse">جاري إعادتك لصفحة الدفع...</p>
                     </div>
                 )}
-
             </div>
         </div>
     );
 }
+
+export default PaymentCallbackPage;

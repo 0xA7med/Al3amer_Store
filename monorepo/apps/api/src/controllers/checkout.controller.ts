@@ -18,6 +18,7 @@ export class CheckoutController {
     static async initiatePayment(req: Request, res: Response) {
         try {
             const {
+                orderId,
                 amount,
                 paymentMethod,
                 walletNumber,
@@ -29,8 +30,8 @@ export class CheckoutController {
                 governorate,
             } = req.body;
 
-            if (!amount || !paymentMethod || !fullName) {
-                return res.status(400).json({ error: 'Missing required fields' });
+            if (!orderId || !amount || !paymentMethod || !fullName) {
+                return res.status(400).json({ error: 'Missing required fields including orderId' });
             }
 
             // Get app settings for Paymob config
@@ -56,8 +57,8 @@ export class CheckoutController {
                 return res.status(400).json({ error: 'إعدادات الدفع غير مكتملة' });
             }
 
-            // Generate a temporary merchant ID (not tied to any order yet)
-            const tempMerchantId = `CHECKOUT-${Date.now()}`;
+            // We use the actual DB order ID as Merchant ID
+            const tempMerchantId = orderId;
 
             const billingData = {
                 first_name: fullName.split(' ')[0] || 'Guest',
@@ -87,6 +88,13 @@ export class CheckoutController {
             );
 
             console.log(`✅ [Checkout] Paymob session created: PaymobOrderID=${paymobOrderId}`);
+
+            // Link the Paymob Order ID to our internal Draft Order
+            const { orders } = await import('../db/schema.js');
+            const { eq } = await import('drizzle-orm');
+            await db.update(orders)
+                .set({ paymobOrderId: paymobOrderId.toString() })
+                .where(eq(orders.id, orderId));
 
             // Build redirect URL
             let paymentUrl = '';

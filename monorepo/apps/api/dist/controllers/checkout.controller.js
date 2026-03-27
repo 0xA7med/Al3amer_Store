@@ -13,9 +13,9 @@ export class CheckoutController {
      */
     static async initiatePayment(req, res) {
         try {
-            const { amount, paymentMethod, walletNumber, fullName, phone, email, address, city, governorate, } = req.body;
-            if (!amount || !paymentMethod || !fullName) {
-                return res.status(400).json({ error: 'Missing required fields' });
+            const { orderId, amount, paymentMethod, walletNumber, fullName, phone, email, address, city, governorate, } = req.body;
+            if (!orderId || !amount || !paymentMethod || !fullName) {
+                return res.status(400).json({ error: 'Missing required fields including orderId' });
             }
             // Get app settings for Paymob config
             const appSettings = await db.query.settings.findFirst();
@@ -36,8 +36,8 @@ export class CheckoutController {
             if (!isWallet && !appSettings.paymobIframeId) {
                 return res.status(400).json({ error: 'إعدادات الدفع غير مكتملة' });
             }
-            // Generate a temporary merchant ID (not tied to any order yet)
-            const tempMerchantId = `CHECKOUT-${Date.now()}`;
+            // We use the actual DB order ID as Merchant ID
+            const tempMerchantId = orderId;
             const billingData = {
                 first_name: fullName.split(' ')[0] || 'Guest',
                 last_name: fullName.split(' ').slice(1).join(' ') || 'Guest',
@@ -56,6 +56,12 @@ export class CheckoutController {
             console.log(`💳 [Checkout] Initiating payment: Method=${paymentMethod}, Amount=${amount}, MerchantID=${tempMerchantId}`);
             const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(appSettings.paymobApiKey, integrationId, parseFloat(amount), tempMerchantId, 'EGP', billingData);
             console.log(`✅ [Checkout] Paymob session created: PaymobOrderID=${paymobOrderId}`);
+            // Link the Paymob Order ID to our internal Draft Order
+            const { orders } = await import('../db/schema.js');
+            const { eq } = await import('drizzle-orm');
+            await db.update(orders)
+                .set({ paymobOrderId: paymobOrderId.toString() })
+                .where(eq(orders.id, orderId));
             // Build redirect URL
             let paymentUrl = '';
             if (isWallet) {
