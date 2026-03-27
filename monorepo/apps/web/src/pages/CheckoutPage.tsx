@@ -129,19 +129,9 @@ export function CheckoutPage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
 
-    // Helper: Abandon (delete) an unpaid order from the database
-    const abandonOrder = async (orderId: string | null) => {
-        if (!orderId) return;
-        try {
-            await api.delete('/orders', { data: { orderIds: [orderId] } });
-            console.log(`🗑️ Abandoned unpaid order: ${orderId}`);
-        } catch (err) {
-            // Silent fail — order might already be paid/deleted
-            console.warn('Could not abandon order:', orderId, err);
-        }
-    };
+    // Paymob session tracking (NOT an order — no order exists in DB yet)
+    const [paymobOrderId, setPaymobOrderId] = useState<string | null>(null);
 
     // Coupon State
     const [couponCode, setCouponCode] = useState('');
@@ -153,27 +143,65 @@ export function CheckoutPage() {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [iframeUrl, setIframeUrl] = useState('');
     const [isCheckingPayment, setIsCheckingPayment] = useState(false);
-    // Polling Backup & PostMessage Listener
+
+    // Build the order payload (reused by both COD and post-payment flows)
+    const buildOrderData = () => {
+        const finalNotes = (formData.phone_2 ? `Phone 2: ${formData.phone_2}\n` : '') + (formData.notes || '');
+        return {
+            fullName: formData.fullName,
+            phone: formData.phone,
+            email: formData.email,
+            governorate: formData.governorate,
+            city: formData.city,
+            address: formData.address,
+            notes: finalNotes,
+            paymentMethod: formData.paymentMethod,
+            items: items.map(item => ({
+                productId: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            shippingCost,
+            taxAmount: vatAmount,
+            extraFee: codExtraFee,
+            couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+            totalAmount: finalTotal,
+            discountAmount: discountAmount,
+            walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
+            userId: user?.id,
+        };
+    };
+
+    // Create actual order in DB (called for COD directly, or after payment is verified)
+    const createOrder = async (extraData: Record<string, any> = {}) => {
+        const orderData = { ...buildOrderData(), ...extraData };
+        const { data } = await api.post('/orders', orderData);
+        return data;
+    };
+
+    // ─── Payment Modal: PostMessage listener + Polling ───
     useEffect(() => {
         let intervalId: any;
 
-        // Listener for Iframe Success Message
-        // Listener for Iframe Success Message
         const handleMessage = (event: MessageEvent) => {
             console.log('Checkout Page received message:', event.data, 'from:', event.origin);
 
-            if (event.data === 'PAYMOB_SUCCESS') {
-                console.log('PAYMOB_SUCCESS matched. Closing modal...');
+            if (event.data === 'PAYMOB_SUCCESS' && paymobOrderId) {
+                console.log('PAYMOB_SUCCESS received. Creating order...');
                 setShowPaymentModal(false);
-                clearCart();
-                // Check if we have an order ID to redirect to
-                if (createdOrderId) {
-                    navigate(`/order-success/${createdOrderId}`);
-                } else {
-                    navigate('/order-success/confirmed');
-                }
+                // Create the order now that payment is confirmed
+                createOrder({ paymobOrderId })
+                    .then(order => {
+                        clearCart();
+                        navigate(`/order-success/${order.id}`);
+                    })
+                    .catch(err => {
+                        console.error('Failed to create order after payment:', err);
+                        setError('تم الدفع بنجاح ولكن حدث خطأ في إنشاء الطلب. يرجى التواصل مع الدعم.');
+                    });
             } else if (event.data === 'PAYMOB_FAILED') {
-                console.log('PAYMOB_FAILED matched. Closing modal...');
+                console.log('PAYMOB_FAILED received.');
                 setShowPaymentModal(false);
                 setError('فشلت عملية الدفع. يرجى المحاولة مرة أخرى أو اختيار طريقة دفع مختلفة.');
             }
@@ -181,29 +209,27 @@ export function CheckoutPage() {
         window.addEventListener('message', handleMessage);
 
         let pollCount = 0;
-        const MAX_POLL_ATTEMPTS = 120; // 120 * 5s = 10 minutes max polling time
+        const MAX_POLL_ATTEMPTS = 120;
 
-        if (showPaymentModal && createdOrderId) {
+        if (showPaymentModal && paymobOrderId) {
             intervalId = setInterval(async () => {
                 pollCount++;
                 if (pollCount > MAX_POLL_ATTEMPTS) {
-                    console.log('Max polling attempts reached. Stopping verification.');
                     clearInterval(intervalId);
                     return;
                 }
 
                 try {
-                    // passively check? No, we need to actively verify because locally we don't get webhooks.
-                    // Call verify-payment to force a check with Paymob.
-                    const { data } = await api.post(`/orders/${createdOrderId}/verify-payment`);
-                    if (data.status === 'paid' || data.status === 'processing') {
+                    const { data } = await api.post('/checkout/verify', { paymobOrderId });
+                    if (data.paid) {
                         clearInterval(intervalId);
                         setShowPaymentModal(false);
+                        // Payment confirmed — now create the order
+                        const order = await createOrder({ paymobOrderId });
                         clearCart();
-                        navigate(`/order-success/${createdOrderId}`);
+                        navigate(`/order-success/${order.id}`);
                     }
                 } catch (error) {
-                    // Ignore errors during polling, just keep trying until max attempts or user closes
                     console.error('Polling error:', error);
                 }
             }, 5000);
@@ -213,7 +239,7 @@ export function CheckoutPage() {
             window.removeEventListener('message', handleMessage);
             if (intervalId) clearInterval(intervalId);
         };
-    }, [showPaymentModal, createdOrderId, navigate, clearCart]);
+    }, [showPaymentModal, paymobOrderId, navigate, clearCart]);
 
     // Dynamic calculations based on settings
     const freeShippingThreshold = parseFloat(settings.freeShippingThreshold || '5000');
@@ -347,32 +373,9 @@ export function CheckoutPage() {
     };
 
     const handlePrevStep = () => {
-        // Delete the unpaid order from DB when going back
-        if (createdOrderId) {
-            abandonOrder(createdOrderId);
-            setCreatedOrderId(null);
-        }
         setError('');
         setStep(prev => Math.max(prev - 1, 1) as 1 | 2 | 3);
     };
-
-    // Delete unpaid order when payment method changes
-    useEffect(() => {
-        if (createdOrderId) {
-            abandonOrder(createdOrderId);
-            setCreatedOrderId(null);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.paymentMethod]);
-
-    // Delete unpaid order when cart changes
-    useEffect(() => {
-        if (createdOrderId) {
-            abandonOrder(createdOrderId);
-            setCreatedOrderId(null);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [items.length, totalPrice]);
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
@@ -390,71 +393,30 @@ export function CheckoutPage() {
 
             const isOnlinePayment = ['paymob', 'paymob_wallet', 'online'].includes(formData.paymentMethod);
 
-            // ─── RETRY: Same order, just re-open payment ───
-            if (createdOrderId && isOnlinePayment) {
-                try {
-                    const { data: retryData } = await api.post(`/orders/${createdOrderId}/retry-payment`, {
-                        walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
-                    });
+            if (isOnlinePayment) {
+                // ─── ONLINE PAYMENT: Just create a Paymob session, NO order in DB ───
+                const { data } = await api.post('/checkout/initiate-payment', {
+                    amount: finalTotal,
+                    paymentMethod: formData.paymentMethod,
+                    walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
+                    fullName: formData.fullName,
+                    phone: formData.phone,
+                    email: formData.email,
+                    address: formData.address,
+                    city: formData.city,
+                    governorate: formData.governorate,
+                });
 
-                    if (retryData.redirect_url) {
-                        setIframeUrl(retryData.redirect_url);
-                        setShowPaymentModal(true);
-                        return;
-                    }
-
-                    if (retryData.status === 'paid' || retryData.status === 'processing') {
-                        clearCart();
-                        navigate(`/order-success/${createdOrderId}`);
-                        return;
-                    }
-                } catch (retryErr: any) {
-                    console.warn('Retry failed, abandoning old order and creating new:', retryErr?.response?.data || retryErr?.message);
-                    await abandonOrder(createdOrderId);
-                    setCreatedOrderId(null);
-                }
-            }
-
-            // ─── CREATE NEW ORDER ───
-            const finalNotes = (formData.phone_2 ? `Phone 2: ${formData.phone_2}\n` : '') + (formData.notes || '');
-
-            const orderData = {
-                fullName: formData.fullName,
-                phone: formData.phone,
-                email: formData.email,
-                governorate: formData.governorate,
-                city: formData.city,
-                address: formData.address,
-                notes: finalNotes,
-                paymentMethod: formData.paymentMethod,
-                items: items.map(item => ({
-                    productId: item.id,
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
-                shippingCost,
-                taxAmount: vatAmount,
-                extraFee: codExtraFee,
-                couponCode: appliedCoupon ? appliedCoupon.code : undefined,
-                totalAmount: finalTotal,
-                discountAmount: discountAmount,
-                walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
-                userId: user?.id,
-            };
-
-            const { data: responseData } = await api.post('/orders', orderData);
-
-            if (responseData.redirect_url) {
-                setIframeUrl(responseData.redirect_url);
-                setCreatedOrderId(responseData.id);
+                // Save the Paymob session ID (for polling/verification later)
+                setPaymobOrderId(data.paymobOrderId);
+                setIframeUrl(data.paymentUrl);
                 setShowPaymentModal(true);
-                return;
+            } else {
+                // ─── COD: Create order directly ───
+                const order = await createOrder();
+                clearCart();
+                navigate(`/order-success/${order.id || 'success'}`);
             }
-
-            // COD → success
-            clearCart();
-            navigate(`/order-success/${responseData.id || 'success'}`);
         } catch (err: any) {
             console.error('Checkout error:', err);
             const serverMsg = err?.response?.data?.error;
