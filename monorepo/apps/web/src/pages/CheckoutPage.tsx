@@ -16,7 +16,6 @@ const GOVERNORATES = [
 
 const isValidEgyptianPhone = (phone: string) => {
     // Basic Egyptian phone format: 010/011/012/015 followed by 8 digits
-    // More permissive to allow user to input correctly without frustration
     let cleaned = phone.trim().replace(/[\s\(\)\-]/g, '');
     
     // Remove +20 or 20 or 0020 prefix if exists
@@ -28,7 +27,10 @@ const isValidEgyptianPhone = (phone: string) => {
     if (!cleaned.startsWith('0') && cleaned.length === 10) cleaned = '0' + cleaned;
 
     const regex = /^01[0-2,5]\d{8}$/;
-    const isValid = regex.test(cleaned);
+    // Block dummy numbers like 01200000000, 01111111111, 01000000000
+    const allSameDigit = /^01[0-2,5](\d)\1{7}$/;
+    
+    const isValid = regex.test(cleaned) && !allSameDigit.test(cleaned);
     if (!isValid && cleaned) {
         console.log('💳 [Validation] Invalid Egyptian phone:', cleaned);
     }
@@ -341,13 +343,7 @@ export function CheckoutPage() {
         setCouponCode('');
     };
 
-    // Helper: Egyptian phone validation
-    const isValidEgyptianPhone = (phone: string): boolean => {
-        const phoneRegex = /^01[0125][0-9]{8}$/;
-        // Block dummy numbers like 01200000000, 01111111111, 01000000000
-        const allSameDigit = /^01[0125](\d)\1{7}$/;
-        return phoneRegex.test(phone) && !allSameDigit.test(phone);
-    };
+
 
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
