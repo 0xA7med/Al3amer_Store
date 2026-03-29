@@ -57,8 +57,8 @@ export class CheckoutController {
                 return res.status(400).json({ error: 'إعدادات الدفع غير مكتملة' });
             }
 
-            // We use the actual DB order ID as Merchant ID
-            const tempMerchantId = orderId;
+            // We use the actual DB order ID + timestamp to ensure uniqueness in Paymob retries
+            const tempMerchantId = `${orderId}-${Date.now()}`;
 
             const billingData = {
                 first_name: fullName.split(' ')[0] || 'Guest',

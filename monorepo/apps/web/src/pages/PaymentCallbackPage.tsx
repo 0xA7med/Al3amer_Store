@@ -13,8 +13,13 @@ export function PaymentCallbackPage() {
                 const success = searchParams.get('success') === 'true';
                 const isPending = searchParams.get('pending') === 'true';
                 const dataMessage = searchParams.get('data.message');
-                const orderId = searchParams.get('order'); // Paymob's order ID
-                const merchantOrderId = searchParams.get('merchant_order_id'); // Our internal UUID
+                const orderId = searchParams.get('order'); // Paymob's internal long integer ID
+                const rawMerchantOrderId = searchParams.get('merchant_order_id') || ''; 
+                
+                // Extract original UUID (everything before the last '-')
+                const merchantOrderId = rawMerchantOrderId.includes('-') 
+                    ? rawMerchantOrderId.substring(0, rawMerchantOrderId.lastIndexOf('-'))
+                    : rawMerchantOrderId;
 
                 // 1. Check if Paymob marked it as failed
                 if (!success && !isPending) {

@@ -13,9 +13,8 @@ export function CartPage() {
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
 
-    const shipping = subtotal > 5000 ? 0 : 100;
     const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
-    const total = subtotal + shipping - discount;
+    const total = subtotal - discount;
 
     const handleApplyCoupon = () => {
         if (couponCode.toLowerCase() === 'al3amer10') {
@@ -176,12 +175,6 @@ export function CartPage() {
                                 <div className="flex justify-between text-gray-300">
                                     <span>المجموع الفرعي</span>
                                     <span className="font-bold">{subtotal.toLocaleString()} ج.م</span>
-                                </div>
-                                <div className="flex justify-between text-gray-300">
-                                    <span>الشحن</span>
-                                    <span className={shipping === 0 ? 'text-emerald-400 font-bold' : 'font-bold'}>
-                                        {shipping === 0 ? 'مجاني' : `${shipping.toLocaleString()} ج.م`}
-                                    </span>
                                 </div>
                                 {couponApplied && (
                                     <div className="flex justify-between text-emerald-400">

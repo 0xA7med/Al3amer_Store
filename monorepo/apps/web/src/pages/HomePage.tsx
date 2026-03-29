@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Package, Loader2, AlertTriangle } from 'lucide-react';
 import { ProductCard } from '../components/products';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
 
 import { useCategories, useNewArrivals, useOffers, useBestSellers, useFeaturedProducts } from '../hooks/useProducts';
-
 
 
 export function HomePage() {
@@ -432,29 +433,33 @@ export function HomePage() {
             {/* Bundle Promo Section */}
             <section className="py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="relative rounded-2xl overflow-hidden glass-panel border border-primary/20">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent"></div>
-                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between p-8 md:p-12 gap-8">
-                            <div className="flex flex-col gap-4 text-center md:text-right items-center md:items-start max-w-xl">
-                                <span className="bg-accent-red text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                                    عرض خاص
-                                </span>
-                                <h2 className="text-3xl md:text-4xl font-bold text-white">تجهيز كامل للسوبر ماركت</h2>
-                                <p className="text-gray-300 text-lg">
-                                    جهاز كاشير تاتش + طابعة فواتير + قارئ باركود + درج نقدية + برنامج إدارة المخازن.
-                                </p>
-                                <div className="flex gap-4 mt-2">
-                                    <span className="text-2xl font-bold text-white">١٨,٥٠٠ ج.م</span>
-                                    <span className="text-xl text-gray-500 line-through">٢٢,٠٠٠ ج.م</span>
-                                </div>
-                                <Link
-                                    to="/ai-builder"
-                                    className="mt-4 bg-white text-primary-dark hover:bg-gray-100 px-8 py-3 rounded-lg font-bold transition-colors"
-                                >
-                                    صمم حزمتك الآن
-                                </Link>
-                            </div>
-                        </div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3 mb-8">
+                        <span className="w-2 h-8 rounded-full bg-accent-red block"></span>
+                        عروض الحزم الجاهزة
+                    </h2>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <BundleOfferCard
+                            label="عرض السوبر ماركت"
+                            title="تجهيز كامل للسوبر ماركت"
+                            businessType="supermarket"
+                            budget={18500}
+                            features={['scanner', 'printer', 'drawer', 'touch']}
+                            borderColor="border-emerald-500/20"
+                            gradientColor="from-emerald-500/10"
+                            badgeClass="bg-accent-red"
+                            buttonClass="bg-white text-primary-dark hover:bg-gray-100"
+                        />
+                        <BundleOfferCard
+                            label="عرض المطاعم والكافيهات"
+                            title="نظام الكاشير الذكي (المطاعم)"
+                            businessType="restaurant"
+                            budget={15000}
+                            features={['printer', 'touch']}
+                            borderColor="border-[#8b5cf6]/20"
+                            gradientColor="from-[#8b5cf6]/10"
+                            badgeClass="bg-blue-600"
+                            buttonClass="bg-[#8b5cf6] text-white hover:bg-[#8b5cf6]/90"
+                        />
                     </div>
                 </div>
             </section>
@@ -463,3 +468,111 @@ export function HomePage() {
 }
 
 export default HomePage;
+
+
+// ============================================================
+// BundleOfferCard — Fully Dynamic, fetches real data from API
+// ============================================================
+interface BundleOfferCardProps {
+    label: string;
+    title: string;
+    businessType: string;
+    budget: number;
+    features: string[];
+    borderColor: string;
+    gradientColor: string;
+    badgeClass: string;
+    buttonClass: string;
+}
+
+function BundleOfferCard({
+    label, title, businessType, budget, features,
+    borderColor, gradientColor, badgeClass, buttonClass
+}: BundleOfferCardProps) {
+
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['bundle-preview', businessType, budget, features.join(',')],
+        queryFn: async () => {
+            const { data } = await api.post('/ai-bundle/generate', {
+                businessType,
+                budget,
+                selectedFeatures: features,
+            });
+            return data;
+        },
+        staleTime: 1000 * 60 * 10, // cache for 10 min — no need to re-fetch every page view
+    });
+
+    const ctaUrl = `/ai-builder?type=${businessType}&budget=${budget}&features=${features.join(',')}`;
+
+    return (
+        <div className={`relative rounded-2xl overflow-hidden glass-panel border ${borderColor}`}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${gradientColor} to-transparent`}></div>
+            <div className="relative z-10 flex flex-col p-8 gap-5">
+
+                {/* Badge */}
+                <span className={`w-fit ${badgeClass} text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider`}>
+                    {label}
+                </span>
+
+                {/* Title */}
+                <h2 className="text-2xl md:text-3xl font-bold text-white">{title}</h2>
+
+                {/* Product List — Real data from API */}
+                {isLoading && (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>جاري تحميل الحزمة...</span>
+                    </div>
+                )}
+
+                {isError && (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        <span>تعذر تحميل الحزمة</span>
+                    </div>
+                )}
+
+                {data && !isLoading && (
+                    <ul className="flex flex-col gap-2">
+                        {data.products.map((p: any, i: number) => (
+                            <li key={i} className="flex items-center gap-2.5 text-sm text-gray-300">
+                                <Package className="w-3.5 h-3.5 text-primary/60 flex-shrink-0" />
+                                <span>{p.name}</span>
+                                <span className="mr-auto text-primary font-bold text-xs whitespace-nowrap">
+                                    {p.price.toLocaleString()} ج.م
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                {/* Real Price from API */}
+                <div className="flex gap-4 items-baseline pt-1 border-t border-white/5">
+                    {isLoading ? (
+                        <div className="h-8 w-32 bg-white/10 rounded animate-pulse" />
+                    ) : data ? (
+                        <>
+                            <span className="text-2xl font-extrabold text-white">
+                                {data.price.toLocaleString()} ج.م
+                            </span>
+                            <span className="text-sm text-gray-500 line-through">
+                                {data.originalPrice.toLocaleString()} ج.م
+                            </span>
+                            <span className="text-xs text-emerald-400 font-bold mr-auto">
+                                وفر {data.savings.toLocaleString()} ج.م
+                            </span>
+                        </>
+                    ) : null}
+                </div>
+
+                <Link
+                    to={ctaUrl}
+                    className={`w-fit ${buttonClass} px-6 py-2.5 rounded-lg font-bold transition-all transform hover:scale-105`}
+                >
+                    صمم حزمتك الآن
+                </Link>
+            </div>
+        </div>
+    );
+}
