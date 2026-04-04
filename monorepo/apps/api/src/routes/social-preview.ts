@@ -1,0 +1,98 @@
+import { Router, Request, Response } from 'express';
+import { db } from '../db/index.js';
+import { products, categories } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
+
+const router: Router = Router();
+
+// Catch all paths that are routed here from web frontend
+router.get('/*', async (req: Request, res: Response) => {
+    // req.params[0] will be the part matched by `/*` e.g., 'product/my-item-slug'
+    const path = req.params[0] || '';
+    
+    // Default meta tags (fallback to homepage info)
+    let title = 'Al3amer Store - مركز العامر';
+    let description = 'المركز الرائد لتجهيزات المحلات التجارية والكاشير وأنظمة المراقبة في مصر';
+    let image = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
+
+    try {
+        // 1. Check if it's a product
+        if (path.startsWith('product/')) {
+            const slug = path.split('/')[1];
+            if (slug) {
+                const product = await db.query.products.findFirst({
+                    where: eq(products.slug, slug),
+                    with: {
+                        images: true
+                    }
+                });
+                
+                if (product) {
+                    title = `${product.name} | Al3amer Store`;
+                    // Strip HTML tags from description and truncate
+                    const strippedDesc = product.description?.replace(/<[^>]*>?/gm, '') || '';
+                    description = strippedDesc.length > 200 ? strippedDesc.substring(0, 200) + '...' : (strippedDesc || description);
+                    
+                    const primaryImage = product.images?.find((img: any) => img.isPrimary);
+                    const firstImage = product.images?.[0];
+                    if (primaryImage?.url) image = primaryImage.url;
+                    else if (firstImage?.url) image = firstImage.url;
+                }
+            }
+        } 
+        // 2. Check if it's a category filtering
+        else if (path.startsWith('shop') || path === 'shop') {
+             title = 'تسوق الآن | Al3amer Store';
+             description = 'تصفح جميع المنتجات والأنظمة الخاصة بالكاشير والتجهيزات';
+             
+             if (req.query.categories) {
+                  const catSlug = req.query.categories as string;
+                  const cat = await db.query.categories.findFirst({
+                      where: eq(categories.slug, catSlug)
+                  });
+                  if (cat) {
+                      title = `${cat.name} | Al3amer Store`;
+                      if (cat.image) image = cat.image;
+                  }
+             }
+        }
+    } catch (err) {
+        console.error('Bot Preview Error:', err);
+        // Fail silently by returning defaults
+    }
+
+    // HTML Payload strictly for Bots
+    const htmlResponse = `
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="utf-8">
+            <title>${title}</title>
+            <meta name="description" content="${description}">
+            
+            <!-- Open Graph / Facebook / WhatsApp -->
+            <meta property="og:type" content="website">
+            <meta property="og:url" content="https://al3amer.store/${path}">
+            <meta property="og:title" content="${title}">
+            <meta property="og:description" content="${description}">
+            <meta property="og:image" content="${image}">
+            
+            <!-- Twitter -->
+            <meta property="twitter:card" content="summary_large_image">
+            <meta property="twitter:url" content="https://al3amer.store/${path}">
+            <meta property="twitter:title" content="${title}">
+            <meta property="twitter:description" content="${description}">
+            <meta property="twitter:image" content="${image}">
+        </head>
+        <body>
+            <h1>${title}</h1>
+            <p>${description}</p>
+            <img src="${image}" alt="${title}" />
+        </body>
+        </html>
+    `;
+    
+    return res.status(200).send(htmlResponse);
+});
+
+export default router;

@@ -19,6 +19,7 @@ import webhookRouter from './routes/webhook.js';
 import debugRouter from './routes/debug.js';
 import metadataRouter from './routes/metadata.js';
 import checkoutRouter from './routes/checkout.js';
+import socialPreviewRouter from './routes/social-preview.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/webhook', webhookRouter);
 app.use('/api/debug', debugRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/checkout', checkoutRouter);
+app.use('/api/social-preview', socialPreviewRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

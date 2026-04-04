@@ -2,6 +2,17 @@
     "rewrites": [
         {
             "source": "/(.*)",
+            "has": [
+                {
+                    "type": "header",
+                    "key": "user-agent",
+                    "value": "(?i).*(whatsapp|telegram|facebookexternalhit|twitterbot|linkedinbot|pinterest|slackbot|discordbot|googlebot).*"
+                }
+            ],
+            "destination": "https://al3amer-store-wf1t.vercel.app/api/social-preview/$1"
+        },
+        {
+            "source": "/(.*)",
             "destination": "/index.html"
         }
     ]
