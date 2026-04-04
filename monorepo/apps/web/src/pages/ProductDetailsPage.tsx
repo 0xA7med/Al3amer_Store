@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Star, ShoppingCart, Heart, Share2, ChevronLeft, Minus, Plus,
@@ -23,6 +23,8 @@ export const ProductDetailsPage = () => {
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<'specs' | 'video' | 'reviews' | 'warranty'>('specs');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+    const [showStickyCart, setShowStickyCart] = useState(false);
+    const [showAllSpecs, setShowAllSpecs] = useState(false);
     const { addToCart, items } = useCart();
     const { isAuthenticated } = useAuth();
     const { toggleWishlist, isInWishlist } = useWishlist();
@@ -51,6 +53,15 @@ export const ProductDetailsPage = () => {
         });
         toast.success(`تم إضافة ${topTwo.length + 1} منتجات إلى السلة بنجاح`);
     };
+
+    // Scroll listener for sticky mobile CTA
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowStickyCart(window.scrollY > 700);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const isInCart = items.some(item => item.id === product?.id);
 
@@ -156,10 +167,10 @@ export const ProductDetailsPage = () => {
                             crumbs.push({ name: cat.name, slug: cat.slug });
                         }
                         return crumbs.map((crumb, idx) => (
-                            <li key={idx}>
+                            <li key={idx} className={idx < crumbs.length - 1 ? 'hidden sm:inline-flex' : 'inline-flex'}>
                                 <div className="flex items-center">
-                                    <ChevronLeft className="w-4 h-4 text-slate-600 mx-2 rtl:rotate-180" />
-                                    <Link to={`/shop?categories=${crumb.slug}`} className="text-sm font-medium text-slate-400 hover:text-primary transition-colors">
+                                    <ChevronLeft className="w-4 h-4 text-slate-600 mx-1 md:mx-2 rtl:rotate-180" />
+                                    <Link to={`/shop?categories=${crumb.slug}`} className="text-[11px] md:text-sm font-medium text-slate-400 hover:text-primary transition-colors">
                                         {crumb.name}
                                     </Link>
                                 </div>
@@ -168,12 +179,32 @@ export const ProductDetailsPage = () => {
                     })()}
                     <li aria-current="page">
                         <div className="flex items-center">
-                            <ChevronLeft className="w-4 h-4 text-slate-600 mx-2 rtl:rotate-180" />
-                            <span className="text-sm font-medium text-primary line-clamp-1">{product.name}</span>
+                            <ChevronLeft className="w-4 h-4 text-slate-600 mx-1 md:mx-2 rtl:rotate-180" />
+                            <span className="text-[11px] md:text-sm font-medium text-primary line-clamp-1 max-w-[150px] md:max-w-xs">{product.name}</span>
                         </div>
                     </li>
                 </ol>
             </nav>
+
+            {/* Product Title - shown ABOVE the gallery for easy screenshot capture */}
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md">
+                        {product.brand?.name || 'براند كاشير'}
+                    </span>
+                    <span className={`text-xs font-bold flex items-center gap-1 border px-2.5 py-1 rounded-md ${
+                        product.stock > 0
+                            ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                            : 'text-red-400 bg-red-500/10 border-red-500/20'
+                    }`}>
+                        <Check className="w-3.5 h-3.5" />
+                        {product.stock > 0 ? 'متوفر' : 'نفذت الكمية'}
+                    </span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-tight tracking-tight">
+                    {product.name}
+                </h1>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-16">
                 {/* Visual Gallery Section */}
@@ -214,7 +245,7 @@ export const ProductDetailsPage = () => {
                             <button
                                 key={idx}
                                 onClick={() => setUserSelectedImage(idx)}
-                                className={`relative size-20 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
+                                className={`relative size-16 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
                                     }`}
                             >
                                 <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
@@ -226,7 +257,7 @@ export const ProductDetailsPage = () => {
                                     setActiveTab('video');
                                     window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
                                 }}
-                                className="relative size-20 md:size-24 rounded-xl border-2 border-transparent hover:border-primary overflow-hidden flex-shrink-0 bg-surface-dark transition-all opacity-70 hover:opacity-100 flex items-center justify-center group"
+                                className="relative size-16 md:size-24 rounded-xl border-2 border-transparent hover:border-primary overflow-hidden flex-shrink-0 bg-surface-dark transition-all opacity-70 hover:opacity-100 flex items-center justify-center group"
                             >
                                 <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors"></div>
                                 <PlayCircle className="w-8 h-8 text-white relative z-10 transform group-hover:scale-110 transition-transform" />
@@ -236,9 +267,10 @@ export const ProductDetailsPage = () => {
                 </div>
 
                 {/* Product Purchase & Info Section */}
-                <div className="lg:col-span-5 flex flex-col gap-6">
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
+                <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
+                    <div className="flex flex-col gap-2 md:gap-3">
+                        {/* Brand + stock badges — hidden on mobile (shown above gallery), visible on desktop */}
+                        <div className="hidden lg:flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-md">
                                     {product.brand?.name || 'براند كاشير'}
@@ -266,12 +298,13 @@ export const ProductDetailsPage = () => {
                                 </button>
                                 <button
                                     onClick={async () => {
+                                        const shareUrl = window.location.href;
                                         if (navigator.share) {
                                             try {
                                                 await navigator.share({
                                                     title: product.name,
                                                     text: `${product.name} - ${(hasDiscount ? discountPrice : price)?.toLocaleString()} ج.م`,
-                                                    url: window.location.href
+                                                    url: shareUrl
                                                 });
                                             } catch (err) {
                                                 if ((err as any).name !== 'AbortError') {
@@ -279,20 +312,54 @@ export const ProductDetailsPage = () => {
                                                 }
                                             }
                                         } else {
-                                            navigator.clipboard.writeText(window.location.href);
+                                            navigator.clipboard.writeText(shareUrl);
                                             toast.success('تم نسخ الرابط');
                                         }
                                     }}
-                                    className="text-slate-400 hover:text-primary transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-primary hover:border-primary/50 transition-all group"
                                 >
-                                    <Share2 className="w-5 h-5" />
+                                    <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                    <span className="text-xs font-bold font-primary">مشاركة</span>
                                 </button>
                             </div>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-extrabold text-white leading-tight tracking-tight">
+
+                        {/* Mobile wishlist + share row */}
+                        <div className="flex lg:hidden items-center justify-end gap-2">
+                            <button
+                                onClick={() => {
+                                    if (!isAuthenticated) {
+                                        toast.error('يرجى تسجيل الدخول لإضافة المنتج للمفضلة');
+                                        return;
+                                    }
+                                    if (product?.id) toggleWishlist(product.id);
+                                }}
+                                className={`transition-colors p-1.5 rounded-lg bg-white/5 border border-white/10 ${isWishlisted ? 'text-red-500' : 'text-slate-400'}`}
+                            >
+                                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const shareUrl = window.location.href;
+                                    if (navigator.share) {
+                                        try { await navigator.share({ title: product.name, url: shareUrl }); }
+                                        catch (err) { if ((err as any).name !== 'AbortError') toast.error('فشلت عملية المشاركة'); }
+                                    } else {
+                                        navigator.clipboard.writeText(shareUrl);
+                                        toast.success('تم نسخ الرابط');
+                                    }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                <span className="text-xs font-bold">مشاركة</span>
+                            </button>
+                        </div>
+                        {/* Title — hidden on mobile (shown above gallery) */}
+                        <h1 className="hidden lg:block text-3xl md:text-4xl font-extrabold text-white leading-tight tracking-tight mt-1 mb-1">
                             {product.name}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm">
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] md:text-sm">
                             <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
                                 <div className="flex text-yellow-400 gap-0.5">
                                     {Array.from({ length: 5 }).map((_, i) => (
@@ -317,7 +384,7 @@ export const ProductDetailsPage = () => {
 
                     <div className="relative">
                         <div 
-                            className={`text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-4'}`} 
+                            className={`text-slate-300 leading-relaxed text-sm md:text-base border-r-2 border-primary/50 pr-4 italic transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-2'}`} 
                             style={{ whiteSpace: 'pre-line' }}
                         >
                             {product.description || 'وصف المنتج غير متاح حالياً، يرجى مراجعة المواصفات الفنية.'}
@@ -342,13 +409,13 @@ export const ProductDetailsPage = () => {
                         )}
                     </div>
 
-                    <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-col gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
+                    <div className="glass-panel p-4 md:p-6 rounded-2xl flex flex-col gap-4 md:gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red via-primary to-brand-red opacity-50"></div>
 
                         <div className="flex items-end gap-3 flex-wrap relative z-10">
                             <div className="flex flex-col">
                                 {hasDiscount && (
-                                    <span className="text-slate-400 text-sm font-medium line-through mb-1 flex items-center gap-1">
+                                    <span className="text-slate-400 text-xs md:text-sm font-medium line-through mb-0.5 flex items-center gap-1">
                                         {price.toLocaleString('ar-EG')} ج.م
                                     </span>
                                 )}
@@ -356,34 +423,34 @@ export const ProductDetailsPage = () => {
                                     <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-brand-red tracking-tight">
                                         {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
                                     </span>
-                                    <span className="text-lg sm:text-xl font-medium text-slate-300">جنية مصري</span>
+                                    <span className="text-base sm:text-xl font-medium text-slate-300">جنية مصري</span>
                                 </div>
                             </div>
                             {hasDiscount && (
                                 <div className="mr-auto flex flex-col items-end">
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider bg-brand-red px-2 py-0.5 rounded shadow-lg shadow-red-900/40">عرض محدود</span>
-                                    <span className="text-sm text-emerald-400 font-medium mt-1">وفرت {(price - discountPrice!).toLocaleString('ar-EG')} ج.م</span>
+                                    <span className="text-[10px] md:text-xs font-bold text-white uppercase tracking-wider bg-brand-red px-2 py-0.5 rounded shadow-lg shadow-red-900/40">عرض محدود</span>
+                                    <span className="text-xs md:text-sm text-emerald-400 font-medium mt-1">وفرت {(price - discountPrice!).toLocaleString('ar-EG')} ج.م</span>
                                 </div>
                             )}
                         </div>
 
                         <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
-                        <div className="flex flex-col gap-4">
-                            <div className="grid grid-cols-12 gap-4">
-                                <div className="col-span-4 flex items-center justify-between bg-surface-dark rounded-xl border border-white/10 h-12 px-1 focus-within:border-primary/50 transition-colors">
+                        <div className="flex flex-col gap-3 md:gap-4">
+                            <div className="grid grid-cols-12 gap-3 md:gap-4">
+                                <div className="col-span-5 md:col-span-4 flex items-center justify-between bg-surface-dark rounded-xl border border-white/10 h-12 md:h-12 px-1 focus-within:border-primary/50 transition-colors">
                                     <button
                                         onClick={() => setQuantity(q => q + 1)}
-                                        className="size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
-                                        <Plus className="w-5 h-5" />
+                                        <Plus className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
-                                    <span className="text-white font-bold text-lg">{quantity}</span>
+                                    <span className="text-white font-bold text-base md:text-lg">{quantity}</span>
                                     <button
                                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                        className="size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                                     >
-                                        <Minus className="w-5 h-5" />
+                                        <Minus className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
                                 </div>
                                 <button
@@ -399,10 +466,10 @@ export const ProductDetailsPage = () => {
                                         toast.success('تم إضافة المنتج للسلة بنجاح');
                                     }}
                                     disabled={product.stock === 0}
-                                    className="col-span-8 bg-primary hover:bg-blue-600 disabled:bg-slate-700 text-white font-bold rounded-xl h-12 flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98] group/btn"
+                                    className="col-span-7 md:col-span-8 bg-primary hover:bg-blue-600 disabled:bg-slate-700 text-white font-bold rounded-xl h-12 flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98] group/btn"
                                 >
-                                    <ShoppingCart className="w-5 h-5 group-hover/btn:animate-bounce" />
-                                    <span className="text-base">{isInCart ? 'أضف مجدداً' : 'أضف إلى السلة'}</span>
+                                    <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:animate-bounce" />
+                                    <span className="text-sm md:text-base">{isInCart ? 'أضف مجدداً' : 'أضف إلى السلة'}</span>
                                 </button>
                             </div>
 
@@ -480,10 +547,10 @@ export const ProductDetailsPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 flex flex-col gap-8">
                         {activeTab === 'specs' && (
-                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500 p-6">
-                                <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
-                                    <Cpu className="w-6 h-6 text-primary" />
-                                    <h3 className="text-xl font-bold text-white">المواصفات الفنية</h3>
+                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500 p-4 md:p-6">
+                                <div className="flex items-center gap-2 mb-4 md:mb-6 border-b border-white/10 pb-3 md:pb-4">
+                                    <Cpu className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                                    <h3 className="text-lg md:text-xl font-bold text-white">المواصفات الفنية</h3>
                                 </div>
                                 
                                 {(() => {
@@ -505,22 +572,36 @@ export const ProductDetailsPage = () => {
                                     }
 
                                     return (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {merged.map((spec, idx) => (
-                                                <div 
-                                                    key={idx} 
-                                                    className="p-4 bg-[#101622]/80 backdrop-blur rounded-xl border border-white/5 hover:border-primary/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 group"
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {(showAllSpecs ? merged : merged.slice(0, 4)).map((spec, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        className="p-3 bg-[#101622]/80 backdrop-blur rounded-xl border border-white/5 hover:border-primary/40 transition-all flex flex-row items-start justify-between gap-2 group"
+                                                    >
+                                                        <span className="text-slate-400 font-medium text-sm flex items-start gap-2 flex-1 pt-0.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors mt-1.5 flex-shrink-0"></span>
+                                                            {displayLabelMap[spec.key.toLowerCase()] || spec.key}
+                                                        </span>
+                                                        <span className="text-white font-bold text-sm text-left break-words max-w-[55%]">
+                                                            {spec.value}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {merged.length > 4 && (
+                                                <button
+                                                    onClick={() => setShowAllSpecs(s => !s)}
+                                                    className="mt-4 w-full py-2.5 rounded-xl border border-white/10 text-slate-300 hover:text-primary hover:border-primary/40 text-sm font-bold flex items-center justify-center gap-2 transition-colors bg-white/2 hover:bg-primary/5"
                                                 >
-                                                    <span className="text-slate-400 font-medium text-sm flex items-center gap-2">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors"></span>
-                                                        {displayLabelMap[spec.key.toLowerCase()] || spec.key}
-                                                    </span>
-                                                    <span className="text-white font-bold text-sm sm:text-right break-words max-w-[70%]">
-                                                        {spec.value}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                    {showAllSpecs ? (
+                                                        <><Minus className="w-4 h-4" />إخفاء المواصفات</>
+                                                    ) : (
+                                                        <><Plus className="w-4 h-4" />عرض كل المواصفات ({merged.length - 4} إضافية)</>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </>
                                     );
                                 })()}
                             </div>
@@ -763,8 +844,11 @@ export const ProductDetailsPage = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {relatedProducts.map((rp: Product) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                        {relatedProducts.map((rp: Product) => {
+                            const rpPrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
+                            const rpIsInCart = items.some(item => item.id === rp.id);
+                            return (
                             <Link key={rp.id} to={`/product/${rp.slug || rp.id}`} className="group">
                                 <div className="glass-panel rounded-2xl p-4 hover:border-primary/50 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
                                     <div className="relative w-full aspect-square rounded-xl bg-surface-dark overflow-hidden mb-4 border border-white/5">
@@ -788,30 +872,39 @@ export const ProductDetailsPage = () => {
                                                     </span>
                                                 )}
                                                 <span className="text-lg font-bold text-brand-red">
-                                                    {(rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price)).toLocaleString()} ج.م
+                                                    {rpPrice.toLocaleString()} ج.م
                                                 </span>
                                             </div>
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    const effectivePrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
+                                                    e.stopPropagation();
                                                     addToCart({
                                                         id: rp.id,
                                                         name: rp.name,
-                                                        price: effectivePrice,
+                                                        price: rpPrice,
                                                         image: rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url,
                                                         quantity: 1
                                                     });
+                                                    if (!rpIsInCart) toast.success('تم إضافة المنتج للسلة');
                                                 }}
-                                                className="size-10 rounded-xl bg-white/5 hover:bg-primary text-white flex items-center justify-center transition-colors border border-white/10 group-hover:border-primary"
+                                                className={`size-10 rounded-xl text-white flex items-center justify-center transition-all border ${
+                                                    rpIsInCart
+                                                        ? 'bg-emerald-500 border-emerald-500/30 shadow-lg shadow-emerald-900/25'
+                                                        : 'bg-white/5 hover:bg-primary border-white/10 group-hover:border-primary'
+                                                }`}
                                             >
-                                                <ShoppingCart className="w-5 h-5" />
+                                                {rpIsInCart
+                                                    ? <Check className="w-5 h-5" />
+                                                    : <ShoppingCart className="w-5 h-5" />
+                                                }
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             </Link>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -887,6 +980,95 @@ export const ProductDetailsPage = () => {
                                     <img src={img} alt="" className="w-full h-full object-cover" />
                                 </button>
                             ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ===== Premium Sticky Mobile Add To Cart Bar ===== */}
+            <AnimatePresence>
+                {showStickyCart && (
+                    <motion.div
+                        initial={{ y: 120, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 120, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+                    >
+                        {/* Gradient fade above the bar */}
+                        <div className="h-6 bg-gradient-to-t from-background-dark/80 to-transparent pointer-events-none" />
+
+                        <div className="bg-[#0f172a]/98 backdrop-blur-2xl border-t border-white/8 px-4 pt-3 pb-6 shadow-[0_-4px_30px_rgba(0,0,0,0.6)]">
+                            {/* Top accent line */}
+                            <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full" />
+
+                            {/* Product info row */}
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-xl bg-surface-dark border border-white/10 overflow-hidden flex-shrink-0">
+                                    <img src={images[0]} alt={product.name} className="w-full h-full object-contain p-1" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white font-bold text-sm truncate">{product.name}</p>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-brand-red font-extrabold text-lg leading-none">
+                                            {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
+                                        </span>
+                                        <span className="text-slate-400 text-xs font-medium">ج.م</span>
+                                        {hasDiscount && (
+                                            <span className="text-slate-500 text-[11px] line-through">{price.toLocaleString('ar-EG', { useGrouping: false })}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {hasDiscount && (
+                                    <span className="flex-shrink-0 text-[10px] font-black text-white bg-brand-red px-2 py-0.5 rounded-md">
+                                        -{discountPercent}%
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Action buttons row */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        addToCart({
+                                            id: product.id,
+                                            name: product.name,
+                                            price: hasDiscount ? discountPrice! : price,
+                                            image: images[0],
+                                            quantity: 1,
+                                            sku: product.sku
+                                        });
+                                        if (!isInCart) toast.success('تم إضافة المنتج للسلة');
+                                    }}
+                                    disabled={product.stock === 0}
+                                    className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] border ${
+                                        isInCart
+                                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                                            : 'bg-white/8 border-white/12 text-white hover:bg-white/12'
+                                    }`}
+                                >
+                                    {isInCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                                    {isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        addToCart({
+                                            id: product.id,
+                                            name: product.name,
+                                            price: hasDiscount ? discountPrice! : price,
+                                            image: images[0],
+                                            quantity: 1,
+                                            sku: product.sku
+                                        });
+                                        navigate('/checkout');
+                                    }}
+                                    disabled={product.stock === 0}
+                                    className="flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-primary hover:bg-blue-500 disabled:bg-slate-700 text-white shadow-lg shadow-primary/25 transition-all active:scale-[0.97]"
+                                >
+                                    <ShoppingBag className="w-4 h-4" />
+                                    شراء الآن
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 )}

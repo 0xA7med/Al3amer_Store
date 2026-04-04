@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 interface ProductCardProps {
     id: string;
@@ -61,7 +62,7 @@ export function ProductCard({
             {/* Background Glow on Hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-            {/* Action Buttons (Floating) */}
+            {/* Action Buttons (Floating) - hover-only on desktop */}
             <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
                 <button
                     onClick={(e) => {
@@ -79,6 +80,27 @@ export function ProductCard({
                 </button>
                 <button className="size-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/50 transition-all">
                     <span className="material-symbols-outlined text-[18px]">compare_arrows</span>
+                </button>
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const shareUrl = `${window.location.origin}/product/${slug || id}`;
+                        if (navigator.share) {
+                            navigator.share({
+                                title: name,
+                                text: `اكتشف ${name} بمتجر العامر`,
+                                url: shareUrl,
+                            }).catch(() => {});
+                        } else {
+                            navigator.clipboard.writeText(shareUrl);
+                            toast.success('تم نسخ الرابط');
+                        }
+                    }}
+                    className="size-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/50 transition-all"
+                    title="مشاركة"
+                >
+                    <span className="material-symbols-outlined text-[18px]">share</span>
                 </button>
             </div>
 
@@ -160,12 +182,14 @@ export function ProductCard({
                         <button
                             onClick={(e) => {
                                 e.preventDefault();
+                                e.stopPropagation();
+                                addToCart({ id, name, price, image: imageUrl });
                                 if (!isInCart) {
-                                    addToCart({ id, name, price, image: imageUrl });
+                                    toast.success('تم إضافة المنتج للسلة بنجاح');
                                 }
                             }}
                             className={`size-10 rounded-xl text-white flex items-center justify-center transition-all shadow-lg active:scale-95 group/btn ${isInCart
-                                ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                                ? 'bg-emerald-500 border border-emerald-500/30'
                                 : 'bg-primary hover:bg-blue-500 shadow-primary/20 hover:shadow-primary/40'
                                 }`}
                             title={isInCart ? 'مضاف للسلة' : 'أضف للسلة'}

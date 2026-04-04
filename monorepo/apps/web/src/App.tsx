@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Header, Footer } from './components/layout';
 import { AdminLayout } from './components/admin';
 import { AuthProvider } from './context/AuthContext';
@@ -6,6 +6,16 @@ import { SettingsProvider } from './context/SettingsContext';
 import { CartProvider } from './context/CartContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
+
+// Scroll to top on every route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [pathname]);
+  return null;
+}
 
 // Customer Pages
 import HomePage from './pages/HomePage';
@@ -56,6 +66,7 @@ function App() {
             }}
           />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               {/* Customer Routes - with Header & Footer */}
               <Route
