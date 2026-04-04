@@ -5,6 +5,9 @@ import { eq, like, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
 import { AIService } from '../services/ai.service.js';
 
+// In-memory tracker for popular/trending searches globally
+const searchHistoryTracker: Record<string, number> = {};
+
 export class ProductsController {
     // Helper to generate SEO friendly slugs (Arabic & English)
     static slugify(text: string): string {
@@ -214,11 +217,17 @@ export class ProductsController {
         try {
             const { q = '' } = req.query;
 
-            if (!q || (q as string).length < 2) {
+            const queryTerm = (q as string).toLowerCase().trim();
+            if (!queryTerm || queryTerm.length < 2) {
                 return res.json([]);
             }
 
-            const searchPattern = `%${q}%`;
+            // Track trending searches (only if it's a valid meaningful word)
+            if (queryTerm.length >= 3) {
+                searchHistoryTracker[queryTerm] = (searchHistoryTracker[queryTerm] || 0) + 1;
+            }
+
+            const searchPattern = `%${queryTerm}%`;
 
             const results = await db.query.products.findMany({
                 where: and(
@@ -257,6 +266,27 @@ export class ProductsController {
         }
     }
 
+    // GET /api/products/popular-searches
+    static async popularSearches(req: Request, res: Response) {
+        try {
+            // Sort recorded searches by hit count
+            const sortedCounts = Object.entries(searchHistoryTracker)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(entry => entry[0]);
+
+            // Default safe keywords if there aren't enough tracked queries yet
+            const defaults = ['كاشير', 'طابعة', 'درج نقدية', 'باركود', 'سكانر'];
+            
+            // Merge actual tracked top searches with defaults to always yield ~4 words
+            const combined = [...new Set([...sortedCounts, ...defaults])].slice(0, 4);
+
+            return res.json(combined);
+        } catch (error) {
+            console.error('Error fetching popular searches:', error);
+            res.status(500).json({ error: 'Failed' });
+        }
+    }
 
     // GET /api/products/:id - Get single product
     static async getOne(req: Request, res: Response) {

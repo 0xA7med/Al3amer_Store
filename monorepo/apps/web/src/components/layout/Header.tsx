@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useSettings } from '../../context/SettingsContext';
+import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 
 const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
@@ -13,6 +14,7 @@ export function Header() {
     const { settings } = useSettings();
     const [showDropdown, setShowDropdown] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -20,7 +22,18 @@ export function Header() {
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const navigate = useNavigate();
     const searchRef = useRef<HTMLDivElement>(null);
+    const mobileSearchInputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Fetch popular trending searches
+    const { data: popularSearches = ['كاشير', 'طابعة', 'باركود', 'درج'] } = useQuery({
+        queryKey: ['popular-searches'],
+        queryFn: async () => {
+            const res = await api.get('/products/popular-searches');
+            return res.data;
+        },
+        staleTime: 60 * 60 * 1000 // 1 hour caching
+    });
 
     // Debounce search logic
     useEffect(() => {
@@ -107,13 +120,13 @@ export function Header() {
                                 <img
                                     src={settings.logoUrl || LOGO_URL}
                                     alt={`${settings.storeNameAr || 'Al3amer'} Logo`}
-                                    className="h-14 object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
+                                    className="h-10 sm:h-14 object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                                 />
                                 <div className="flex flex-col">
-                                    <h2 className="text-white text-xl font-bold leading-none tracking-tight group-hover:text-primary transition-colors drop-shadow-sm">
+                                    <h2 className="text-white text-lg sm:text-xl font-bold leading-none tracking-tight group-hover:text-primary transition-colors drop-shadow-sm">
                                         {settings.storeNameAr || 'مركز العامر'}
                                     </h2>
-                                    <span className="text-[10px] text-gray-300 font-medium tracking-wider mt-1 transition-colors">
+                                    <span className="hidden sm:block text-[10px] text-gray-300 font-medium tracking-wider mt-1 transition-colors">
                                         لأجهزة الكاشير وأنظمة المحاسبة
                                     </span>
                                 </div>
@@ -193,7 +206,7 @@ export function Header() {
                                         </div>
                                         <div className="p-2 bg-black/20 flex flex-wrap gap-1.5">
                                             <span className="text-[9px] text-slate-500 ml-1 py-1">بحث سريع:</span>
-                                            {['باركود', 'كاشير', 'طابعة', 'درج'].map(tag => (
+                                            {popularSearches.map((tag: string) => (
                                                 <button
                                                     key={tag}
                                                     onClick={() => {
@@ -258,7 +271,14 @@ export function Header() {
                         </div>
                         {/* Actions */}
                         <div className="flex items-center gap-3">
-                            <button className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg">
+                            <button
+                                onClick={() => {
+                                    setIsMobileSearchOpen(true);
+                                    setTimeout(() => mobileSearchInputRef.current?.focus(), 100);
+                                }}
+                                className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                aria-label="بحث"
+                            >
                                 <span className="material-symbols-outlined">search</span>
                             </button>
                             <Link to="/cart" className="relative p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg group">
@@ -340,6 +360,130 @@ export function Header() {
                     </div>
                 </div>
             </nav>
+            {/* Mobile Search Overlay */}
+            {isMobileSearchOpen && (
+                <div className="fixed inset-0 z-[110] flex flex-col" role="dialog" aria-modal="true" aria-label="البحث">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                        onClick={() => { setIsMobileSearchOpen(false); setSearchQuery(''); setShowSuggestions(false); }}
+                    />
+
+                    {/* Search Panel */}
+                    <div className="relative z-10 bg-[#0d121c]/95 border-b border-white/10 shadow-2xl p-4 animate-in slide-in-from-top duration-300">
+                        {/* Search Input Row */}
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 relative">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                    <span className="material-symbols-outlined">search</span>
+                                </div>
+                                <input
+                                    ref={mobileSearchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setShowSuggestions(true);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                                            setIsMobileSearchOpen(false);
+                                            setSearchQuery('');
+                                        }
+                                    }}
+                                    className="block w-full h-12 pr-10 pl-4 bg-[#1e293b] border border-gray-700 text-white placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-base"
+                                    placeholder="ابحث عن منتج، ماركة، أو فئة..."
+                                />
+                                {isSearching && (
+                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => { setIsMobileSearchOpen(false); setSearchQuery(''); setShowSuggestions(false); }}
+                                className="p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors flex-shrink-0"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        {/* Quick Search Chips */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            <span className="text-xs text-slate-500 self-center">بحث سريع:</span>
+                            {popularSearches.map((tag: string) => (
+                                <button
+                                    key={tag}
+                                    onClick={() => {
+                                        setSearchQuery(tag);
+                                        setShowSuggestions(true);
+                                        mobileSearchInputRef.current?.focus();
+                                    }}
+                                    className="text-xs bg-white/5 text-slate-300 px-3 py-1.5 rounded-full border border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/30 transition-colors"
+                                >
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Suggestions */}
+                        {showSuggestions && searchQuery.length > 1 && (
+                            <div className="mt-3 bg-[#101622] border border-white/10 rounded-xl overflow-hidden">
+                                <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">المنتجات المقترحة</span>
+                                    <button
+                                        onClick={() => {
+                                            navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                                            setIsMobileSearchOpen(false);
+                                            setSearchQuery('');
+                                        }}
+                                        className="text-[11px] text-primary hover:text-white transition-colors"
+                                    >
+                                        عرض الكل
+                                    </button>
+                                </div>
+                                <div className="max-h-[50vh] overflow-y-auto custom-scrollbar">
+                                    {suggestions.length > 0 ? (
+                                        suggestions.map((product) => (
+                                            <button
+                                                key={product.id}
+                                                type="button"
+                                                onPointerDown={(e) => {
+                                                    // Prevent the active input from losing focus (which normally swallows the first tap to close the keyboard)
+                                                    e.preventDefault();
+                                                    // Navigate first
+                                                    navigate(`/product/${product.slug || product.id}`);
+                                                    // Delay closing slightly so navigation isn't cancelled by component unmount
+                                                    setTimeout(() => {
+                                                        setIsMobileSearchOpen(false);
+                                                        setShowSuggestions(false);
+                                                        setSearchQuery('');
+                                                    }, 100);
+                                                }}
+                                                className="w-full flex items-center gap-4 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0 group/item text-right"
+                                            >
+                                                <div className="size-14 bg-white/5 rounded-lg border border-white/5 p-1 flex items-center justify-center flex-shrink-0">
+                                                    <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="text-sm font-bold text-white truncate group-hover/item:text-primary transition-colors">{product.name}</h4>
+                                                </div>
+                                                <div className="text-left flex-shrink-0">
+                                                    <span className="text-sm font-bold text-primary">{parseFloat(product.price).toLocaleString()} ج.م</span>
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="p-6 text-center text-slate-500 text-sm">لا توجد نتائج مطابقة</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Mobile Menu Overlay */}
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 z-[100]">

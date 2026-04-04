@@ -291,6 +291,7 @@ export function ShopPage() {
     const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({});
     const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
     const [sortBy, setSortBy] = useState('rating');
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
     // Sync state if url changes
     useEffect(() => {
@@ -615,7 +616,7 @@ export function ShopPage() {
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
             {/* Breadcrumb */}
-            <nav className="flex mb-8 text-sm font-medium text-gray-400">
+            <nav className="flex mb-6 text-sm font-medium text-gray-400">
                 <ol className="flex items-center gap-2">
                     <li><Link to="/" className="hover:text-primary transition-colors">الرئيسية</Link></li>
                     <li><span className="material-symbols-outlined text-sm pt-1">chevron_left</span></li>
@@ -629,9 +630,26 @@ export function ShopPage() {
                 </ol>
             </nav>
 
+            {/* Mobile Filter & Sort Button */}
+            <div className="lg:hidden mb-4">
+                <button
+                    onClick={() => setIsFilterDrawerOpen(true)}
+                    className="flex items-center gap-2 w-full py-3 px-4 bg-[#1e293b] border border-white/10 rounded-xl text-white font-bold hover:border-primary/50 transition-all active:scale-[0.98]"
+                >
+                    <span className="material-symbols-outlined text-primary">filter_list</span>
+                    <span>تصفية وترتيب</span>
+                    {hasActiveFilters && (
+                        <span className="bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            {activeFilters.length}
+                        </span>
+                    )}
+                    <span className="material-symbols-outlined text-gray-400 mr-auto">tune</span>
+                </button>
+            </div>
+
             <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Filters */}
-                <aside className="w-full lg:w-72 flex-shrink-0 space-y-6">
+                {/* Sidebar Filters — Desktop only inline, Mobile via Drawer */}
+                <aside className="hidden lg:block w-full lg:w-72 flex-shrink-0 space-y-6">
                     <div className="glass-panel rounded-2xl p-5 sticky top-24">
                         <div className="flex items-center justify-between mb-5">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -743,6 +761,169 @@ export function ShopPage() {
                     </div>
                 </aside>
 
+                {/* Mobile Filter Bottom-Sheet Drawer */}
+                {isFilterDrawerOpen && (
+                    <div className="fixed inset-0 z-[105] lg:hidden" role="dialog" aria-modal="true">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setIsFilterDrawerOpen(false)}
+                        />
+                        {/* Sheet */}
+                        <div className="absolute bottom-0 inset-x-0 bg-[#0d121c] border-t border-white/10 rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                            {/* Handle Bar */}
+                            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                                <div className="w-10 h-1 bg-white/20 rounded-full" />
+                            </div>
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 flex-shrink-0">
+                                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">filter_list</span>
+                                    تصفية النتائج
+                                </h3>
+                                <div className="flex items-center gap-3">
+                                    {hasActiveFilters && (
+                                        <button
+                                            onClick={clearAllFilters}
+                                            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+                                            مسح الكل
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setIsFilterDrawerOpen(false)}
+                                        className="p-1.5 bg-white/5 rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-xl">close</span>
+                                    </button>
+                                </div>
+                            </div>
+                            {/* Scrollable Content */}
+                            <div className="overflow-y-auto flex-1 p-5">
+                                {/* Sort */}
+                                <div className="mb-5 pb-5 border-b border-gray-700/50">
+                                    <h4 className="font-bold text-sm text-gray-200 flex items-center gap-2 mb-3">
+                                        <span className="material-symbols-outlined text-primary text-[18px]">sort</span>
+                                        ترتيب حسب
+                                    </h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { key: 'rating', label: 'التقييم الأعلى' },
+                                            { key: 'bestselling', label: 'الأكثر مبيعاً' },
+                                            { key: 'new', label: 'وصل حديثاً' },
+                                            { key: 'price-asc', label: 'سعر: الأقل أولاً' },
+                                            { key: 'price-desc', label: 'سعر: الأعلى أولاً' },
+                                        ].map(item => (
+                                            <button
+                                                key={item.key}
+                                                onClick={() => setSortBy(item.key)}
+                                                className={`py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                                                    sortBy === item.key
+                                                        ? 'bg-primary/20 border-primary text-primary'
+                                                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-gray-600 hover:text-white'
+                                                }`}
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Categories */}
+                                <FilterSection title="الفئات" icon="category" defaultOpen={true}>
+                                    <div className="space-y-0.5 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                                        <label className="flex items-center justify-between cursor-pointer group py-1">
+                                            <div className="flex items-center gap-2.5">
+                                                <span className="w-[14px]" />
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedCategories.length === 0}
+                                                    onChange={() => toggleCategory('all')}
+                                                    className="rounded border-gray-600 bg-[#101622] text-primary focus:ring-0 focus:ring-offset-0 size-3.5"
+                                                />
+                                                <span className={`text-sm transition-colors ${selectedCategories.length === 0 ? 'text-primary font-semibold' : 'text-gray-300 group-hover:text-white'}`}>الكل</span>
+                                            </div>
+                                            <span className="text-[10px] text-gray-500 bg-white/5 px-1.5 py-0.5 rounded-full">{categoryCounts['all'] || 0}</span>
+                                        </label>
+                                        {categoryTree.map(node => (
+                                            <CategoryTreeItem
+                                                key={node.id}
+                                                node={node}
+                                                selectedCategories={selectedCategories}
+                                                categoryCounts={categoryCounts}
+                                                toggleCategory={toggleCategory}
+                                            />
+                                        ))}
+                                    </div>
+                                </FilterSection>
+
+                                {/* Brands */}
+                                {dynamicBrands.length > 0 && (
+                                    <FilterSection title="العلامة التجارية" icon="verified" defaultOpen={false}>
+                                        <div className="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                                            {dynamicBrands.map((brand) => (
+                                                <label key={brand} className="flex items-center gap-3 cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedBrands.includes(brand)}
+                                                        onChange={() => toggleFilter(setSelectedBrands, brand)}
+                                                        className="rounded border-gray-600 bg-[#101622] text-primary focus:ring-0 focus:ring-offset-0 size-3.5"
+                                                    />
+                                                    <span className={`text-sm transition-colors ${selectedBrands.includes(brand) ? 'text-primary font-semibold' : 'text-gray-300 group-hover:text-white'}`}>{brand}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </FilterSection>
+                                )}
+
+                                {/* Dynamic Specs */}
+                                {specFacets.map((facet: { key: string; label: string; values: string[] }) => (
+                                    <FilterSection key={facet.key} title={facet.label} icon="tune" defaultOpen={false}>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {facet.values.map((value: string) => {
+                                                const isActive = (selectedSpecs[facet.key] || []).includes(value);
+                                                return (
+                                                    <button
+                                                        key={value}
+                                                        onClick={() => toggleSpecFilter(facet.key, value)}
+                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${isActive
+                                                            ? 'bg-primary/20 border-primary text-primary shadow-sm shadow-primary/10'
+                                                            : 'bg-white/5 border-white/5 text-gray-400 hover:border-gray-600 hover:text-white'
+                                                        }`}
+                                                    >
+                                                        {value}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </FilterSection>
+                                ))}
+
+                                {/* Price */}
+                                <FilterSection title="السعر" icon="payments" defaultOpen={false}>
+                                    <DualRangeSlider
+                                        min={computedPriceRange.min}
+                                        max={computedPriceRange.max || 100000}
+                                        step={Math.max(1, Math.floor((computedPriceRange.max - computedPriceRange.min) / 100))}
+                                        value={priceRange}
+                                        onChange={setPriceRange}
+                                    />
+                                </FilterSection>
+                            </div>
+                            {/* Footer Apply Button */}
+                            <div className="p-4 border-t border-white/10 flex-shrink-0">
+                                <button
+                                    onClick={() => setIsFilterDrawerOpen(false)}
+                                    className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-all shadow-lg shadow-primary/25"
+                                >
+                                    عرض {filteredProducts.length} منتج
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Products Grid */}
                 <div className="flex-1">
                     <div className="mb-8">
@@ -815,7 +996,7 @@ export function ShopPage() {
                     </div>
 
                     {/* Products Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
                         {isLoading ? (
                             <div className="col-span-full flex justify-center py-20">
                                 <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>

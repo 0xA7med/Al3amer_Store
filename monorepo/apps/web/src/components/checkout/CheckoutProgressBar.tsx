@@ -54,16 +54,17 @@ export const CheckoutProgressBar: React.FC<CheckoutProgressBarProps> = ({ curren
                                     )}
                                 </div>
 
-                                <span className={`text-[9px] md:text-sm font-bold transition-colors duration-300 text-center max-w-[60px] md:max-w-none leading-tight
+                                <span className={`text-[9px] min-[360px]:text-[10px] md:text-sm font-bold transition-colors duration-300 text-center max-w-[55px] min-[360px]:max-w-[65px] md:max-w-none leading-tight
                                     ${isActive
                                         ? 'text-primary'
                                         : isCompleted
                                             ? 'text-emerald-400'
                                             : 'text-gray-500'}
-                                    ${isActive ? 'block' : 'hidden min-[400px]:block'}`}
+                                    ${isActive ? 'block' : 'hidden min-[360px]:block'}`}
                                 >
                                     {step.label}
                                 </span>
+
                             </div>
 
                             {/* Connector Line */}

@@ -16,6 +16,7 @@ interface ProductCardProps {
         type: 'discount' | 'new';
         text: string;
     };
+    mobileHorizontal?: boolean;
 }
 
 export function ProductCard({
@@ -28,6 +29,7 @@ export function ProductCard({
     imageUrl,
     slug,
     badge,
+    mobileHorizontal = false,
 }: ProductCardProps) {
     const { addToCart, items } = useCart();
     const { isAuthenticated } = useAuth();
@@ -55,7 +57,7 @@ export function ProductCard({
     };
 
     return (
-        <div className="glass-card rounded-2xl overflow-hidden group flex flex-col h-full relative p-0 hover:z-10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(19,91,236,0.15)] hover:border-primary/30">
+        <div className={`glass-card rounded-2xl overflow-hidden group flex ${mobileHorizontal ? 'flex-row sm:flex-col' : 'flex-col'} h-full relative p-0 hover:z-10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(19,91,236,0.15)] hover:border-primary/30`}>
             {/* Background Glow on Hover */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -104,7 +106,7 @@ export function ProductCard({
             {/* Image Section */}
             <Link
                 to={`/product/${slug || id}`}
-                className="relative w-full aspect-[4/3] bg-gradient-to-b from-white/5 to-transparent p-3 sm:p-6 flex items-center justify-center overflow-hidden"
+                className={`relative overflow-hidden flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[130px] sm:w-full sm:aspect-[4/3]' : 'w-full aspect-[4/3]'}`}
             >
                 {/* Image Glow */}
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
@@ -115,11 +117,11 @@ export function ProductCard({
             </Link>
 
             {/* Content Section */}
-            <div className="p-3 sm:p-5 flex flex-col flex-1 border-t border-white/5 bg-[#1e293b]/40 backdrop-blur-sm">
+            <div className={`p-3 sm:p-5 flex flex-col flex-1 bg-[#1e293b]/40 backdrop-blur-sm ${mobileHorizontal ? 'border-r sm:border-r-0 sm:border-t' : 'border-t'} border-white/5`}>
                 <div className="mb-3">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest">{brand}</span>
-                        <div className="flex text-yellow-500 gap-[1px]">{renderStars()}</div>
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest truncate max-w-[50%]">{brand}</span>
+                        <div className="flex text-yellow-500 gap-[1px] shrink-0">{renderStars()}</div>
                     </div>
                     <Link to={`/product/${slug || id}`}>
                         <h3 className="text-white font-bold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors cursor-pointer">

@@ -52,13 +52,13 @@ export function HomePage() {
     return (
         <>
             {/* Hero Section */}
-            <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+            <section className="relative min-h-[450px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0 bg-[#0d121c]">
                     <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
                     <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+CjxjaXJjbGUgY3g9IjEiIGN5PSIxIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+Cjwvc3ZnPg==')] [background-size:24px_24px] pointer-events-none"></div>
                 </div>
-                <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-20">
+                <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10 lg:py-20">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div className="flex flex-col gap-6 max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 w-fit backdrop-blur-sm">
@@ -92,20 +92,7 @@ export function HomePage() {
                                     <Sparkles className="w-5 h-5 text-purple-400 group-hover:text-purple-300 animate-pulse" />
                                 </Link>
                             </div>
-                            <div className="flex items-center gap-6 pt-8 border-t border-white/10 mt-4">
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <span className="material-symbols-outlined text-primary">verified</span>
-                                    <span className="text-sm">وكيل معتمد</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <span className="material-symbols-outlined text-primary">local_shipping</span>
-                                    <span className="text-sm">شحن لكل مصر</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-gray-400">
-                                    <span className="material-symbols-outlined text-primary">build_circle</span>
-                                    <span className="text-sm">صيانة وضمان</span>
-                                </div>
-                            </div>
+
                         </div>
 
                         <div 
@@ -247,39 +234,39 @@ export function HomePage() {
                 </div>
             </section>
 
-            {/* Features Section */}
-            <section className="py-16 relative">
+            {/* Trust & Features Section */}
+            <section className="py-8 md:py-12 bg-gradient-to-b from-transparent to-[#0d121c] border-t border-white/5 relative mt-4 md:mt-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-8">
                         {[
                             {
                                 icon: 'shield_moon',
                                 title: 'ضمان العامر ستور',
-                                desc: 'نوفر لك ضماناً حقيقياً ودعماً فنياً متميزاً لجميع الأجهزة لضمان استمرارية عمل نشاطك.',
+                                desc: 'ضمان حقيقي ودعم فني متميز لجميع أجهزتك',
                             },
                             {
                                 icon: 'payments',
                                 title: 'الدفع عند الاستلام',
-                                desc: 'نوفر لك خدمة الدفع عند الاستلام لجميع محافظات مصر بكل سهولة وأمان.',
+                                desc: 'دفع آمن ومريح عند استلام طلبك ومراجعته',
                             },
                             {
                                 icon: 'rocket_launch',
-                                title: 'شحن سريع لحد الباب',
-                                desc: 'توصيل سريع وآمن لكل محافظات مصر مباشرة إلى باب منزلك أو محلك.',
+                                title: 'شحن سريع',
+                                desc: 'توصيل آمن وسريع لجميع محافظات مصر',
                             },
                         ].map((feature) => (
                             <div
                                 key={feature.title}
-                                className="glass-card p-6 rounded-xl flex flex-col items-start gap-4 hover:border-primary/50 group"
+                                className="glass-panel p-4 md:p-5 rounded-2xl flex items-center gap-4 hover:bg-white/5 transition-colors border border-white/5 group"
                             >
-                                <div className="w-12 h-12 rounded-lg bg-[#232f48] flex items-center justify-center group-hover:bg-primary transition-colors duration-300">
-                                    <span className="material-symbols-outlined text-primary group-hover:text-white text-2xl">
+                                <div className="w-12 h-12 md:w-14 md:h-14 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                                    <span className="material-symbols-outlined text-primary text-2xl md:text-3xl">
                                         {feature.icon}
                                     </span>
                                 </div>
-                                <div>
-                                    <h3 className="text-white text-lg font-bold mb-1">{feature.title}</h3>
-                                    <p className="text-gray-400 text-sm leading-relaxed">{feature.desc}</p>
+                                <div className="flex-1">
+                                    <h3 className="text-white font-bold text-sm md:text-base mb-0.5">{feature.title}</h3>
+                                    <p className="text-gray-400 text-[11px] md:text-xs leading-relaxed">{feature.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -287,42 +274,7 @@ export function HomePage() {
                 </div>
             </section>
 
-            {/* Categories Section */}
-            <section className="py-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-end justify-between mb-8">
-                        <div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">تسوق حسب الفئة</h2>
-                            <p className="text-gray-400">تصفح المنتجات حسب احتياج نشاطك</p>
-                        </div>
-                        <Link
-                            to="/shop"
-                            className="hidden sm:flex items-center gap-1 text-primary hover:text-white transition-colors text-sm font-bold"
-                        >
-                            <span>عرض الكل</span>
-                            <span className="material-symbols-outlined rtl:rotate-180 text-lg">arrow_right_alt</span>
-                        </Link>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {categories?.filter((cat: any) => cat.isActive && cat.isFeatured).map((cat: any) => (
-                            <Link
-                                to={`/shop?categories=${cat.slug}`}
-                                key={cat.id}
-                                className="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-3 text-center group h-36"
-                            >
-                                {cat.image ? (
-                                    <img src={cat.image} alt={cat.name} className="w-12 h-12 object-contain" />
-                                ) : (
-                                    <span className="material-symbols-outlined text-4xl text-gray-500 group-hover:text-primary transition-colors">
-                                        {cat.icon || 'category'}
-                                    </span>
-                                )}
-                                <span className="text-sm font-bold text-gray-300 group-hover:text-white">{cat.name}</span>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </section>
+
 
             {/* Best Sellers Section */}
             <section className="py-16 bg-[#0d121c]/50">
@@ -351,6 +303,7 @@ export function HomePage() {
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     badge={product.isFeatured ? { type: 'new', text: 'مميز' } : undefined}
+                                    mobileHorizontal={true}
                                 />
                             ))
                         )}
@@ -377,7 +330,6 @@ export function HomePage() {
                         ) : (
                             newArrivals?.slice(0, 4).map((product) => (
                                 <ProductCard
-
                                     key={product.id}
                                     id={product.id}
                                     name={product.name}
@@ -388,6 +340,7 @@ export function HomePage() {
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     badge={{ type: 'new', text: 'جديد' }}
+                                    mobileHorizontal={true}
                                 />
                             ))
                         )}
@@ -423,9 +376,47 @@ export function HomePage() {
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     badge={{ type: 'discount', text: 'خصم' }}
+                                    mobileHorizontal={true}
                                 />
                             ))
                         )}
+                    </div>
+                </div>
+            </section>
+
+            {/* Categories Section */}
+            <section className="py-10 lg:py-16 bg-[#0d121c]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-end justify-between mb-8">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">تسوق حسب الفئة</h2>
+                            <p className="text-gray-400">تصفح المنتجات حسب احتياج نشاطك</p>
+                        </div>
+                        <Link
+                            to="/shop"
+                            className="hidden sm:flex items-center gap-1 text-primary hover:text-white transition-colors text-sm font-bold"
+                        >
+                            <span>عرض الكل</span>
+                            <span className="material-symbols-outlined rtl:rotate-180 text-lg">arrow_right_alt</span>
+                        </Link>
+                    </div>
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar md:grid md:grid-cols-4 lg:grid-cols-6 -mx-4 px-4 md:mx-0 md:px-0">
+                        {categories?.filter((cat: any) => cat.isActive && cat.isFeatured).map((cat: any) => (
+                            <Link
+                                to={`/shop?categories=${cat.slug}`}
+                                key={cat.id}
+                                className="glass-card p-3 md:p-4 rounded-xl flex items-center md:flex-col md:justify-center gap-3 md:text-center group min-w-[160px] snap-center shrink-0 md:min-w-0 md:h-36"
+                            >
+                                {cat.image ? (
+                                    <img src={cat.image} alt={cat.name} className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" />
+                                ) : (
+                                    <span className="material-symbols-outlined text-3xl md:text-4xl text-gray-500 group-hover:text-primary transition-colors shrink-0">
+                                        {cat.icon || 'category'}
+                                    </span>
+                                )}
+                                <span className="text-xs md:text-sm font-bold text-gray-300 group-hover:text-white line-clamp-2 md:line-clamp-none">{cat.name}</span>
+                            </Link>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -463,6 +454,7 @@ export function HomePage() {
                     </div>
                 </div>
             </section>
+
         </>
     );
 }
