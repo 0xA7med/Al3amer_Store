@@ -48,11 +48,36 @@ router.get('/*', async (req: Request, res: Response) => {
              if (req.query.categories) {
                   const catSlug = req.query.categories as string;
                   const cat = await db.query.categories.findFirst({
-                      where: eq(categories.slug, catSlug)
+                      where: eq(categories.slug, catSlug),
+                      with: {
+                          products: {
+                              limit: 3,
+                              with: { images: true }
+                          }
+                      }
                   });
+
                   if (cat) {
                       title = `${cat.name} | Al3amer Store`;
-                      if (cat.image) image = cat.image;
+                      
+                      // 1. Better Dynamic Image (Fallback to first product image if category has no image)
+                      if (cat.image) {
+                          image = cat.image;
+                      } else if (cat.products && cat.products.length > 0) {
+                          const productWithImg = cat.products.find(p => p.images && p.images.length > 0);
+                          if (productWithImg) {
+                              const primaryImg = productWithImg.images.find(img => img.isPrimary);
+                              image = primaryImg?.url || productWithImg.images[0].url;
+                          }
+                      }
+
+                      // 2. Dynamic Description based on content
+                      if (cat.products && cat.products.length > 0) {
+                          const sampleNames = cat.products.map(p => p.name).join('، ');
+                          description = `اكتشف أفضل الخيارات في قسم ${cat.name} مثل: ${sampleNames} وغيرها الكثير بمتجر العامر.`;
+                      } else {
+                          description = `تصفح أحدث وأفضل منتجات ${cat.name} لتجهيزات مؤسستك التقنية بأسعار ضمان استثنائية من متجر العامر.`;
+                      }
                   }
              }
         }
