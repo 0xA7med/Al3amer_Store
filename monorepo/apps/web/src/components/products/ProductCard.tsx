@@ -36,7 +36,7 @@ export function ProductCard({
 }: ProductCardProps) {
     const { addToCart, items } = useCart();
     const { isAuthenticated } = useAuth();
-    const { toggleWishlist, isInWishlist } = useWishlist();
+    const { toggleWishlist, isInWishlist, isToggling } = useWishlist();
     const navigate = useNavigate();
     const isOutOfStock = stock <= 0;
     const isInCart = items.some(item => item.id === id);
@@ -46,20 +46,21 @@ export function ProductCard({
         : 0;
 
     return (
-        <div className={`glass-card rounded-2xl overflow-hidden group flex ${mobileHorizontal ? 'flex-row sm:flex-col' : 'flex-col'} h-full relative p-0 hover:z-10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(19,91,236,0.15)] hover:border-primary/30`}>
+        <div className={`glass-card rounded-2xl overflow-hidden group flex ${mobileHorizontal ? 'flex-row sm:flex-col' : 'flex-col'} h-full relative p-0 hover:z-10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(19,91,236,0.15)] hover:border-primary/30 ${isToggling ? 'opacity-80' : ''}`}>
             {/* Background Glow */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
             {/* Floating Actions - desktop hover only */}
             <div className="absolute top-2 left-2 z-20 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 sm:flex hidden transition-all duration-300 translate-x-3 group-hover:translate-x-0">
                 <button
+                    disabled={isToggling}
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (!isAuthenticated) { navigate('/login'); return; }
+                        if (!isAuthenticated) return navigate('/login');
                         toggleWishlist(id);
                     }}
-                    className={`size-8 rounded-lg bg-black/40 backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-400 hover:text-red-400 border-white/10'}`}
+                    className={`size-8 rounded-lg bg-black/40 backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-400 hover:text-red-400 border-white/10'} ${isToggling ? 'animate-pulse' : ''}`}
                 >
                     <span className={`material-symbols-outlined text-[17px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
                 </button>
@@ -83,16 +84,18 @@ export function ProductCard({
 
             {/* Mobile wishlist button - always visible top-left */}
             <button
+                disabled={isToggling}
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (!isAuthenticated) { navigate('/login'); return; }
+                    if (!isAuthenticated) return navigate('/login');
                     toggleWishlist(id);
                 }}
-                className={`absolute top-2 left-2 z-20 sm:hidden size-7 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-500 bg-black/30 border-white/10'}`}
+                className={`absolute top-2 left-2 z-20 sm:hidden size-7 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-500 bg-black/30 border-white/10'} ${isToggling ? 'animate-pulse' : ''}`}
             >
                 <span className={`material-symbols-outlined text-[15px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
             </button>
+
 
             {/* Badges */}
             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">

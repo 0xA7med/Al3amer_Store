@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 export interface WishlistItem {
     id: string;
@@ -30,32 +31,30 @@ export function useWishlist() {
         retry: false,
     });
 
-    const addToWishlistMutation = useMutation({
-        mutationFn: async (productId: string) => {
-            await api.post('/wishlist', { productId });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-        },
-    });
-
-    const removeFromWishlistMutation = useMutation({
-        mutationFn: async (productId: string) => {
-            await api.delete(`/wishlist/${productId}`);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['wishlist'] });
-        },
-    });
-
     const toggleWishlistMutation = useMutation({
         mutationFn: async (productId: string) => {
             const response = await api.post('/wishlist/toggle', { productId });
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['wishlist'] });
+            if (data.inWishlist) {
+                toast.success('تمت الإضافة للمفضلة', {
+                    icon: '❤️',
+                    style: { direction: 'rtl' }
+                });
+            } else {
+                toast.success('تم الإزالة من المفضلة', {
+                    icon: '💔',
+                    style: { direction: 'rtl' }
+                });
+            }
         },
+        onError: () => {
+            toast.error('حدث خطأ أثناء تحديث المفضلة', {
+                style: { direction: 'rtl' }
+            });
+        }
     });
 
     const isInWishlist = (productId: string) => {
@@ -65,11 +64,12 @@ export function useWishlist() {
     return {
         wishlist,
         isLoading,
+        isToggling: toggleWishlistMutation.isPending,
         error,
         fetchWishlist: () => queryClient.invalidateQueries({ queryKey: ['wishlist'] }),
-        addToWishlist: addToWishlistMutation.mutateAsync,
-        removeFromWishlist: removeFromWishlistMutation.mutateAsync,
-        toggleWishlist: toggleWishlistMutation.mutateAsync,
+        addToWishlist: (productId: string) => toggleWishlistMutation.mutate(productId),
+        removeFromWishlist: (productId: string) => toggleWishlistMutation.mutate(productId),
+        toggleWishlist: (productId: string) => toggleWishlistMutation.mutate(productId),
         isInWishlist,
     };
 }
