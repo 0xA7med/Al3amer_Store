@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
+import { useCart } from '../context/CartContext';
 
 export function PaymentCallbackPage() {
     const [searchParams] = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading');
     const [message, setMessage] = useState('جاري التحقق من الدفع...');
+    const { clearCart } = useCart();
 
     useEffect(() => {
         const verifyPayment = async () => {
@@ -42,8 +44,9 @@ export function PaymentCallbackPage() {
                     setStatus('success');
                     setMessage('تمت عملية الدفع بنجاح! جاري تحويلك...');
                     
-                    // Cleanup any local drafts
+                    // Cleanup any local drafts and clear cart
                     localStorage.removeItem('checkout_draft_order_id');
+                    clearCart();
 
                     // 3. Redirect to Success Page using our UUID (merchant_order_id)
                     setTimeout(() => {

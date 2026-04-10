@@ -141,11 +141,13 @@ export class CheckoutController {
             }
 
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            
+            if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob not configured' });
             }
 
-            const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+            const isPaid = await PaymobService.getTransactionStatus(paymobApiKeyRaw, paymobOrderId);
 
             console.log(`🔍 [Checkout] Verify: PaymobOrderID=${paymobOrderId}, Paid=${isPaid}`);
 
