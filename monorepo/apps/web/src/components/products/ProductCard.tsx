@@ -29,7 +29,7 @@ export function ProductCard({
     originalPrice,
     rating,
     imageUrl,
-    stock = 1, // Default to available if not provided
+    stock = 1,
     slug,
     badge,
     mobileHorizontal = false,
@@ -45,44 +45,23 @@ export function ProductCard({
         ? Math.round(((originalPrice - price) / originalPrice) * 100)
         : 0;
 
-    const renderStars = () => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-            stars.push(
-                <span
-                    key={i}
-                    className={`material-symbols-outlined ${i <= rating ? 'symbol-filled text-yellow-400' : 'text-gray-600'} text-[18px]`}
-                >
-                    star
-                </span>
-            );
-        }
-        return stars;
-    };
-
     return (
         <div className={`glass-card rounded-2xl overflow-hidden group flex ${mobileHorizontal ? 'flex-row sm:flex-col' : 'flex-col'} h-full relative p-0 hover:z-10 transition-all duration-300 hover:shadow-[0_0_30px_rgba(19,91,236,0.15)] hover:border-primary/30`}>
-            {/* Background Glow on Hover */}
+            {/* Background Glow */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-            {/* Action Buttons (Floating) - hover-only on desktop */}
-            <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
+            {/* Floating Actions - desktop hover only */}
+            <div className="absolute top-2 left-2 z-20 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 sm:flex hidden transition-all duration-300 translate-x-3 group-hover:translate-x-0">
                 <button
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (!isAuthenticated) {
-                            navigate('/login');
-                            return;
-                        }
+                        if (!isAuthenticated) { navigate('/login'); return; }
                         toggleWishlist(id);
                     }}
-                    className={`size-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all ${isWishlisted ? 'text-red-500 bg-red-500/10 border-red-500/20' : 'text-gray-400 hover:text-red-500 hover:border-red-500/50'}`}
+                    className={`size-8 rounded-lg bg-black/40 backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-400 hover:text-red-400 border-white/10'}`}
                 >
-                    <span className={`material-symbols-outlined text-[18px] ${isWishlisted ? 'filled' : ''}`}>favorite</span>
-                </button>
-                <button className="size-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/50 transition-all">
-                    <span className="material-symbols-outlined text-[18px]">compare_arrows</span>
+                    <span className={`material-symbols-outlined text-[17px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
                 </button>
                 <button
                     onClick={(e) => {
@@ -90,127 +69,136 @@ export function ProductCard({
                         e.stopPropagation();
                         const shareUrl = `${window.location.origin}/product/${slug || id}`;
                         if (navigator.share) {
-                            navigator.share({
-                                title: name,
-                                text: `اكتشف ${name} بمتجر العامر`,
-                                url: shareUrl,
-                            }).catch(() => {});
+                            navigator.share({ title: name, text: `اكتشف ${name}`, url: shareUrl }).catch(() => {});
                         } else {
                             navigator.clipboard.writeText(shareUrl);
                             toast.success('تم نسخ الرابط');
                         }
                     }}
-                    className="size-8 rounded-lg bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary/50 transition-all"
-                    title="مشاركة"
+                    className="size-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary transition-all"
                 >
-                    <span className="material-symbols-outlined text-[18px]">share</span>
+                    <span className="material-symbols-outlined text-[17px]">share</span>
                 </button>
             </div>
 
-            {/* Badge */}
-            {(badge || isOutOfStock) && (
-                <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
-                    <span
-                        className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-md shadow-lg border border-white/10 ${isOutOfStock
-                            ? 'bg-slate-700/80 shadow-slate-900/20'
-                            : badge?.type === 'discount'
-                                ? 'bg-accent-red/80 shadow-red-900/20'
-                                : 'bg-primary/80 shadow-blue-900/20'
-                            }`}
-                    >
-                        {isOutOfStock ? 'نفذت الكمية' : badge?.text}
+            {/* Mobile wishlist button - always visible top-left */}
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isAuthenticated) { navigate('/login'); return; }
+                    toggleWishlist(id);
+                }}
+                className={`absolute top-2 left-2 z-20 sm:hidden size-7 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-500 bg-black/30 border-white/10'}`}
+            >
+                <span className={`material-symbols-outlined text-[15px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
+            </button>
+
+            {/* Badges */}
+            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
+                {isOutOfStock && (
+                    <span className="text-white text-[9px] font-bold px-2 py-0.5 rounded-md bg-slate-700/90 backdrop-blur-sm border border-white/10">
+                        نفذت الكمية
                     </span>
-                </div>
-            )}
-            {!badge && discountPercentage > 0 && (
-                <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
-                    <span className="text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-md shadow-lg bg-accent-red/80 shadow-red-900/20 border border-white/10">
+                )}
+                {!isOutOfStock && badge && (
+                    <span className={`text-white text-[9px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm border border-white/10 ${badge.type === 'discount' ? 'bg-accent-red/80' : 'bg-primary/80'}`}>
+                        {badge.text}
+                    </span>
+                )}
+                {!isOutOfStock && !badge && discountPercentage > 0 && (
+                    <span className="text-white text-[9px] font-bold px-2 py-0.5 rounded-md bg-accent-red/80 backdrop-blur-sm border border-white/10">
                         -{discountPercentage}%
                     </span>
-                </div>
-            )}
+                )}
+            </div>
 
-            {/* Image Section */}
+            {/* Image */}
             <Link
                 to={`/product/${slug || id}`}
-                className={`relative overflow-hidden flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[130px] sm:w-full sm:aspect-[4/3]' : 'w-full aspect-[4/3]'} ${isOutOfStock ? 'opacity-60' : ''}`}
+                className={`relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[110px] sm:w-full sm:aspect-[4/3] p-2 sm:p-5' : 'w-full aspect-[4/3] p-3 sm:p-6'} ${isOutOfStock ? 'opacity-55' : ''}`}
             >
-                {/* Image Glow */}
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
                 <div
-                    className={`w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-110 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] group-hover:drop-shadow-[0_20px_40px_rgba(19,91,236,0.2)] ${isOutOfStock ? 'grayscale' : ''}`}
+                    className={`w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] ${isOutOfStock ? 'grayscale' : ''}`}
                     style={{ backgroundImage: `url('${imageUrl}')` }}
                 />
             </Link>
 
-            {/* Content Section */}
-            <div className={`p-3 sm:p-5 flex flex-col flex-1 bg-[#1e293b]/40 backdrop-blur-sm ${mobileHorizontal ? 'border-r sm:border-r-0 sm:border-t' : 'border-t'} border-white/5`}>
-                <div className="mb-3">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest truncate max-w-[50%]">{brand}</span>
-                        <div className="flex text-yellow-500 gap-[1px] shrink-0">{renderStars()}</div>
+            {/* Content */}
+            <div className={`flex flex-col flex-1 ${mobileHorizontal ? 'p-2.5 sm:p-4' : 'p-2.5 sm:p-4'} bg-[#1e293b]/40 backdrop-blur-sm border-t border-white/5`}>
+                
+                {/* Brand & Rating */}
+                <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-primary uppercase tracking-widest truncate max-w-[55%]">{brand}</span>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                        <span className="material-symbols-outlined symbol-filled text-yellow-400 text-[12px]">star</span>
+                        <span className="text-[9px] text-gray-400 font-bold">{rating.toFixed(1)}</span>
                     </div>
-                    <Link to={`/product/${slug || id}`}>
-                        <h3 className="text-white font-bold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors cursor-pointer">
-                            {name}
-                        </h3>
-                    </Link>
                 </div>
 
-                {/* Price & Add to Cart */}
-                <div className="mt-auto pt-4 flex items-end justify-between gap-2 border-t border-white/5">
-                    <div className="flex flex-col">
+                {/* Product Name */}
+                <Link to={`/product/${slug || id}`}>
+                    <h3 className="text-white font-semibold text-[12px] sm:text-[13px] leading-snug line-clamp-2 group-hover:text-primary/90 transition-colors mb-2 cursor-pointer">
+                        {name}
+                    </h3>
+                </Link>
+
+                {/* Price + Buttons */}
+                <div className="mt-auto flex items-center justify-between gap-1.5 pt-2 border-t border-white/5">
+                    {/* Price */}
+                    <div className="flex flex-col min-w-0">
                         {originalPrice && (
-                            <span className="text-gray-500 text-xs font-bold line-through decoration-red-500/60 decoration-1 mb-0.5">
-                                {originalPrice.toLocaleString()} ج.م
+                            <span className="text-gray-500 text-[9px] font-bold line-through decoration-red-500/60 leading-none mb-0.5">
+                                {originalPrice.toLocaleString()}
                             </span>
                         )}
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-white text-xl font-bold tracking-tight">
+                        <div className="flex items-baseline gap-0.5">
+                            <span className="text-white text-[15px] sm:text-lg font-bold tracking-tight leading-none">
                                 {price.toLocaleString()}
                             </span>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">ج.م</span>
+                            <span className="text-[8px] sm:text-[9px] text-gray-400 font-bold">ج.م</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            disabled={isOutOfStock}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                addToCart({ id, name, price, image: imageUrl });
-                                navigate('/checkout');
-                            }}
-                            className={`h-10 px-4 rounded-xl text-white text-[11px] font-bold border transition-all hidden sm:flex items-center justify-center ${isOutOfStock
-                                ? 'bg-white/5 border-white/5 text-gray-500 cursor-not-allowed'
-                                : 'bg-white/5 hover:bg-white/10 border-white/10'
-                                }`}
-                        >
-                            {isOutOfStock ? 'غير متوفر' : 'شراء الآن'}
-                        </button>
-                        <button
-                            disabled={isOutOfStock}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                addToCart({ id, name, price, image: imageUrl });
-                                if (!isInCart) {
-                                    toast.success('تم إضافة المنتج للسلة بنجاح');
-                                }
-                            }}
-                            className={`size-10 rounded-xl text-white flex items-center justify-center transition-all shadow-lg active:scale-95 group/btn ${isOutOfStock
-                                ? 'bg-slate-800 text-gray-500 cursor-not-allowed border-white/5'
-                                : isInCart
-                                    ? 'bg-emerald-500 border border-emerald-500/30'
+                    {/* Action Buttons */}
+                    {isOutOfStock ? (
+                        <span className="text-[9px] text-gray-500 font-bold bg-white/5 border border-white/5 rounded-lg px-2.5 py-1.5 shrink-0">
+                            غير متوفر
+                        </span>
+                    ) : (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Buy Now - visible on all sizes */}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    addToCart({ id, name, price, image: imageUrl });
+                                    navigate('/checkout');
+                                }}
+                                className="h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl text-white text-[10px] sm:text-[11px] font-bold border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center"
+                            >
+                                شراء
+                            </button>
+                            {/* Add to Cart */}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    addToCart({ id, name, price, image: imageUrl });
+                                    if (!isInCart) toast.success('تم الإضافة للسلة');
+                                }}
+                                className={`size-8 sm:size-9 rounded-xl text-white flex items-center justify-center transition-all active:scale-95 shadow-lg ${isInCart
+                                    ? 'bg-emerald-500 border border-emerald-500/30 shadow-emerald-900/20'
                                     : 'bg-primary hover:bg-blue-500 shadow-primary/20 hover:shadow-primary/40'
-                                }`}
-                            title={isOutOfStock ? 'نفذت الكمية' : isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
-                        >
-                            <span className={`material-symbols-outlined text-[20px] transition-transform ${isOutOfStock ? '' : isInCart ? '' : 'group-hover/btn:scale-110'}`}>
-                                {isOutOfStock ? 'block' : isInCart ? 'check_circle' : 'shopping_cart'}
-                            </span>
-                        </button>
-                    </div>
+                                    }`}
+                                title={isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
+                            >
+                                <span className="material-symbols-outlined text-[17px] sm:text-[19px]">
+                                    {isInCart ? 'check_circle' : 'shopping_cart'}
+                                </span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

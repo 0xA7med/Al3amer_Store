@@ -11,6 +11,9 @@ const orderCreationLimiter = rateLimit({
     message: { error: 'تم تجاوز الحد المسموح من الطلبات. الرجاء المحاولة بعد دقيقة.' },
     standardHeaders: true,
     legacyHeaders: false,
+    // Use the IP set by Express's trust proxy
+    keyGenerator: (req) => req.ip || req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || '',
+    validate: { xForwardedForHeader: false },
 });
 
 router.delete('/', OrdersController.bulkDelete);

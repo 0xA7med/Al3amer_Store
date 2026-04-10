@@ -26,6 +26,9 @@ dotenv.config();
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for Vercel deployment
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
