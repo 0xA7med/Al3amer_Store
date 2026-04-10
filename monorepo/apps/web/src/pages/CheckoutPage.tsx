@@ -39,7 +39,7 @@ const isValidEgyptianPhone = (phone: string) => {
 
 export function CheckoutPage() {
     const navigate = useNavigate();
-    const { items, totalPrice, clearCart } = useCart();
+    const { items, totalPrice, clearCart, validateCart } = useCart();
     const { user } = useAuth();
     const { settings } = useSettings();
     const { addresses, fetchAddresses } = useAddresses();
@@ -340,9 +340,15 @@ export function CheckoutPage() {
             if (formData.paymentMethod === 'paymob_wallet') {
                 if (!isValidEgyptianPhone(formData.walletNumber)) {
                     setError('برجاء إدخال رقم محفظة صحيح');
-                    setIsSubmitting(false);
-                    return;
                 }
+            }
+
+            // 0. Robust Cart Validation before starting payment flow
+            const isCartValid = await validateCart();
+            if (!isCartValid) {
+                // validateCart already handles toast notifications and updating the local state
+                setIsSubmitting(false);
+                return;
             }
 
             const orderPayload = buildOrderData();

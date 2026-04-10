@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { settings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { GoogleGenAI } from '@google/genai';
+import { encryptText, decryptText } from '../lib/crypto.utils.js';
 
 export class SettingsController {
     // GET /api/settings - Fetch global settings
@@ -12,6 +13,16 @@ export class SettingsController {
             const settingsRecord = await db.query.settings.findFirst();
 
             if (settingsRecord) {
+                // Decrypt API keys before sending to admin frontend
+                if (settingsRecord.paymobApiKey) {
+                    settingsRecord.paymobApiKey = decryptText(settingsRecord.paymobApiKey) || settingsRecord.paymobApiKey;
+                }
+                if (settingsRecord.googleApiKey) {
+                    settingsRecord.googleApiKey = decryptText(settingsRecord.googleApiKey) || settingsRecord.googleApiKey;
+                }
+                if (settingsRecord.aiApiKey) {
+                    settingsRecord.aiApiKey = decryptText(settingsRecord.aiApiKey) || settingsRecord.aiApiKey;
+                }
                 return res.json(settingsRecord);
             }
 
@@ -124,7 +135,26 @@ export class SettingsController {
     }
     static async update(req: Request, res: Response) {
         try {
-            const updateData = req.body;
+            const updateData = { ...req.body };
+
+            // Encrypt sensitive API keys if they are submitted
+            if (updateData.paymobApiKey) {
+                // Check if it's already encrypted (if frontend sends it back as is)
+                // usually frontend sends new value, but just in case
+                if (!updateData.paymobApiKey.includes(':')) {
+                    updateData.paymobApiKey = encryptText(updateData.paymobApiKey);
+                }
+            }
+            if (updateData.googleApiKey) {
+                if (!updateData.googleApiKey.includes(':')) {
+                    updateData.googleApiKey = encryptText(updateData.googleApiKey);
+                }
+            }
+            if (updateData.aiApiKey) {
+                if (!updateData.aiApiKey.includes(':')) {
+                    updateData.aiApiKey = encryptText(updateData.aiApiKey);
+                }
+            }
 
             // Get existing settings
             const existingSettings = await db.query.settings.findFirst();

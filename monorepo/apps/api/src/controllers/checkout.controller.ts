@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { settings } from '../db/schema.js';
 import { PaymobService } from '../services/paymob.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
 
 /**
  * Checkout Controller
@@ -36,7 +37,8 @@ export class CheckoutController {
 
             // Get app settings for Paymob config
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'الدفع الإلكتروني غير مُفعّل حالياً' });
             }
 
@@ -79,7 +81,7 @@ export class CheckoutController {
             console.log(`💳 [Checkout] Initiating payment: Method=${paymentMethod}, Amount=${amount}, MerchantID=${tempMerchantId}`);
 
             const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
-                appSettings.paymobApiKey,
+                paymobApiKeyRaw!,
                 integrationId,
                 parseFloat(amount),
                 tempMerchantId,
@@ -112,7 +114,16 @@ export class CheckoutController {
 
         } catch (error: any) {
             console.error('❌ [Checkout] Initiate Payment Error:', error?.response?.data || error?.message || error);
-            return res.status(500).json({ error: 'فشل في بدء عملية الدفع. يرجى المحاولة مرة أخرى.' });
+            
+            const errorMessage = error?.message && error.message.includes('خطأ في بوابة الدفع')
+                ? error.message 
+                : error?.message && error.message.includes('مصادقة')
+                ? error.message
+                : error?.message && error.message.includes('فشل في الاتصال')
+                ? error.message
+                : 'فشل في بدء عملية الدفع. يرجى المحاولة مرة أخرى.';
+
+            return res.status(500).json({ error: errorMessage });
         }
     }
 

@@ -77,14 +77,32 @@ export class PaymobService {
         currency: string = 'EGP',
         billingData: any
     ): Promise<{ token: string; orderId: string }> {
-        // Paymob expects amount in cents
-        const amountCents = Math.round(amount * 100);
+        try {
+            // Paymob expects amount in cents
+            const amountCents = Math.round(amount * 100);
 
-        const authToken = await this.authenticate(apiKey);
-        const orderId = await this.registerOrder(authToken, amountCents, currency, merchantOrderId);
-        const paymentKey = await this.getPaymentKey(authToken, orderId, amountCents, currency, integrationId, billingData);
+            console.log(`[Paymob] Authenticating with Paymob API...`);
+            const authToken = await this.authenticate(apiKey);
+            
+            console.log(`[Paymob] Registering Order for Merchant ID: ${merchantOrderId}...`);
+            const orderId = await this.registerOrder(authToken, amountCents, currency, merchantOrderId);
+            
+            console.log(`[Paymob] Getting Payment Key for Integration ID: ${integrationId}...`);
+            const paymentKey = await this.getPaymentKey(authToken, orderId, amountCents, currency, integrationId, billingData);
 
-        return { token: paymentKey, orderId: orderId.toString() };
+            return { token: paymentKey, orderId: orderId.toString() };
+        } catch (error: any) {
+            console.error('❌ [PaymobService] generatePaymentKey Error:', error?.response?.data || error?.message);
+            
+            // Check for specific error status codes
+            if (error?.response?.status === 401 || error?.response?.status === 403) {
+                throw new Error('خطأ في مصادقة بوابة الدفع: يرجى التأكد من أن مفاتيح API صحيحة وأن الـ IP مضاف للقائمة البيضاء في Paymob.');
+            } else if (error?.response?.status === 404) {
+                throw new Error('خطأ في بوابة الدفع: Integration ID أو Iframe ID غير صحيح.');
+            }
+            
+            throw new Error(`فشل في الاتصال ببوابة الدفع: ${error?.response?.data?.detail || error?.message || 'خطأ غير معروف'}`);
+        }
     }
 
     static async payWithWallet(paymentKey: string, phoneNumber: string): Promise<string> {

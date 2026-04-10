@@ -12,9 +12,10 @@ interface ProductCardProps {
     originalPrice?: number;
     rating: number;
     imageUrl: string;
+    stock?: number;
     slug?: string | null;
     badge?: {
-        type: 'discount' | 'new';
+        type: 'discount' | 'new' | 'out_of_stock';
         text: string;
     };
     mobileHorizontal?: boolean;
@@ -28,6 +29,7 @@ export function ProductCard({
     originalPrice,
     rating,
     imageUrl,
+    stock = 1, // Default to available if not provided
     slug,
     badge,
     mobileHorizontal = false,
@@ -36,6 +38,7 @@ export function ProductCard({
     const { isAuthenticated } = useAuth();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const navigate = useNavigate();
+    const isOutOfStock = stock <= 0;
     const isInCart = items.some(item => item.id === id);
     const isWishlisted = isInWishlist(id);
     const discountPercentage = originalPrice
@@ -105,15 +108,17 @@ export function ProductCard({
             </div>
 
             {/* Badge */}
-            {badge && (
+            {(badge || isOutOfStock) && (
                 <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
                     <span
-                        className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-md shadow-lg border border-white/10 ${badge.type === 'discount'
-                            ? 'bg-accent-red/80 shadow-red-900/20'
-                            : 'bg-primary/80 shadow-blue-900/20'
+                        className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md backdrop-blur-md shadow-lg border border-white/10 ${isOutOfStock
+                            ? 'bg-slate-700/80 shadow-slate-900/20'
+                            : badge?.type === 'discount'
+                                ? 'bg-accent-red/80 shadow-red-900/20'
+                                : 'bg-primary/80 shadow-blue-900/20'
                             }`}
                     >
-                        {badge.text}
+                        {isOutOfStock ? 'نفذت الكمية' : badge?.text}
                     </span>
                 </div>
             )}
@@ -128,12 +133,12 @@ export function ProductCard({
             {/* Image Section */}
             <Link
                 to={`/product/${slug || id}`}
-                className={`relative overflow-hidden flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[130px] sm:w-full sm:aspect-[4/3]' : 'w-full aspect-[4/3]'}`}
+                className={`relative overflow-hidden flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[130px] sm:w-full sm:aspect-[4/3]' : 'w-full aspect-[4/3]'} ${isOutOfStock ? 'opacity-60' : ''}`}
             >
                 {/* Image Glow */}
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
                 <div
-                    className="w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-110 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] group-hover:drop-shadow-[0_20px_40px_rgba(19,91,236,0.2)]"
+                    className={`w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-110 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] group-hover:drop-shadow-[0_20px_40px_rgba(19,91,236,0.2)] ${isOutOfStock ? 'grayscale' : ''}`}
                     style={{ backgroundImage: `url('${imageUrl}')` }}
                 />
             </Link>
@@ -170,16 +175,21 @@ export function ProductCard({
 
                     <div className="flex items-center gap-2">
                         <button
+                            disabled={isOutOfStock}
                             onClick={(e) => {
                                 e.preventDefault();
                                 addToCart({ id, name, price, image: imageUrl });
                                 navigate('/checkout');
                             }}
-                            className="h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white text-[11px] font-bold border border-white/10 transition-all hidden sm:flex items-center justify-center"
+                            className={`h-10 px-4 rounded-xl text-white text-[11px] font-bold border transition-all hidden sm:flex items-center justify-center ${isOutOfStock
+                                ? 'bg-white/5 border-white/5 text-gray-500 cursor-not-allowed'
+                                : 'bg-white/5 hover:bg-white/10 border-white/10'
+                                }`}
                         >
-                            شراء الآن
+                            {isOutOfStock ? 'غير متوفر' : 'شراء الآن'}
                         </button>
                         <button
+                            disabled={isOutOfStock}
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -188,14 +198,16 @@ export function ProductCard({
                                     toast.success('تم إضافة المنتج للسلة بنجاح');
                                 }
                             }}
-                            className={`size-10 rounded-xl text-white flex items-center justify-center transition-all shadow-lg active:scale-95 group/btn ${isInCart
-                                ? 'bg-emerald-500 border border-emerald-500/30'
-                                : 'bg-primary hover:bg-blue-500 shadow-primary/20 hover:shadow-primary/40'
+                            className={`size-10 rounded-xl text-white flex items-center justify-center transition-all shadow-lg active:scale-95 group/btn ${isOutOfStock
+                                ? 'bg-slate-800 text-gray-500 cursor-not-allowed border-white/5'
+                                : isInCart
+                                    ? 'bg-emerald-500 border border-emerald-500/30'
+                                    : 'bg-primary hover:bg-blue-500 shadow-primary/20 hover:shadow-primary/40'
                                 }`}
-                            title={isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
+                            title={isOutOfStock ? 'نفذت الكمية' : isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
                         >
-                            <span className={`material-symbols-outlined text-[20px] transition-transform ${isInCart ? '' : 'group-hover/btn:scale-110'}`}>
-                                {isInCart ? 'check_circle' : 'shopping_cart'}
+                            <span className={`material-symbols-outlined text-[20px] transition-transform ${isOutOfStock ? '' : isInCart ? '' : 'group-hover/btn:scale-110'}`}>
+                                {isOutOfStock ? 'block' : isInCart ? 'check_circle' : 'shopping_cart'}
                             </span>
                         </button>
                     </div>

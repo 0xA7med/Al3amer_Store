@@ -302,6 +302,7 @@ export function HomePage() {
                                     rating={5}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
+                                    stock={product.stock}
                                     badge={product.isFeatured ? { type: 'new', text: 'مميز' } : undefined}
                                     mobileHorizontal={true}
                                 />
@@ -339,6 +340,7 @@ export function HomePage() {
                                     rating={5}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
+                                    stock={product.stock}
                                     badge={{ type: 'new', text: 'جديد' }}
                                     mobileHorizontal={true}
                                 />
@@ -375,6 +377,7 @@ export function HomePage() {
                                     rating={5}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
+                                    stock={product.stock}
                                     badge={{ type: 'discount', text: 'خصم' }}
                                     mobileHorizontal={true}
                                 />

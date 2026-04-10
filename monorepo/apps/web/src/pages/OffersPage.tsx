@@ -83,6 +83,7 @@ const OffersPage = () => {
                                 rating={5} // Mock rating if not available
                                 imageUrl={product.images?.[0]?.url || 'https://via.placeholder.com/300'}
                                 slug={product.slug}
+                                stock={product.stock}
                                 badge={{ type: 'discount', text: 'Sale' }}
                             />
                         ))}

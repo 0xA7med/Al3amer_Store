@@ -3,6 +3,7 @@ import { db } from '../db/index.js';
 import { orders, orderItems, products, productImages, settings, coupons } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
 
 export class OrdersController {
     // POST /api/orders - Create new order
@@ -560,7 +561,8 @@ export class OrdersController {
 
             // 2. Get Settings
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob API Key not configured' });
             }
 
@@ -574,7 +576,7 @@ export class OrdersController {
             if (!paymobOrderId) {
                 console.log('⚠️ paymobOrderId not found in DB. Attempting lookup by Merchant Order ID...');
                 try {
-                    paymobOrderId = await PaymobService.getOrderIdByMerchantOrderId(appSettings.paymobApiKey, order.orderNumber);
+                    paymobOrderId = await PaymobService.getOrderIdByMerchantOrderId(paymobApiKeyRaw!, order.orderNumber);
                     if (paymobOrderId) {
                         // Save it for future
                         await db.update(orders).set({ paymobOrderId }).where(eq(orders.id, id));
@@ -590,7 +592,7 @@ export class OrdersController {
             }
 
             // B. Check Transaction Status
-            const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+            const isPaid = await PaymobService.getTransactionStatus(paymobApiKeyRaw!, paymobOrderId);
 
             if (isPaid) {
                 console.log('✅ Payment Verified! Updating order status...');
@@ -645,7 +647,8 @@ export class OrdersController {
 
             // 2. Get Settings for Paymob keys
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob is not configured' });
             }
 
@@ -667,7 +670,7 @@ export class OrdersController {
 
             // 3. Generate new payment key
             const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(
-                appSettings.paymobApiKey,
+                paymobApiKeyRaw!,
                 integrationId,
                 total,
                 retryMerchantId,
@@ -715,7 +718,16 @@ export class OrdersController {
 
         } catch (error: any) {
             console.error('❌ Retry Payment Error:', error?.response?.data || error?.message || error);
-            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.' });
+            
+            const errorMessage = error?.message && error.message.includes('خطأ في بوابة الدفع')
+                ? error.message 
+                : error?.message && error.message.includes('مصادقة')
+                ? error.message
+                : error?.message && error.message.includes('فشل في الاتصال')
+                ? error.message
+                : 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.';
+
+            res.status(500).json({ error: errorMessage });
         }
     }
 

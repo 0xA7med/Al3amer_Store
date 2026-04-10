@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 
 export interface CartItem {
     id: string; // Product ID
@@ -19,31 +20,34 @@ interface CartContextType {
     totalPrice: number;
     isCartOpen: boolean;
     setIsCartOpen: (isOpen: boolean) => void;
+    validateCart: () => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-    const [items, setItems] = useState<CartItem[]>([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
-
-    // Load cart from localStorage on mount and sync with server
-    useEffect(() => {
+    // Initializer function to load cart from localStorage synchronously
+    const [items, setItems] = useState<CartItem[]>(() => {
         const savedCart = localStorage.getItem('cart');
         if (savedCart) {
             try {
-                const parsedCart = JSON.parse(savedCart);
-                setItems(parsedCart);
-                
-                // Sync with server immediately if cart is not empty
-                if (parsedCart.length > 0) {
-                    syncCart(parsedCart);
-                }
+                return JSON.parse(savedCart);
             } catch (error) {
                 console.error('Failed to parse cart data:', error);
                 localStorage.removeItem('cart');
             }
         }
+        return [];
+    });
+    
+    const [isCartOpen, setIsCartOpen] = useState(false);
+
+    // Sync with server immediately if cart is not empty on mount
+    useEffect(() => {
+        if (items.length > 0) {
+            syncCart(items);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Save cart to localStorage whenever it changes
@@ -52,10 +56,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, [items]);
 
     const syncCart = async (currentItems: CartItem[]) => {
+        if (currentItems.length === 0) return true;
+        
         try {
             const productIds = currentItems.map(item => item.id);
-            // Fetch validation from our new endpoint
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/products/validate-cart`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            
+            const res = await fetch(`${apiUrl}/products/validate-cart`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ productIds }),
@@ -66,33 +73,78 @@ export function CartProvider({ children }: { children: ReactNode }) {
             const data = await res.json();
             const { validProducts, invalidIds } = data;
             
-            if (invalidIds && invalidIds.length > 0) {
-                // Show warning message
-                alert("تم تحديث سلتك: بعض المنتجات لم تعد متوفرة وتم إزالتها");
-            }
+            let changesMade = false;
+            let removalCount = invalidIds?.length || 0;
+            let priceChanges = 0;
+            let stockAdjustments = 0;
             
             // Build synced cart
             const syncedItems = currentItems
-                .filter(item => !invalidIds.includes(item.id)) // Remove invalid
+                .filter(item => !invalidIds.includes(item.id)) // Remove completely invalid
                 .map(item => {
                     const validProduct = validProducts.find((p: any) => p.id === item.id);
-                    if (validProduct) {
-                        return { 
-                            ...item, 
-                            price: Number(validProduct.discountPrice) || Number(validProduct.price), // Priority to discount
-                            name: validProduct.name,
-                            // Optionally update image or max out quantity based on stock
-                        };
+                    if (!validProduct) return item;
+
+                    const currentPrice = Number(validProduct.discountPrice) || Number(validProduct.price);
+                    const hasPriceChanged = currentPrice !== item.price;
+                    const stock = validProduct.stock || 0;
+                    
+                    let finalQuantity = item.quantity;
+
+                    // 1. Availability check (Out of stock)
+                    if (stock <= 0) {
+                        removalCount++;
+                        changesMade = true;
+                        return null; // Will be filtered out
                     }
-                    return item;
-                });
-                
-            setItems(syncedItems);
+
+                    // 2. Quantity Cap based on Stock
+                    if (finalQuantity > stock) {
+                        finalQuantity = stock;
+                        stockAdjustments++;
+                        changesMade = true;
+                    }
+
+                    // 3. Price updates
+                    if (hasPriceChanged) {
+                        priceChanges++;
+                        changesMade = true;
+                    }
+
+                    return { 
+                        ...item, 
+                        price: currentPrice,
+                        name: validProduct.name,
+                        quantity: finalQuantity,
+                        image: validProduct.image || item.image
+                    };
+                })
+                .filter(Boolean) as CartItem[];
             
+            // If the cart drastically changed, notify the user
+            if (changesMade || removalCount > 0) {
+                if (removalCount > 0) {
+                    toast.error(`تمت إزالة ${removalCount} منتج من سلتك لعدم توفرها`);
+                }
+                if (stockAdjustments > 0) {
+                    toast.error(`${stockAdjustments} منتج تم تعديل كميته بناءً على المخزون المتاح`);
+                }
+                if (priceChanges > 0) {
+                    toast.success("تم تحديث أسعار المنتجات في سلتك");
+                }
+                setItems(syncedItems);
+                return false;
+            }
+            
+            return true;
         } catch (error) {
             console.error('Cart sync error:', error);
-            // On failure, keep current cart or handle gracefully
+            return true; // Assume valid on network error to not block user, or handle differently
         }
+    };
+
+    const validateCart = async () => {
+        return await syncCart(items);
     };
 
     const addToCart = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
@@ -153,6 +205,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 totalPrice,
                 isCartOpen,
                 setIsCartOpen,
+                validateCart,
             }}
         >
             {children}

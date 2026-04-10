@@ -84,19 +84,28 @@ export class WebhookController {
             // 2. Process Business Logic
             if (obj.success === true) {
                 const paymobOrderId = obj.order?.id?.toString();
+                const transactionId = obj.id;
 
                 if (paymobOrderId) {
-                    // Update our internal order
-                    const result = await db.update(orders)
-                        .set({
-                            status: 'processing', // or 'paid' depending on your flow
-                            updatedAt: new Date()
-                        })
-                        .where(eq(orders.paymobOrderId, paymobOrderId))
-                        .returning();
+                    // Implement Idempotency: Check if already processed
+                    const existingOrder = await db.query.orders.findFirst({
+                        where: eq(orders.paymobOrderId, paymobOrderId)
+                    });
 
-                    if (result.length > 0) {
-                        console.log(`🎉 [PAYMOB WEBHOOK] Successfully updated order ${result[0].orderNumber} to processing`);
+                    if (existingOrder) {
+                        if (existingOrder.status === 'processing' || existingOrder.status === 'paid') {
+                            console.log(`ℹ️ [PAYMOB WEBHOOK] Order ${existingOrder.orderNumber} already processed (Status: ${existingOrder.status}). Ignoring duplicate webhook for Trans ID: ${transactionId}`);
+                        } else {
+                            // Update our internal order
+                            await db.update(orders)
+                                .set({
+                                    status: 'processing', // or 'paid' depending on your flow
+                                    updatedAt: new Date()
+                                })
+                                .where(eq(orders.paymobOrderId, paymobOrderId));
+
+                            console.log(`🎉 [PAYMOB WEBHOOK] Successfully updated order ${existingOrder.orderNumber} to processing`);
+                        }
                     } else {
                         console.warn(`⚠️ [PAYMOB WEBHOOK] No internal order found for Paymob Order ID: ${paymobOrderId}`);
                     }

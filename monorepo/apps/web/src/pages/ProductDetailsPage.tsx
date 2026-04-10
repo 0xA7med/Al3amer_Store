@@ -12,6 +12,8 @@ import { useWishlist } from '../hooks/useWishlist';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getEmbedUrl } from '../utils/videoParser';
+import { useSettings } from '../context/SettingsContext';
+import { MessageCircle } from 'lucide-react';
 
 export const ProductDetailsPage = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -28,6 +30,7 @@ export const ProductDetailsPage = () => {
     const { addToCart, items } = useCart();
     const { isAuthenticated } = useAuth();
     const { toggleWishlist, isInWishlist } = useWishlist();
+    const { settings } = useSettings();
     const isWishlisted = isInWishlist(product?.id || '');
 
     const { data: relatedProductsData } = useProducts({
@@ -491,6 +494,18 @@ export const ProductDetailsPage = () => {
                                 <ShoppingBag className="w-6 h-6 group-hover/btn:animate-bounce" />
                                 <span className="text-base">شراء الآن</span>
                             </button>
+
+                            {product.stock === 0 && (
+                                <a
+                                    href={`https://wa.me/${settings.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`مرحباً، أود الاستفسار عن توفر منتج: ${product.name}`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl h-14 flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 hover:shadow-green-900/40 transition-all active:scale-[0.98] group/btn mt-2"
+                                >
+                                    <MessageCircle className="w-6 h-6 group-hover/btn:scale-110 transition-transform" />
+                                    <span className="text-base">استفسار عبر واتساب</span>
+                                </a>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
