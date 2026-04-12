@@ -220,7 +220,7 @@ export class SettingsController {
 
             // Step 1: Discover available models
             const { ModelDiscoveryService } = await import('../services/model-discovery.service');
-            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1beta');
 
             if (availableModels.length === 0) {
                 return res.status(500).json({
@@ -239,7 +239,7 @@ export class SettingsController {
                 try {
                     console.log(`🧪 Testing model: ${modelName}`);
 
-                    const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${cleanKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
 
                     const response = await fetch(url, {
                         method: 'POST',

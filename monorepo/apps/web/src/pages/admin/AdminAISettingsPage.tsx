@@ -42,7 +42,7 @@ export default function AdminAISettingsPage() {
         if (settings) {
             // Only update apiKey if not modified by user
             if (!keyModified) {
-                setApiKey(settings.googleApiKey || '');
+                setApiKey(settings.aiApiKey || settings.googleApiKey || '');
             }
             setIsEnabled(settings.aiEnabled ?? true);
             setDescriptionLength(settings.aiDescriptionLength || 'medium');
@@ -92,6 +92,7 @@ export default function AdminAISettingsPage() {
 
     const handleSave = () => {
         updateSettingsMutation.mutate({
+            aiApiKey: apiKey,
             googleApiKey: apiKey,
             aiEnabled: isEnabled,
             aiDescriptionLength: descriptionLength,
