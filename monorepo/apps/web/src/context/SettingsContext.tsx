@@ -26,6 +26,11 @@ interface Settings {
     // Payment
     codEnabled?: boolean;
     codExtraFee?: string;
+    codAdvancePayment?: string;
+    codReturnShippingBaseAmount?: string;
+    codReturnShippingBaseFee?: string;
+    codReturnShippingExtraAmount?: string;
+    codReturnShippingExtraFee?: string;
     paymobEnabled?: boolean;
     paymobIntegrationCard?: string;
     paymobIntegrationWallet?: string;

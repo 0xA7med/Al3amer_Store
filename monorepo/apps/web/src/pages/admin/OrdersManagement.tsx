@@ -343,29 +343,50 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
     const [searchTerm, setSearchTerm] = useState('');
     const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Customer search states
+    const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
+    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
-            if (customer.phone.length >= 10) {
+            if (customer.phone.length >= 3) {
+                setIsSearchingCustomer(true);
                 try {
-                    const { data } = await api.get('/users', { params: { search: customer.phone } });
+                    const { data } = await api.get('/users', { params: { search: customer.phone, limit: 10 } });
                     if (data?.data && data.data.length > 0) {
-                        const found = data.data.find((u: any) => u.phone === customer.phone);
-                        if (found) {
-                            setCustomer(prev => ({
-                                ...prev,
-                                name: prev.name || found.name,
-                                address: prev.address || found.address || '',
-                                governorate: prev.governorate || found.governorate || '',
-                            }));
-                        }
+                        setCustomerSearchResults(data.data);
+                        setShowCustomerDropdown(true);
+                    } else {
+                        setCustomerSearchResults([]);
+                        setShowCustomerDropdown(false);
                     }
-                } catch (e) {}
+                } catch (e) {
+                    setCustomerSearchResults([]);
+                    setShowCustomerDropdown(false);
+                } finally {
+                    setIsSearchingCustomer(false);
+                }
+            } else {
+                setCustomerSearchResults([]);
+                setShowCustomerDropdown(false);
             }
         };
         const timeout = setTimeout(fetchUserData, 500);
         return () => clearTimeout(timeout);
     }, [customer.phone]);
+
+    const handleSelectCustomer = (selected: any) => {
+        setCustomer(prev => ({
+            ...prev,
+            phone: selected.phone,
+            name: selected.name || prev.name,
+            address: selected.address || prev.address || '',
+            governorate: selected.governorate || prev.governorate || '',
+        }));
+        setShowCustomerDropdown(false);
+    };
 
     const addToCart = (product: any) => { setCart([...cart, { product, quantity: 1 }]); setSearchTerm(''); };
     const removeFromCart = (idx: number) => { setCart(cart.filter((_, i) => i !== idx)); };
@@ -426,9 +447,52 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                         <div className="space-y-4">
                             <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
+                                <div className="space-y-1 relative">
                                     <label className="text-xs text-slate-400 mr-2">رقم الهاتف الأساسي</label>
-                                    <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="01xxxxxxxxx" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                    <input 
+                                        value={customer.phone} 
+                                        onChange={e => {
+                                            setCustomer({ ...customer, phone: e.target.value });
+                                            setShowCustomerDropdown(true);
+                                        }} 
+                                        onFocus={() => { if (customerSearchResults.length > 0) setShowCustomerDropdown(true); }}
+                                        placeholder="01xxxxxxxxx" 
+                                        className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" 
+                                    />
+                                    {isSearchingCustomer && (
+                                        <div className="absolute left-3 top-8">
+                                            <span className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin inline-block"></span>
+                                        </div>
+                                    )}
+                                    {/* Customer Search Dropdown */}
+                                    {showCustomerDropdown && customerSearchResults.length > 0 && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setShowCustomerDropdown(false)} />
+                                            <div className="absolute z-50 w-full mt-1 bg-[#1e2330] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
+                                                {customerSearchResults.map((user: any) => (
+                                                    <button
+                                                        key={user.id}
+                                                        onClick={() => handleSelectCustomer(user)}
+                                                        className="w-full text-right p-3 hover:bg-white/5 border-b border-white/5 last:border-0 flex flex-col gap-1 transition-colors"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="material-symbols-outlined text-sm text-slate-400">person</span>
+                                                            <span className="text-white font-bold text-sm">{user.name}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-primary font-mono text-xs pr-6">
+                                                            <span className="material-symbols-outlined text-[12px]">phone</span>
+                                                            {user.phone}
+                                                        </div>
+                                                        {user.address && (
+                                                            <div className="text-xs text-slate-500 pr-6 truncate">
+                                                                {user.governorate && `${user.governorate} - `}{user.address}
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
