@@ -1,6 +1,7 @@
 import { db } from '../db/index.js';
 import { settings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { encryptText, decryptText } from '../lib/crypto.utils.js';
 export class SettingsController {
     // GET /api/settings - Fetch global settings
     static async get(_req, res) {
@@ -8,6 +9,25 @@ export class SettingsController {
             // Get the first (and only) settings record
             const settingsRecord = await db.query.settings.findFirst();
             if (settingsRecord) {
+                // Decrypt API keys before sending to admin frontend
+                if (settingsRecord.paymobApiKey) {
+                    settingsRecord.paymobApiKey = decryptText(settingsRecord.paymobApiKey) || settingsRecord.paymobApiKey;
+                }
+                if (settingsRecord.googleApiKey) {
+                    settingsRecord.googleApiKey = decryptText(settingsRecord.googleApiKey) || settingsRecord.googleApiKey;
+                }
+                if (settingsRecord.aiApiKey) {
+                    settingsRecord.aiApiKey = decryptText(settingsRecord.aiApiKey) || settingsRecord.aiApiKey;
+                }
+                if (settingsRecord.telegramBotToken) {
+                    settingsRecord.telegramBotToken = decryptText(settingsRecord.telegramBotToken) || settingsRecord.telegramBotToken;
+                }
+                if (settingsRecord.whatsappApiKey) {
+                    settingsRecord.whatsappApiKey = decryptText(settingsRecord.whatsappApiKey) || settingsRecord.whatsappApiKey;
+                }
+                if (settingsRecord.smtpPass) {
+                    settingsRecord.smtpPass = decryptText(settingsRecord.smtpPass) || settingsRecord.smtpPass;
+                }
                 return res.json(settingsRecord);
             }
             // Default safe settings object
@@ -116,7 +136,40 @@ export class SettingsController {
     }
     static async update(req, res) {
         try {
-            const updateData = req.body;
+            const updateData = { ...req.body };
+            // Encrypt sensitive API keys if they are submitted
+            if (updateData.paymobApiKey) {
+                // Check if it's already encrypted (if frontend sends it back as is)
+                // usually frontend sends new value, but just in case
+                if (!updateData.paymobApiKey.includes(':')) {
+                    updateData.paymobApiKey = encryptText(updateData.paymobApiKey);
+                }
+            }
+            if (updateData.googleApiKey) {
+                if (!updateData.googleApiKey.includes(':')) {
+                    updateData.googleApiKey = encryptText(updateData.googleApiKey);
+                }
+            }
+            if (updateData.aiApiKey) {
+                if (!updateData.aiApiKey.includes(':')) {
+                    updateData.aiApiKey = encryptText(updateData.aiApiKey);
+                }
+            }
+            if (updateData.telegramBotToken) {
+                if (!updateData.telegramBotToken.includes(':')) {
+                    updateData.telegramBotToken = encryptText(updateData.telegramBotToken);
+                }
+            }
+            if (updateData.whatsappApiKey) {
+                if (!updateData.whatsappApiKey.includes(':')) {
+                    updateData.whatsappApiKey = encryptText(updateData.whatsappApiKey);
+                }
+            }
+            if (updateData.smtpPass) {
+                if (!updateData.smtpPass.includes(':')) {
+                    updateData.smtpPass = encryptText(updateData.smtpPass);
+                }
+            }
             // Get existing settings
             const existingSettings = await db.query.settings.findFirst();
             if (!existingSettings) {
@@ -150,7 +203,7 @@ export class SettingsController {
             console.log("🚀 Starting Dynamic Model Discovery Test...");
             // Step 1: Discover available models
             const { ModelDiscoveryService } = await import('../services/model-discovery.service');
-            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1beta');
             if (availableModels.length === 0) {
                 return res.status(500).json({
                     success: false,
@@ -164,7 +217,7 @@ export class SettingsController {
             for (const modelName of availableModels) {
                 try {
                     console.log(`🧪 Testing model: ${modelName}`);
-                    const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${cleanKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: {

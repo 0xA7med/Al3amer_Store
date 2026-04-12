@@ -1,5 +1,6 @@
 import { db } from '../db/index.js';
 import { PaymobService } from '../services/paymob.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
 /**
  * Checkout Controller
  * Handles payment initiation and verification WITHOUT creating orders.
@@ -19,7 +20,8 @@ export class CheckoutController {
             }
             // Get app settings for Paymob config
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'الدفع الإلكتروني غير مُفعّل حالياً' });
             }
             const isWallet = paymentMethod === 'paymob_wallet';
@@ -36,8 +38,8 @@ export class CheckoutController {
             if (!isWallet && !appSettings.paymobIframeId) {
                 return res.status(400).json({ error: 'إعدادات الدفع غير مكتملة' });
             }
-            // We use the actual DB order ID as Merchant ID
-            const tempMerchantId = orderId;
+            // We use the actual DB order ID + timestamp to ensure uniqueness in Paymob retries
+            const tempMerchantId = `${orderId}-${Date.now()}`;
             const billingData = {
                 first_name: fullName.split(' ')[0] || 'Guest',
                 last_name: fullName.split(' ').slice(1).join(' ') || 'Guest',
@@ -54,7 +56,7 @@ export class CheckoutController {
                 state: governorate || 'NA',
             };
             console.log(`💳 [Checkout] Initiating payment: Method=${paymentMethod}, Amount=${amount}, MerchantID=${tempMerchantId}`);
-            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(appSettings.paymobApiKey, integrationId, parseFloat(amount), tempMerchantId, 'EGP', billingData);
+            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(paymobApiKeyRaw, integrationId, parseFloat(amount), tempMerchantId, 'EGP', billingData);
             console.log(`✅ [Checkout] Paymob session created: PaymobOrderID=${paymobOrderId}`);
             // Link the Paymob Order ID to our internal Draft Order
             const { orders } = await import('../db/schema.js');
@@ -78,7 +80,14 @@ export class CheckoutController {
         }
         catch (error) {
             console.error('❌ [Checkout] Initiate Payment Error:', error?.response?.data || error?.message || error);
-            return res.status(500).json({ error: 'فشل في بدء عملية الدفع. يرجى المحاولة مرة أخرى.' });
+            const errorMessage = error?.message && error.message.includes('خطأ في بوابة الدفع')
+                ? error.message
+                : error?.message && error.message.includes('مصادقة')
+                    ? error.message
+                    : error?.message && error.message.includes('فشل في الاتصال')
+                        ? error.message
+                        : 'فشل في بدء عملية الدفع. يرجى المحاولة مرة أخرى.';
+            return res.status(500).json({ error: errorMessage });
         }
     }
     /**
@@ -93,10 +102,11 @@ export class CheckoutController {
                 return res.status(400).json({ error: 'paymobOrderId is required' });
             }
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob not configured' });
             }
-            const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+            const isPaid = await PaymobService.getTransactionStatus(paymobApiKeyRaw, paymobOrderId);
             console.log(`🔍 [Checkout] Verify: PaymobOrderID=${paymobOrderId}, Paid=${isPaid}`);
             return res.json({ paid: isPaid, paymobOrderId });
         }

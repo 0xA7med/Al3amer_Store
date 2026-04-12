@@ -18,9 +18,12 @@ import webhookRouter from './routes/webhook.js';
 import debugRouter from './routes/debug.js';
 import metadataRouter from './routes/metadata.js';
 import checkoutRouter from './routes/checkout.js';
+import socialPreviewRouter from './routes/social-preview.js';
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
+// Trust proxy for Vercel deployment
+app.set('trust proxy', 1);
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -43,6 +46,7 @@ app.use('/api/webhook', webhookRouter);
 app.use('/api/debug', debugRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/checkout', checkoutRouter);
+app.use('/api/social-preview', socialPreviewRouter);
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', message: 'Al3amer API is running' });

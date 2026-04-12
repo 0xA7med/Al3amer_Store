@@ -7,8 +7,10 @@ export interface User {
     email: string;
     phone: string;
     avatar?: string;
-    role: 'customer' | 'admin';
+    role: 'customer' | 'admin' | 'trader';
     loyaltyPoints: number;
+    traderBranding?: any;
+    discountConfig?: any;
 }
 
 interface AuthContextType {

@@ -52,6 +52,8 @@ export class UsersController {
                     email,
                     governorate,
                     city,
+                    address,
+                    notes,
                     CAST(total AS DECIMAL) as total,
                     created_at,
                     status
@@ -111,6 +113,20 @@ export class UsersController {
                     }
                 }
                 const entry = phoneMap.get(phone);
+                if (!entry.address && row.address)
+                    entry.address = row.address;
+                if (!entry.governorate && row.governorate)
+                    entry.governorate = row.governorate;
+                if (!entry.city && row.city)
+                    entry.city = row.city;
+                // Extract secondary phone from notes if available
+                if (!entry.phone2 && row.notes) {
+                    const noteStr = String(row.notes);
+                    const phone2Match = noteStr.match(/(?:رقم إضافي:|Phone 2:)\s*(01\d{8,9})/);
+                    if (phone2Match && phone2Match[1]) {
+                        entry.phone2 = phone2Match[1];
+                    }
+                }
                 entry.orders += 1;
                 entry.totalSpent += Number(row.total || 0);
             }
@@ -135,13 +151,19 @@ export class UsersController {
                     });
                 }
             }
-            // 5. Sort by totalSpent desc, paginate
-            const { page = '1', limit = '50' } = req.query;
+            // 5. Sort by totalSpent desc, filter by search, paginate
+            const { page = '1', limit = '50', search } = req.query;
             const pageNum = parseInt(page);
             const limitNum = parseInt(limit);
             const offset = (pageNum - 1) * limitNum;
-            const unified = Array.from(phoneMap.values())
-                .sort((a, b) => b.totalSpent - a.totalSpent);
+            let unified = Array.from(phoneMap.values());
+            if (search && typeof search === 'string') {
+                const searchLower = search.toLowerCase();
+                unified = unified.filter(u => u.phone.includes(searchLower) ||
+                    (u.phone2 && u.phone2.includes(searchLower)) ||
+                    u.name.toLowerCase().includes(searchLower));
+            }
+            unified = unified.sort((a, b) => b.totalSpent - a.totalSpent);
             const total = unified.length;
             const paged = unified.slice(offset, offset + limitNum);
             res.json({

@@ -5,13 +5,17 @@ export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
-    phone: text('phone').unique(),
+    phone: text('phone'),
     password: text('password').notNull(),
     address: text('address'),
-    avatar: text('avatar'),
+    city: text('city'),
+    governorate: text('governorate'),
+    role: text('role').default('customer'), // 'admin', 'customer', 'trader'
     loyaltyPoints: integer('loyalty_points').default(0),
-    role: text('role').default('customer'), // customer | admin
-    status: text('status').default('active'), // active | inactive | blocked
+    status: text('status').default('active'), // 'active', 'blocked'
+    // Trader Configuration
+    traderBranding: jsonb('trader_branding').$type(),
+    discountConfig: jsonb('discount_config').$type(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -20,6 +24,7 @@ export const usersRelations = relations(users, ({ many }) => ({
     addresses: many(addresses),
     wishlist: many(wishlist),
     reviews: many(reviews),
+    traderOrders: many(orders),
 }));
 // ============= ADDRESSES TABLE =============
 export const addresses = pgTable('addresses', {
@@ -66,7 +71,7 @@ export const wishlistRelations = relations(wishlist, ({ one }) => ({
 }));
 // ============= CATEGORIES TABLE =============
 export const categories = pgTable('categories', {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
     parentId: uuid('parent_id'),
@@ -114,6 +119,7 @@ export const products = pgTable('products', {
     isFeatured: boolean('is_featured').default(false),
     specifications: jsonb('specifications').$type(),
     dynamicAttributes: jsonb('dynamic_attributes').$type().default({}),
+    shortNameAwb: text('short_name_awb'), // الاسم المختصر للبوليسة (عالمي)
     tags: text('tags').array(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -163,9 +169,16 @@ export const orders = pgTable('orders', {
     status: text('status').default('pending'), // pending | processing | shipping | delivered
     subtotal: numeric('subtotal', { precision: 10, scale: 2 }).notNull(),
     shippingCost: numeric('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('0'),
+    codReturnShipping: numeric('cod_return_shipping', { precision: 10, scale: 2 }).default('0'),
+    totalAtDelivery: numeric('total_at_delivery', { precision: 10, scale: 2 }).default('0'),
     taxAmount: numeric('tax_amount', { precision: 10, scale: 2 }).default('0'),
     extraFee: numeric('extra_fee', { precision: 10, scale: 2 }).default('0'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+    // Trader Fields
+    traderId: uuid('trader_id').references(() => users.id),
+    traderCommission: numeric('trader_commission', { precision: 10, scale: 2 }).default('0'),
+    finalCodAmount: numeric('final_cod_amount', { precision: 10, scale: 2 }), // المبلغ المطلوب تحصيله من العميل النهائي
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -173,6 +186,11 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     user: one(users, {
         fields: [orders.userId],
         references: [users.id],
+    }),
+    trader: one(users, {
+        fields: [orders.traderId],
+        references: [users.id],
+        relationName: 'traderOrders'
     }),
     items: many(orderItems),
 }));
@@ -236,6 +254,12 @@ export const settings = pgTable('settings', {
     paymobIframeId: text('paymob_iframe_id'),
     codEnabled: boolean('cod_enabled').default(true),
     codExtraFee: numeric('cod_extra_fee', { precision: 10, scale: 2 }).default('0'),
+    // COD Advanced Shipment Settings
+    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('100'),
+    codReturnShippingBaseFee: numeric('cod_return_shipping_base_fee', { precision: 10, scale: 2 }).default('30'),
+    codReturnShippingBaseAmount: numeric('cod_return_shipping_base_amount', { precision: 10, scale: 2 }).default('1000'),
+    codReturnShippingExtraFee: numeric('cod_return_shipping_extra_fee', { precision: 10, scale: 2 }).default('5'),
+    codReturnShippingExtraAmount: numeric('cod_return_shipping_extra_amount', { precision: 10, scale: 2 }).default('1000'),
     // Shipping
     shippingFlatRate: numeric('shipping_flat_rate', { precision: 10, scale: 2 }).default('50'),
     freeShippingThreshold: numeric('free_shipping_threshold', { precision: 10, scale: 2 }).default('2000'),
@@ -263,6 +287,22 @@ export const settings = pgTable('settings', {
     aiLanguage: text('ai_language').default('ar'),
     aiDescriptionLength: text('ai_description_length').default('medium'),
     aiFields: jsonb('ai_fields').$type(),
+    // Telegram Notifications
+    telegramEnabled: boolean('telegram_enabled').default(false),
+    telegramBotToken: text('telegram_bot_token'),
+    telegramChatId: text('telegram_chat_id'),
+    // WhatsApp Notifications (CallMeBot)
+    whatsappEnabled: boolean('whatsapp_enabled').default(false),
+    whatsappApiKey: text('whatsapp_api_key'),
+    whatsappRecipientPhone: text('whatsapp_recipient_phone'),
+    // Email Notifications (Simple SMTP)
+    emailEnabled: boolean('email_enabled').default(false),
+    smtpHost: text('smtp_host'),
+    smtpPort: integer('smtp_port').default(587),
+    smtpUser: text('smtp_user'),
+    smtpPass: text('smtp_pass'),
+    emailFrom: text('email_from'),
+    emailReceiver: text('email_receiver'),
 });
 // ============= BANNERS TABLE =============
 export const banners = pgTable('banners', {

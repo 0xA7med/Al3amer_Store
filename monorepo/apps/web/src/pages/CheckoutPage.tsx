@@ -203,8 +203,8 @@ export function CheckoutPage() {
             discountAmount: discountAmount,
             walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
             userId: user?.id,
-            traderId: (user as any)?.role === 'trader' ? user?.id : undefined,
-            finalCodAmount: (user as any)?.role === 'trader' ? (formData.finalCodAmount || codTotalAtDelivery) : undefined,
+            traderId: user?.role === 'trader' ? user?.id : undefined,
+            finalCodAmount: user?.role === 'trader' ? (formData.finalCodAmount || codTotalAtDelivery) : undefined,
         };
     };
 
@@ -744,7 +744,7 @@ export function CheckoutPage() {
                                 </div>
 
                                 {/* Trader Specific Section */}
-                                {(user as any)?.role === 'trader' && (
+                                {user?.role === 'trader' && (
                                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4 animate-in zoom-in-95 duration-300">
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="material-symbols-outlined text-primary">sell</span>

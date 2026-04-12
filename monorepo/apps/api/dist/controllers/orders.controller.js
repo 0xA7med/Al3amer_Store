@@ -2,18 +2,26 @@ import { db } from '../db/index.js';
 import { orders, orderItems, products, productImages, coupons } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
+import { NotificationService } from '../services/notification.service.js';
 export class OrdersController {
     // POST /api/orders - Create new order
     static async create(req, res) {
         try {
-            const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
-             } = req.body;
+            const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
+            traderId, finalCodAmount, } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
             // Validation
-            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
-                console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0, governorate, city, address });
-                return res.status(400).json({ error: 'Missing required fields: fullName, items, governorate, city, address' });
-            }
+            if (!fullName)
+                return res.status(400).json({ error: 'حقل الاسم بالكامل مطلوب' });
+            if (!items || items.length === 0)
+                return res.status(400).json({ error: 'يجب إضافة منتج واحد على الأقل للطلب' });
+            if (!governorate)
+                return res.status(400).json({ error: 'حقل المحافظة مطلوب' });
+            if (!city)
+                return res.status(400).json({ error: 'حقل المدينة مطلوب' });
+            if (!address)
+                return res.status(400).json({ error: 'حقل العنوان التفصيلي مطلوب' });
             const safePhone = phone ? String(phone) : '0000000000';
             // Fetch fresh product data from DB
             const productIds = items.map((i) => i.productId);
@@ -33,8 +41,8 @@ export class OrdersController {
             for (const item of items) {
                 const dbProduct = validProducts.find(p => p.id === item.productId);
                 if (!dbProduct) {
-                    console.error(`Product ID ${item.productId} (${item.name || 'Unknown'}) not found or inactive`);
-                    return res.status(400).json({ error: "One or more products in your cart are no longer available. Please refresh your cart." });
+                    console.error(`Product ID ${item.productId} not found or inactive`);
+                    return res.status(400).json({ error: `المنتج ذو الرقم ${item.productId} غير متوفر أو غير نشط حالياً` });
                 }
                 const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
                 const quantity = Number(item.quantity) || 1;
@@ -102,9 +110,15 @@ export class OrdersController {
                 shippingCost: shippingCost.toString(),
                 taxAmount: taxAmount.toString(),
                 extraFee: extraFee.toString(),
+                codAdvancePayment: codAdvancePayment.toString(),
+                codReturnShipping: codReturnShipping.toString(),
+                totalAtDelivery: totalAtDelivery.toString(),
                 total: total.toString(),
                 status: orderStatus,
                 paymobOrderId: null, // Will be set during payment verification
+                traderId: traderId ? String(traderId) : null,
+                finalCodAmount: finalCodAmount ? finalCodAmount.toString() : null,
+                traderCommission: finalCodAmount ? (Number(finalCodAmount) - total).toString() : "0",
             }).returning();
             // Create order items
             const orderItemsData = finalOrderItems.map((item) => ({
@@ -123,6 +137,16 @@ export class OrdersController {
                     items: true,
                 },
             });
+            // 📦 [NOTIFICATION] TRIGGER
+            // If it is NOT an online payment (e.g. COD), notify immediately
+            const onlineMethods = ['paymob', 'paymob_wallet', 'online'];
+            if (!onlineMethods.includes(paymentMethod)) {
+                console.log(`🚀 [Notification] Triggering for COD Order #${orderNumber}`);
+                // Use the complete order with items
+                NotificationService.sendNewOrderNotification(completeOrder).catch(err => {
+                    console.error('Failed to send notification for COD order:', err);
+                });
+            }
             res.status(201).json(completeOrder);
         }
         catch (error) {
@@ -139,7 +163,7 @@ export class OrdersController {
     static async updatePendingOrder(req, res) {
         try {
             const orderId = req.params.id;
-            const { fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, } = req.body;
+            const { fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, traderId, finalCodAmount, } = req.body;
             console.log(`📦 [PUT /orders/${orderId}] Updating draft order`);
             if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
                 return res.status(400).json({ error: 'Missing required fields' });
@@ -221,7 +245,10 @@ export class OrdersController {
                 extraFee: extraFee.toString(),
                 total: total.toString(),
                 status: 'pending',
-                paymobOrderId: null // Reset payment ID since cart changed
+                paymobOrderId: null, // Reset payment ID since cart changed
+                traderId: traderId ? String(traderId) : null,
+                finalCodAmount: finalCodAmount ? finalCodAmount.toString() : null,
+                traderCommission: finalCodAmount ? (Number(finalCodAmount) - total).toString() : "0",
             }).where(eq(orders.id, orderId));
             // Overwrite items
             await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
@@ -368,6 +395,8 @@ export class OrdersController {
                             },
                         },
                     },
+                    user: true,
+                    trader: true,
                 },
             });
             if (!order) {
@@ -449,7 +478,8 @@ export class OrdersController {
             }
             // 2. Get Settings
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob API Key not configured' });
             }
             // 3. Verify with Paymob
@@ -460,7 +490,7 @@ export class OrdersController {
             if (!paymobOrderId) {
                 console.log('⚠️ paymobOrderId not found in DB. Attempting lookup by Merchant Order ID...');
                 try {
-                    paymobOrderId = await PaymobService.getOrderIdByMerchantOrderId(appSettings.paymobApiKey, order.orderNumber);
+                    paymobOrderId = await PaymobService.getOrderIdByMerchantOrderId(paymobApiKeyRaw, order.orderNumber);
                     if (paymobOrderId) {
                         // Save it for future
                         await db.update(orders).set({ paymobOrderId }).where(eq(orders.id, id));
@@ -475,12 +505,24 @@ export class OrdersController {
                 return res.status(400).json({ status: 'pending', error: 'Could not locate payment record at provider' });
             }
             // B. Check Transaction Status
-            const isPaid = await PaymobService.getTransactionStatus(appSettings.paymobApiKey, paymobOrderId);
+            const isPaid = await PaymobService.getTransactionStatus(paymobApiKeyRaw, paymobOrderId);
             if (isPaid) {
                 console.log('✅ Payment Verified! Updating order status...');
                 await db.update(orders)
                     .set({ status: 'paid', updatedAt: new Date() })
                     .where(eq(orders.id, id));
+                // 📦 [NOTIFICATION] TRIGGER
+                // Fetch full order with items for notification
+                const completeOrder = await db.query.orders.findFirst({
+                    where: eq(orders.id, id),
+                    with: { items: true },
+                });
+                if (completeOrder) {
+                    console.log(`🚀 [Notification] Triggering for PAID Order #${completeOrder.orderNumber}`);
+                    NotificationService.sendNewOrderNotification(completeOrder).catch(err => {
+                        console.error('Failed to send notification for paid order:', err);
+                    });
+                }
                 return res.json({ status: 'paid', message: 'Payment verified successfully' });
             }
             else {
@@ -522,7 +564,8 @@ export class OrdersController {
             }
             // 2. Get Settings for Paymob keys
             const appSettings = await db.query.settings.findFirst();
-            if (!appSettings?.paymobEnabled || !appSettings.paymobApiKey) {
+            const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
+            if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob is not configured' });
             }
             const isWallet = order.paymentMethod === 'paymob_wallet';
@@ -537,7 +580,7 @@ export class OrdersController {
             // Use a unique merchant_order_id suffix for each retry to avoid Paymob duplicate rejection
             const retryMerchantId = `${order.orderNumber}-R${Date.now().toString().slice(-4)}`;
             // 3. Generate new payment key
-            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(appSettings.paymobApiKey, integrationId, total, retryMerchantId, 'EGP', {
+            const { token: paymentToken, orderId: paymobOrderId } = await PaymobService.generatePaymentKey(paymobApiKeyRaw, integrationId, total, retryMerchantId, 'EGP', {
                 first_name: order.fullName.split(' ')[0] || 'Guest',
                 last_name: order.fullName.split(' ').slice(1).join(' ') || 'Guest',
                 email: order.email || 'guest@example.com',
@@ -576,7 +619,14 @@ export class OrdersController {
         }
         catch (error) {
             console.error('❌ Retry Payment Error:', error?.response?.data || error?.message || error);
-            res.status(500).json({ error: 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.' });
+            const errorMessage = error?.message && error.message.includes('خطأ في بوابة الدفع')
+                ? error.message
+                : error?.message && error.message.includes('مصادقة')
+                    ? error.message
+                    : error?.message && error.message.includes('فشل في الاتصال')
+                        ? error.message
+                        : 'فشل في إعادة محاولة الدفع. يرجى المحاولة مرة أخرى.';
+            res.status(500).json({ error: errorMessage });
         }
     }
     // GET /api/orders/:id/status - Get order status (for polling)

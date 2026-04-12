@@ -3,6 +3,9 @@ import { products, productImages, categories, brands, reviews, orderItems } from
 import { eq, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
 import { AIService } from '../services/ai.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
+// In-memory tracker for popular/trending searches globally
+const searchHistoryTracker = {};
 export class ProductsController {
     // Helper to generate SEO friendly slugs (Arabic & English)
     static slugify(text) {
@@ -25,11 +28,13 @@ export class ProductsController {
             }
             // Get Settings
             const appSettings = await db.query.settings.findFirst();
-            const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+            // Prefer the dedicated AI key, fall back to google key, then env var
+            const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+            const apiKey = rawKey ? (decryptText(rawKey) ?? rawKey) : undefined;
             if (!apiKey) {
-                return res.status(400).json({ error: 'Google API Key is not configured' });
+                return res.status(400).json({ error: 'Google API Key is not configured in settings' });
             }
-            const aiService = new AIService(apiKey);
+            const aiService = new AIService(apiKey.trim());
             const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium', section, category, brand);
             return res.json(result);
         }
@@ -174,10 +179,15 @@ export class ProductsController {
     static async searchSuggestions(req, res) {
         try {
             const { q = '' } = req.query;
-            if (!q || q.length < 2) {
+            const queryTerm = q.toLowerCase().trim();
+            if (!queryTerm || queryTerm.length < 2) {
                 return res.json([]);
             }
-            const searchPattern = `%${q}%`;
+            // Track trending searches (only if it's a valid meaningful word)
+            if (queryTerm.length >= 3) {
+                searchHistoryTracker[queryTerm] = (searchHistoryTracker[queryTerm] || 0) + 1;
+            }
+            const searchPattern = `%${queryTerm}%`;
             const results = await db.query.products.findMany({
                 where: and(eq(products.status, 'active'), ilike(products.name, searchPattern)),
                 limit: 10,
@@ -208,6 +218,25 @@ export class ProductsController {
         catch (error) {
             console.error('Error fetching search suggestions:', error);
             res.status(500).json({ error: 'Failed to fetch suggestions' });
+        }
+    }
+    // GET /api/products/popular-searches
+    static async popularSearches(req, res) {
+        try {
+            // Sort recorded searches by hit count
+            const sortedCounts = Object.entries(searchHistoryTracker)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(entry => entry[0]);
+            // Default safe keywords if there aren't enough tracked queries yet
+            const defaults = ['كاشير', 'طابعة', 'درج نقدية', 'باركود', 'سكانر'];
+            // Merge actual tracked top searches with defaults to always yield ~4 words
+            const combined = [...new Set([...sortedCounts, ...defaults])].slice(0, 4);
+            return res.json(combined);
+        }
+        catch (error) {
+            console.error('Error fetching popular searches:', error);
+            res.status(500).json({ error: 'Failed' });
         }
     }
     // GET /api/products/:id - Get single product
@@ -464,6 +493,28 @@ export class ProductsController {
                 error: error instanceof Error ? error.message : 'Unknown error',
                 details: error
             });
+        }
+    }
+    // PATCH /api/products/:id/short-name - Update product's AWB short name
+    static async updateShortName(req, res) {
+        try {
+            const { id } = req.params;
+            const { shortNameAwb } = req.body;
+            const [updatedProduct] = await db.update(products)
+                .set({
+                shortNameAwb,
+                updatedAt: new Date()
+            })
+                .where(eq(products.id, id))
+                .returning();
+            if (!updatedProduct) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            res.json(updatedProduct);
+        }
+        catch (error) {
+            console.error('Error updating product short name:', error);
+            res.status(500).json({ error: 'Failed to update short name' });
         }
     }
     // PATCH /api/products/bulk - Bulk update products (inline price/stock edits)

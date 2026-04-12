@@ -25,6 +25,7 @@ export class OrdersController {
                 taxAmount = 0,
                 extraFee = 0,
                 codAdvancePayment = 0,
+                codReturnShipping = 0,
                 totalAtDelivery = 0,
                 couponCode,
                 walletNumber,
