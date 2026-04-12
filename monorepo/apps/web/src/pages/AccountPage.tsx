@@ -652,37 +652,41 @@ export function AccountPage() {
                 </div>
             )}
 
-
-
+            {activeTab === 'profile' && (
+                <div className="glass-panel rounded-2xl p-6 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">person</span>
+                        تحديث الملف الشخصي
+                    </h3>
                     <form className="space-y-6" onSubmit={handleProfileUpdate}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">الاسم بالكامل</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">الاسم بالكامل</label>
                                 <input
                                     type="text"
                                     value={profileData.name}
                                     onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                    className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                    className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">رقم الهاتف</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">رقم الهاتف</label>
                                 <input
                                     type="tel"
                                     value={profileData.phone}
                                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                                    className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left dir-ltr"
+                                    className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none transition-all text-left dir-ltr"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">البريد الإلكتروني (لا يمكن تغييره)</label>
+                            <label className="block text-sm font-medium text-gray-400 mb-2">البريد الإلكتروني (لا يمكن تغييره)</label>
                             <input
                                 type="email"
                                 value={profileData.email}
                                 disabled
-                                className="w-full h-12 bg-[#181a20]/50 border border-white/5 rounded-xl px-4 text-gray-400 cursor-not-allowed dir-ltr text-left"
+                                className="w-full h-12 bg-[#1b1d23]/50 border border-white/5 rounded-xl px-4 text-gray-500 cursor-not-allowed dir-ltr text-left"
                             />
                         </div>
 
@@ -690,15 +694,22 @@ export function AccountPage() {
                             <button
                                 type="submit"
                                 disabled={profileLoading}
-                                className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                                className="bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2 active:scale-95"
                             >
-                                {profileLoading && <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>}
+                                {profileLoading ? (
+                                    <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                                ) : (
+                                    <span className="material-symbols-outlined">check_circle</span>
+                                )}
                                 حفظ التغييرات
                             </button>
                         </div>
                     </form>
                 </div>
             )}
+        </div>
+    </div>
+</div>
 
             {/* Order Details Modal */}
             {selectedOrder && (
@@ -727,7 +738,7 @@ export function AccountPage() {
                         </div>
 
                         {/* Body */}
-                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 flex-1">
+                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 flex-1 text-right" dir="rtl">
                             {/* Items */}
                             <div className="space-y-4">
                                 <h4 className="text-white font-bold border-b border-white/10 pb-2 flex items-center gap-2">
@@ -745,7 +756,7 @@ export function AccountPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 text-right">
                                             <h5 className="text-white font-medium truncate" title={item.name}>{item.name}</h5>
                                             <div className="flex gap-3 text-sm mt-1">
                                                 <span className="text-gray-400">{Number(item.price).toLocaleString()} ج.م</span>
@@ -762,7 +773,7 @@ export function AccountPage() {
 
                             <div className="grid md:grid-cols-2 gap-6">
                                 {/* Shipping Info */}
-                                <div className="space-y-4">
+                                <div className="space-y-4 text-right">
                                     <h4 className="text-white font-bold border-b border-white/10 pb-2 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-primary">local_shipping</span>
                                         بيانات الشحن
@@ -774,7 +785,7 @@ export function AccountPage() {
                                         </div>
                                         <div>
                                             <span className="text-gray-400 block mb-1">رقم الهاتف</span>
-                                            <span className="text-white font-medium dir-ltr text-right">{selectedOrder.phone}</span>
+                                            <span className="text-white font-medium dir-ltr inline-block">{selectedOrder.phone}</span>
                                         </div>
                                         <div>
                                             <span className="text-gray-400 block mb-1">العنوان</span>
@@ -785,7 +796,7 @@ export function AccountPage() {
                                 </div>
 
                                 {/* Payment Summary */}
-                                <div className="space-y-4">
+                                <div className="space-y-4 text-right">
                                     <h4 className="text-white font-bold border-b border-white/10 pb-2 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-primary">payments</span>
                                         تفاصيل الدفع
@@ -826,7 +837,6 @@ export function AccountPage() {
             )}
         </div>
     );
-
 }
 
 export default AccountPage;
