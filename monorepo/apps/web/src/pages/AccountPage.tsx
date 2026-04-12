@@ -5,8 +5,9 @@ import { useAddresses, type Address } from '../hooks/useAddresses';
 import { useWishlist } from '../hooks/useWishlist';
 import { AddressForm } from '../components/account/AddressForm';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
-type AccountTab = 'overview' | 'orders' | 'wishlist' | 'addresses' | 'profile';
+type AccountTab = 'overview' | 'orders' | 'wishlist' | 'addresses' | 'profile' | 'branding';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
     pending: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', label: 'قيد الانتظار' },
@@ -37,6 +38,23 @@ export function AccountPage() {
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [localBranding, setLocalBranding] = useState<any>(null);
+    const [localDiscount, setLocalDiscount] = useState<any>(null);
+
+    useEffect(() => {
+        if (user) {
+            setLocalBranding(user.traderBranding || {
+                storeName: '',
+                phone1: '',
+                phone2: '',
+                logoUrl: ''
+            });
+            setLocalDiscount(user.discountConfig || {
+                type: 'percentage',
+                value: 0
+            });
+        }
+    }, [user]);
 
     // Initial data loading
     useEffect(() => {
@@ -80,11 +98,15 @@ export function AccountPage() {
             await api.put('/users/profile', {
                 name: profileData.name,
                 phone: profileData.phone,
+                traderBranding: localBranding,
+                discountConfig: localDiscount
             });
-            alert('تم تحديث الملف الشخصي بنجاح');
+            toast.success('تم تحديث البيانات بنجاح');
+            // Refresh window or user context if needed, usually profile update should refresh context
+            window.location.reload(); 
         } catch (error) {
             console.error('Failed to update profile:', error);
-            alert('فشل تحديث الملف الشخصي');
+            toast.error('فشل تحديث البيانات');
         } finally {
             setProfileLoading(false);
         }
@@ -115,6 +137,7 @@ export function AccountPage() {
         { id: 'orders', label: 'طلباتي', icon: 'shopping_bag' },
         { id: 'wishlist', label: 'المفضلة', icon: 'favorite' },
         { id: 'addresses', label: 'العناوين', icon: 'location_on' },
+        ...(user.role === 'trader' ? [{ id: 'branding', label: 'هويتي التجارية', icon: 'branding_watermark' }] : []),
         { id: 'profile', label: 'الملف الشخصي', icon: 'person' },
     ];
 
@@ -437,18 +460,202 @@ export function AccountPage() {
                 </div>
             )}
 
-            {/* Profile Tab */}
-            {activeTab === 'profile' && (
-                <div className="glass-panel rounded-2xl p-6 max-w-2xl">
-                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">person</span>
-                        تعديل الملف الشخصي
-                    </h3>
+        {/* Branding Tab (For Traders) */}
+            {activeTab === 'branding' && user.role === 'trader' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="space-y-6">
+                        {/* Branding Form */}
+                        <div className="glass-panel rounded-2xl p-6 border border-white/5 shadow-xl">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">branding_watermark</span>
+                                تخصيص هوية المسوق
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">اسم النشاط التجاري</label>
+                                    <input
+                                        type="text"
+                                        value={localBranding?.storeName || ''}
+                                        onChange={(e) => setLocalBranding({ ...localBranding, storeName: e.target.value })}
+                                        placeholder="مثلاً: متجر السعادة"
+                                        className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">رقم هاتف 1</label>
+                                        <input
+                                            type="tel"
+                                            value={localBranding?.phone1 || ''}
+                                            onChange={(e) => setLocalBranding({ ...localBranding, phone1: e.target.value })}
+                                            className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none dir-ltr"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">رقم هاتف 2 (اختياري)</label>
+                                        <input
+                                            type="tel"
+                                            value={localBranding?.phone2 || ''}
+                                            onChange={(e) => setLocalBranding({ ...localBranding, phone2: e.target.value })}
+                                            className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none dir-ltr"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">رابط اللوجو</label>
+                                    <input
+                                        type="text"
+                                        value={localBranding?.logoUrl || ''}
+                                        onChange={(e) => setLocalBranding({ ...localBranding, logoUrl: e.target.value })}
+                                        placeholder="https://example.com/logo.png"
+                                        className="w-full h-12 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white focus:border-primary outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Profit Settings */}
+                        <div className="glass-panel rounded-2xl p-6 border border-emerald-500/10 shadow-xl bg-emerald-500/[0.02]">
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-emerald-400">payments</span>
+                                إعدادات الربح والخصم
+                            </h3>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <button 
+                                    type="button"
+                                    onClick={() => setLocalDiscount({ ...localDiscount, type: 'percentage' })}
+                                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${localDiscount?.type === 'percentage' ? 'bg-primary/20 border-primary text-primary' : 'bg-[#1b1d23] border-white/5 text-gray-400 opacity-60'}`}
+                                >
+                                    <span className="material-symbols-outlined text-2xl">percent</span>
+                                    <span className="font-bold">نسبة مئوية</span>
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={() => setLocalDiscount({ ...localDiscount, type: 'fixed' })}
+                                    className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${localDiscount?.type === 'fixed' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-[#1b1d23] border-white/5 text-gray-400 opacity-60'}`}
+                                >
+                                    <span className="material-symbols-outlined text-2xl">pin</span>
+                                    <span className="font-bold">مبلغ ثابت</span>
+                                </button>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">قيمة الخصم/العمولة التلقائية</label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={localDiscount?.value || 0}
+                                        onChange={(e) => setLocalDiscount({ ...localDiscount, value: Number(e.target.value) })}
+                                        className="w-full h-14 bg-[#1b1d23] border border-white/10 rounded-xl px-4 text-white text-2xl font-bold focus:border-primary outline-none"
+                                    />
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">
+                                        {localDiscount?.type === 'percentage' ? '%' : 'ج.م'}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-xs text-slate-500 leading-relaxed italic">
+                                    بمجرد ضبط هذا الإعداد، سيتم تطبيقه تلقائياً عند إنشاء أي طلب جديد لعملائك لتبسيط عملية حساب أرباحك.
+                                </p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleProfileUpdate}
+                            disabled={profileLoading}
+                            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-primary/25 flex items-center justify-center gap-3 active:scale-95"
+                        >
+                            {profileLoading ? (
+                                <span className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin"></span>
+                            ) : (
+                                <span className="material-symbols-outlined">save</span>
+                            )}
+                            حفظ كافة التغييرات
+                        </button>
+                    </div>
+
+                    {/* Live AWB Preview Card */}
+                    <div className="lg:sticky lg:top-8 h-fit">
+                        <div className="flex items-center justify-between mb-4 px-2">
+                            <h4 className="text-white font-bold flex items-center gap-2">
+                                <span className="material-symbols-outlined text-emerald-400">visibility</span>
+                                معاينة البوليسة الحية (A5)
+                            </h4>
+                            <span className="text-[10px] bg-white/5 text-slate-500 px-2 py-1 rounded uppercase tracking-widest font-bold">Reseller View</span>
+                        </div>
+                        
+                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-slate-800 transform-gpu transition-all duration-300 hover:scale-[1.01]">
+                            <div className="p-6 bg-white text-black font-sans dir-rtl text-right min-h-[500px]" dir="rtl">
+                                {/* Simulated Header */}
+                                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden shadow-inner">
+                                            {localBranding?.logoUrl ? (
+                                                <img src={localBranding.logoUrl} alt="Preview Logo" className="max-w-full max-h-full object-contain p-1" />
+                                            ) : (
+                                                <span className="material-symbols-outlined text-slate-200 text-4xl">storefront</span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-black text-slate-900 leading-none">{localBranding?.storeName || 'اسم متجرك'}</h2>
+                                            <p className="text-[10px] text-slate-500 mt-1 font-bold">AL3AMER STORE SYSTEMS</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-left" dir="ltr">
+                                        <div className="bg-slate-900 text-white px-3 py-1 text-[10px] font-black rounded mb-1">COD SHIPMENT</div>
+                                        <p className="text-[9px] font-mono text-slate-400">ORD-PREVIEW-#{Math.floor(Math.random()*9000)+1000}</p>
+                                    </div>
+                                </div>
+
+                                {/* Body */}
+                                <div className="grid grid-cols-2 gap-6 mb-6">
+                                    <div className="space-y-3">
+                                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                            <span className="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-tight">العميل المستلم</span>
+                                            <p className="text-sm font-black text-slate-900">أحمد محمد علي</p>
+                                            <p className="text-[11px] text-slate-600">شارع التحرير، وسط البلد، القاهرة</p>
+                                            <p className="text-xs font-black text-slate-900 mt-1" dir="ltr">0101 XXXX XXX</p>
+                                        </div>
+                                        <div className="p-3 border border-slate-200 rounded-lg h-24">
+                                             <span className="block text-[9px] font-black text-slate-400 mb-1 uppercase tracking-tight">وصف الأصناف</span>
+                                             <p className="text-[10px] text-slate-700 font-bold leading-relaxed">١ × خلاط كهربائي الترا برو</p>
+                                             <p className="text-[10px] text-slate-700 font-bold leading-relaxed">٢ × طابعة فواتير حرارية ٥٨مم</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col justify-between items-center text-center">
+                                        <div className="w-full p-4 border-4 border-slate-900 rounded-xl bg-white shadow-xl transform -rotate-1">
+                                            <span className="text-[10px] font-black text-slate-400 block mb-1">المبلغ عند الاستلام</span>
+                                            <p className="text-3xl font-black text-slate-900 leading-none">1,250</p>
+                                            <p className="text-xs font-bold text-slate-900 mt-1">جنيه مصري</p>
+                                        </div>
+
+                                        <div className="mt-4 p-2 border border-slate-200 rounded-md">
+                                            <div className="text-[8px] font-black text-slate-400 border-b border-slate-200 mb-1">QR AUTH</div>
+                                            <div className="size-16 bg-slate-900 flex items-center justify-center text-white text-[6px]">SCAN TO VERIFY</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Contact */}
+                                <div className="mt-auto bg-red-600 text-white p-2 rounded-lg text-center flex items-center justify-center gap-4 text-[11px] font-black">
+                                    <span className="opacity-80">للاستفسار:</span>
+                                    <span dir="ltr" className="tracking-tighter">{localBranding?.phone1 || '01017320430'}</span>
+                                    {localBranding?.phone2 && <span className="w-px h-3 bg-white/30 truncate" />}
+                                    {localBranding?.phone2 && <span dir="ltr" className="tracking-tighter">{localBranding.phone2}</span>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
 
-                    <form className="space-y-4" onSubmit={handleProfileUpdate}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form className="space-y-6" onSubmit={handleProfileUpdate}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-2">الاسم بالكامل</label>
                                 <input

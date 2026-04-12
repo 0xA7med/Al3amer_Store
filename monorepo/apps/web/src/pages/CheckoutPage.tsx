@@ -106,7 +106,8 @@ export function CheckoutPage() {
         governorate: '',
         notes: '',
         paymentMethod: 'cod', // cash on delivery
-        walletNumber: ''
+        walletNumber: '',
+        finalCodAmount: ''
     });
 
     // Auto-fill from user or localStorage
@@ -202,6 +203,8 @@ export function CheckoutPage() {
             discountAmount: discountAmount,
             walletNumber: formData.paymentMethod === 'paymob_wallet' ? formData.walletNumber : undefined,
             userId: user?.id,
+            traderId: (user as any)?.role === 'trader' ? user?.id : undefined,
+            finalCodAmount: (user as any)?.role === 'trader' ? (formData.finalCodAmount || codTotalAtDelivery) : undefined,
         };
     };
 
@@ -739,6 +742,43 @@ export function CheckoutPage() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {/* Trader Specific Section */}
+                                {(user as any)?.role === 'trader' && (
+                                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 space-y-4 animate-in zoom-in-95 duration-300">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="material-symbols-outlined text-primary">sell</span>
+                                            <h3 className="text-lg font-bold text-white">بيانات التحصيل للمسوق</h3>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <label className="block text-slate-300 text-sm">المبلغ المطلوب تحصيله من العميل (شامل الشحن والرسوم)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    value={formData.finalCodAmount}
+                                                    onChange={e => setFormData({ ...formData, finalCodAmount: e.target.value })}
+                                                    className="w-full bg-black/40 border border-primary/30 rounded-xl px-4 py-4 text-white text-2xl font-bold focus:border-primary outline-none transition-all"
+                                                    placeholder={codTotalAtDelivery.toString()}
+                                                />
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">ج.م</span>
+                                            </div>
+                                            <p className="text-slate-500 text-xs">اترك الحقل فارغاً إذا كنت تريد التحصيل بسعر المتجر الرسمي.</p>
+                                        </div>
+
+                                        {formData.finalCodAmount && Number(formData.finalCodAmount) > 0 && (
+                                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-emerald-400">payments</span>
+                                                    <span className="text-emerald-400 font-medium">ربحك المتوقع من هذا الطلب:</span>
+                                                </div>
+                                                <span className="text-emerald-400 text-xl font-bold">
+                                                    {(Number(formData.finalCodAmount) - finalTotal).toFixed(2)} ج.م
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 

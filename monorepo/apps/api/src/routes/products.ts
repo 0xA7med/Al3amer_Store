@@ -17,6 +17,7 @@ router.post('/', ProductsController.create);
 router.put('/:id', ProductsController.update);
 router.patch('/bulk', ProductsController.bulkUpdate);
 router.post('/bulk-action', ProductsController.bulkAction);
+router.patch('/:id/short-name', ProductsController.updateShortName);
 router.delete('/:id', ProductsController.delete);
 
 export default router;

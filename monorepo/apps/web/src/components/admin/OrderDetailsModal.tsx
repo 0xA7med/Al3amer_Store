@@ -230,6 +230,37 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                             <span className="text-slate-500 font-bold">الشحن</span>
                             <span className="text-white font-mono">{parseFloat(order.shippingCost || '0').toLocaleString('ar-EG')} ج.م</span>
                         </div>
+                        <div className="flex justify-between text-xs md:text-sm">
+                            <span className="text-slate-500 font-bold">طريقة الدفع</span>
+                            <span className="text-white font-bold">
+                                {order.paymentMethod === 'cod' ? 'الدفع عند الاستلام' 
+                                    : order.paymentMethod === 'manual_paid' ? 'مدفوع بالكامل'
+                                    : order.paymentMethod === 'paymob' ? 'بطاقة ائتمان (فيزا)'
+                                    : order.paymentMethod === 'paymob_wallet' ? 'محفظة إلكترونية'
+                                    : 'دفع إلكتروني'}
+                            </span>
+                        </div>
+                        {/* COD Advance Payment breakdown */}
+                        {order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0 && (
+                            <>
+                                <div className="flex justify-between text-xs md:text-sm">
+                                    <span className="text-amber-400 font-bold">المدفوع مقدماً (عربون)</span>
+                                    <span className="text-amber-400 font-mono">{parseFloat(order.codAdvancePayment).toLocaleString('ar-EG')} ج.م</span>
+                                </div>
+                                <div className="flex justify-between text-xs md:text-sm">
+                                    <span className="text-emerald-400 font-bold">المتبقي عند الاستلام</span>
+                                    <span className="text-emerald-400 font-mono">
+                                        {(order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (parseFloat(order.total || '0') - parseFloat(order.codAdvancePayment))).toLocaleString('ar-EG')} ج.م
+                                    </span>
+                                </div>
+                            </>
+                        )}
+                        {order.paymentMethod === 'manual_paid' && (
+                            <div className="flex justify-between text-xs md:text-sm">
+                                <span className="text-emerald-400 font-bold">المتبقي عند الاستلام</span>
+                                <span className="text-emerald-400 font-mono">0 ج.م</span>
+                            </div>
+                        )}
                         <div className="flex justify-between items-center pt-2 border-t border-white/5">
                             <span className="text-primary font-black uppercase text-xs tracking-wider">الإجمالي النهائى</span>
                             <div className="text-left">

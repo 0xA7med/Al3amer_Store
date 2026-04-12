@@ -95,29 +95,57 @@ export default function CustomerProfile() {
                     </button>
                     <div>
                         <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-                            الملف الشخصي: {customerName}
-                            <span className="h-6 w-px bg-white/10 mx-2"></span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${customerStatus === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                {customerStatus === 'active' ? 'نشط' : 'محظور'}
-                            </span>
-                        </h1>
+                             الملف الشخصي: {customerName}
+                             <span className="h-6 w-px bg-white/10 mx-2"></span>
+                             <div className="flex gap-1">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${customerStatus === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    {customerStatus === 'active' ? 'نشط' : 'محظور'}
+                                </span>
+                                {latestOrder?.user?.role === 'trader' && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-blue-500/20 text-blue-400">
+                                        تاجر (Reseller)
+                                    </span>
+                                )}
+                             </div>
+                         </h1>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button 
-                        onClick={handleEdit}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl font-bold transition-all"
-                    >
-                        <span className="material-symbols-outlined text-lg">edit</span>
-                        تعديل
-                    </button>
+                <div className="flex flex-wrap items-center gap-2">
                     <button 
                         onClick={() => navigate(`/admin/orders?createOrderFor=${phone}`)}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl font-bold transition-all"
                     >
                         <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
                         إنشاء طلب
+                    </button>
+                    {latestOrder?.user?.role !== 'trader' ? (
+                        <button 
+                            onClick={async () => {
+                                if (window.confirm('بعد التحويل لتاجر، ستتمكن من ضبط خصومات خاصة له. هل تريد المتابعة؟')) {
+                                    await updateCustomer(customerId, { ...latestOrder.user, role: 'trader' });
+                                }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl font-bold transition-all border border-blue-500/20"
+                        >
+                            <span className="material-symbols-outlined text-lg">person_add</span>
+                            تحويل لتاجر
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={() => setIsEditing(true)} // reuse editing for trader config
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl font-bold transition-all border border-blue-500/20"
+                        >
+                            <span className="material-symbols-outlined text-lg">settings</span>
+                            خصومات التاجر
+                        </button>
+                    )}
+                    <button 
+                        onClick={handleEdit}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-bold transition-all"
+                    >
+                        <span className="material-symbols-outlined text-lg">edit</span>
+                        تعديل
                     </button>
                     <button 
                         onClick={handleToggleStatus}

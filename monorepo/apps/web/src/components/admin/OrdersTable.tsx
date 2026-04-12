@@ -8,20 +8,31 @@ import { type Order, useUpdateOrderStatus } from '../../hooks/useAdmin';
 export const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
     pending:    { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',   label: 'قيد الانتظار',   icon: 'pending' },
     pending_payment: { color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', label: 'بانتظار الدفع', icon: 'hourglass_empty' },
-    processing: { color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',   label: 'قيد المعالجة',   icon: 'sync' },
-    shipped:    { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',          label: 'جاري التوصيل',   icon: 'local_shipping' },
+    processing: { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',         label: 'قيد المعالجة',   icon: 'sync' },
+    shipped:    { color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',    label: 'جاري التوصيل',   icon: 'local_shipping' },
     delivered:  { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'مكتمل',          icon: 'check_circle' },
+    paid:       { color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', label: 'مدفوع',          icon: 'paid' },
     cancelled:  { color: 'bg-red-500/10 text-red-400 border-red-500/20',             label: 'ملغي',           icon: 'cancel' },
 };
 
-export const getPaymentInfo = (method: string) => {
-    switch (method) {
-        case 'cod':            return { label: 'الدفع عند الاستلام', icon: 'payments',                color: 'text-emerald-400' };
-        case 'paymob':         return { label: 'بطاقة ائتمان',        icon: 'credit_card',            color: 'text-blue-400' };
-        case 'paymob_wallet':  return { label: 'محفظة إلكترونية',     icon: 'account_balance_wallet', color: 'text-purple-400' };
-        case 'online':         return { label: 'دفع إلكتروني',        icon: 'language',               color: 'text-blue-400' };
-        default:               return { label: method || 'غير محدد',  icon: 'payments',               color: 'text-slate-400' };
+export const getPaymentInfo = (order: Order | any) => {
+    const method = typeof order === 'string' ? order : (order?.paymentMethod || 'cod');
+    const advance = typeof order === 'object' ? parseFloat(order?.codAdvancePayment || '0') : 0;
+
+    if (method === 'manual_paid') {
+        return { label: 'مدفوع بالكامل', icon: 'verified', color: 'text-emerald-400' };
     }
+    if (method === 'cod') {
+        if (advance > 0) {
+            return { label: 'دفع جزئي (عربون)', icon: 'savings', color: 'text-amber-400' };
+        }
+        return { label: 'الدفع عند الاستلام', icon: 'payments', color: 'text-emerald-400' };
+    }
+    if (method === 'paymob')        return { label: 'بطاقة ائتمان (فيزا)', icon: 'credit_card', color: 'text-blue-400' };
+    if (method === 'paymob_wallet') return { label: 'محفظة إلكترونية', icon: 'account_balance_wallet', color: 'text-purple-400' };
+    if (method === 'online')        return { label: 'دفع إلكتروني', icon: 'language', color: 'text-blue-400' };
+
+    return { label: method || 'غير محدد', icon: 'payments', color: 'text-slate-400' };
 };
 
 // ─────────────────────────────────────────────
@@ -233,13 +244,26 @@ export default function SharedOrdersTable({
                                                     >
                                                         {customerName}
                                                     </Link>
-                                                    {isGuest && (
+                                                    {isGuest && !order.traderId && (
                                                         <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400 font-bold uppercase flex-shrink-0">
                                                             زائر
                                                         </span>
                                                     )}
+                                                    {order.traderId && (
+                                                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold uppercase flex-shrink-0 flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-[12px]">verified_user</span>
+                                                            مسوق
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <span className="text-slate-400 text-xs font-mono">{customerPhone || 'بدون هاتف'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-slate-400 text-xs font-mono">{customerPhone || 'بدون هاتف'}</span>
+                                                    {order.trader?.traderBranding?.storeName && (
+                                                        <span className="text-[10px] text-primary/60 font-medium truncate max-w-[100px]">
+                                                            ({order.trader.traderBranding.storeName})
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -281,20 +305,30 @@ export default function SharedOrdersTable({
                                         {showPayment && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`material-symbols-outlined text-[18px] ${getPaymentInfo(order.paymentMethod || 'cod').color}`}>
-                                                        {getPaymentInfo(order.paymentMethod || 'cod').icon}
+                                                    <span className={`material-symbols-outlined text-[18px] ${getPaymentInfo(order).color}`}>
+                                                        {getPaymentInfo(order).icon}
                                                     </span>
                                                     <span className="text-xs font-bold text-slate-300">
-                                                        {getPaymentInfo(order.paymentMethod || 'cod').label}
+                                                        {getPaymentInfo(order).label}
                                                     </span>
                                                 </div>
                                             </td>
                                         )}
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-base font-extrabold text-white">
-                                                {parseFloat(order.total || '0').toLocaleString('ar-EG')}
-                                            </span>
-                                            <span className="text-[10px] text-primary font-bold"> ج.م</span>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-base font-extrabold text-white">
+                                                        {parseFloat(order.total || '0').toLocaleString('ar-EG')}
+                                                    </span>
+                                                    <span className="text-[10px] text-primary font-bold">ج.م</span>
+                                                </div>
+                                                {order.traderCommission && (
+                                                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-[10px]">payments</span>
+                                                        ربح: {parseFloat(order.traderCommission).toLocaleString('ar-EG')} ج.م
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
@@ -331,7 +365,7 @@ export default function SharedOrdersTable({
                         const customerName = order.user?.name || order.fullName || 'غير معروف';
                         const customerPhone = order.user?.phone || order.phone || '';
                         const isGuest = !order.user;
-                        const paymentInfo = getPaymentInfo(order.paymentMethod || 'cod');
+                        const paymentInfo = getPaymentInfo(order);
 
                         return (
                             <div
@@ -369,15 +403,21 @@ export default function SharedOrdersTable({
                                                 <span className="material-symbols-outlined text-primary text-[14px]" title="يوجد ملاحظات">chat_bubble</span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
                                             <Link
                                                 to={`/admin/customers/${encodeURIComponent(customerPhone)}`}
                                                 className="text-white text-sm font-bold truncate max-w-[100px]"
                                             >
                                                 {customerName}
                                             </Link>
-                                            {isGuest && (
+                                            {isGuest && !order.traderId && (
                                                 <span className="text-[8px] px-1 py-0.5 rounded bg-white/5 border border-white/10 text-slate-500 font-bold">زائر</span>
+                                            )}
+                                            {order.traderId && (
+                                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold flex items-center gap-0.5">
+                                                    <span className="material-symbols-outlined text-[10px]">verified_user</span>
+                                                    مسوق
+                                                </span>
                                             )}
                                         </div>
                                         <span className="text-slate-400 text-[10px] font-mono">{customerPhone}</span>

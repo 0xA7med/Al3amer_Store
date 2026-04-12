@@ -127,7 +127,8 @@ export default function OrdersManagement() {
             order.user?.name?.toLowerCase().includes(s) ||
             order.fullName?.toLowerCase().includes(s) ||
             order.phone?.toLowerCase().includes(s) ||
-            order.user?.phone?.toLowerCase().includes(s);
+            order.user?.phone?.toLowerCase().includes(s) ||
+            (order.notes && order.notes.toLowerCase().includes(s));
         return matchesStatus && matchesSearch;
     });
 
@@ -381,6 +382,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
         setCustomer(prev => ({
             ...prev,
             phone: selected.phone,
+            phone2: selected.phone2 || prev.phone2 || '',
             name: selected.name || prev.name,
             address: selected.address || prev.address || '',
             governorate: selected.governorate || prev.governorate || '',

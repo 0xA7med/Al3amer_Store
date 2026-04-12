@@ -610,6 +610,31 @@ export class ProductsController {
         }
     }
 
+    // PATCH /api/products/:id/short-name - Update product's AWB short name
+    static async updateShortName(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { shortNameAwb } = req.body;
+
+            const [updatedProduct] = await db.update(products)
+                .set({ 
+                    shortNameAwb,
+                    updatedAt: new Date() 
+                })
+                .where(eq(products.id, id))
+                .returning();
+
+            if (!updatedProduct) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            res.json(updatedProduct);
+        } catch (error) {
+            console.error('Error updating product short name:', error);
+            res.status(500).json({ error: 'Failed to update short name' });
+        }
+    }
+
     // PATCH /api/products/bulk - Bulk update products (inline price/stock edits)
     static async bulkUpdate(req: Request, res: Response) {
         try {

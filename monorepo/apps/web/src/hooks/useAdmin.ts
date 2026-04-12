@@ -40,6 +40,9 @@ export interface Order {
     subtotal: string;
     shippingCost: string;
     paymentMethod: string;
+    codAdvancePayment?: string;
+    codReturnShipping?: string;
+    totalAtDelivery?: string;
     fullName: string;
     phone: string;
     email: string;
@@ -67,6 +70,20 @@ export interface Order {
             images: { url: string }[];
         } | null;
     }[];
+    traderId?: string | null;
+    traderCommission?: string | null;
+    finalCodAmount?: string | null;
+    trader?: {
+        id: string;
+        name: string;
+        phone: string;
+        traderBranding?: {
+            storeName: string;
+            logoUrl: string;
+            phone1: string;
+            phone2: string;
+        };
+    } | null;
 }
 
 export interface OrdersResponse {

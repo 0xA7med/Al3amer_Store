@@ -25,11 +25,12 @@ export class OrdersController {
                 taxAmount = 0,
                 extraFee = 0,
                 codAdvancePayment = 0,
-                codReturnShipping = 0,
                 totalAtDelivery = 0,
                 couponCode,
                 walletNumber,
                 paymobOrderId, // Provided for pre-paid online orders
+                traderId,
+                finalCodAmount,
             } = req.body;
 
             console.log('📦 [POST /orders] Raw Body:', req.body);
@@ -151,6 +152,9 @@ export class OrdersController {
                 total: total.toString(),
                 status: orderStatus,
                 paymobOrderId: null, // Will be set during payment verification
+                traderId: traderId ? String(traderId) : null,
+                finalCodAmount: finalCodAmount ? finalCodAmount.toString() : null,
+                traderCommission: finalCodAmount ? (Number(finalCodAmount) - total).toString() : "0",
             }).returning();
 
             // Create order items
@@ -215,6 +219,8 @@ export class OrdersController {
                 taxAmount = 0,
                 extraFee = 0,
                 couponCode,
+                traderId,
+                finalCodAmount,
             } = req.body;
 
             console.log(`📦 [PUT /orders/${orderId}] Updating draft order`);
@@ -314,7 +320,10 @@ export class OrdersController {
                 extraFee: extraFee.toString(),
                 total: total.toString(),
                 status: 'pending',
-                paymobOrderId: null // Reset payment ID since cart changed
+                paymobOrderId: null, // Reset payment ID since cart changed
+                traderId: traderId ? String(traderId) : null,
+                finalCodAmount: finalCodAmount ? finalCodAmount.toString() : null,
+                traderCommission: finalCodAmount ? (Number(finalCodAmount) - total).toString() : "0",
             }).where(eq(orders.id, orderId));
 
             // Overwrite items
@@ -478,6 +487,8 @@ export class OrdersController {
                             },
                         },
                     },
+                    user: true,
+                    trader: true,
                 },
             });
 

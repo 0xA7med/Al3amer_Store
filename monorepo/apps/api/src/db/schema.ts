@@ -6,13 +6,29 @@ export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
-    phone: text('phone').unique(),
+    phone: text('phone'),
     password: text('password').notNull(),
     address: text('address'),
-    avatar: text('avatar'),
+    city: text('city'),
+    governorate: text('governorate'),
+    role: text('role').default('customer'), // 'admin', 'customer', 'trader'
     loyaltyPoints: integer('loyalty_points').default(0),
-    role: text('role').default('customer'), // customer | admin
-    status: text('status').default('active'), // active | inactive | blocked
+    status: text('status').default('active'), // 'active', 'blocked'
+    
+    // Trader Configuration
+    traderBranding: jsonb('trader_branding').$type<{
+        logoUrl?: string;
+        phone1?: string;
+        phone2?: string;
+        storeName?: string;
+    }>(),
+    discountConfig: jsonb('discount_config').$type<{
+        type: 'percentage' | 'fixed';
+        value: number;
+        productExclusions?: string[]; // IDs of products excluded
+        specificProductDiscounts?: Record<string, number>; // ProductID -> DiscountAmount
+    }>(),
+
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -22,6 +38,7 @@ export const usersRelations = relations(users, ({ many }) => ({
     addresses: many(addresses),
     wishlist: many(wishlist),
     reviews: many(reviews),
+    traderOrders: many(orders),
 }));
 
 // ============= ADDRESSES TABLE =============
@@ -73,7 +90,7 @@ export const wishlistRelations = relations(wishlist, ({ one }) => ({
 
 // ============= CATEGORIES TABLE =============
 export const categories = pgTable('categories', {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
     parentId: uuid('parent_id'),
@@ -125,6 +142,7 @@ export const products = pgTable('products', {
     isFeatured: boolean('is_featured').default(false),
     specifications: jsonb('specifications').$type<Array<{ key: string; value: string }>>(),
     dynamicAttributes: jsonb('dynamic_attributes').$type<Record<string, string | string[]>>().default({}),
+    shortNameAwb: text('short_name_awb'), // الاسم المختصر للبوليسة (عالمي)
     tags: text('tags').array(),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -184,6 +202,12 @@ export const orders = pgTable('orders', {
     taxAmount: numeric('tax_amount', { precision: 10, scale: 2 }).default('0'),
     extraFee: numeric('extra_fee', { precision: 10, scale: 2 }).default('0'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+
+    // Trader Fields
+    traderId: uuid('trader_id').references(() => users.id),
+    traderCommission: numeric('trader_commission', { precision: 10, scale: 2 }).default('0'),
+    finalCodAmount: numeric('final_cod_amount', { precision: 10, scale: 2 }), // المبلغ المطلوب تحصيله من العميل النهائي
+
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -192,6 +216,11 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
     user: one(users, {
         fields: [orders.userId],
         references: [users.id],
+    }),
+    trader: one(users, {
+        fields: [orders.traderId],
+        references: [users.id],
+        relationName: 'traderOrders'
     }),
     items: many(orderItems),
 }));
