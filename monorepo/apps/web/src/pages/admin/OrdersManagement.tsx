@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAdminOrders, useAdminProducts, useBulkDeleteOrders, useBulkUpdateOrdersStatus, type Order } from '../../hooks/useAdmin';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -344,6 +345,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
     const [searchTerm, setSearchTerm] = useState('');
     const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const queryClient = useQueryClient();
     
     // Customer search states
     const [customerSearchResults, setCustomerSearchResults] = useState<any[]>([]);
@@ -429,6 +431,8 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                 items: cart.map(i => ({ productId: i.product.id, quantity: i.quantity }))
             });
             toast.success('تم إنشاء الطلب بنجاح');
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
             onClose();
         } catch (error: any) {
             const msg = error.response?.data?.error || 'فشل إنشاء الطلب';
