@@ -4,6 +4,7 @@ import { orders, orderItems, products, productImages, settings, coupons } from '
 import { eq, and, inArray } from 'drizzle-orm';
 import { PaymobService } from '../services/paymob.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { NotificationService } from '../services/notification.service.js';
 
 export class OrdersController {
     // POST /api/orders - Create new order
@@ -31,10 +32,11 @@ export class OrdersController {
             console.log('📦 [POST /orders] Raw Body:', req.body);
 
             // Validation
-            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
-                console.error('❌ Missing required fields:', { fullName, hasItems: items?.length > 0, governorate, city, address });
-                return res.status(400).json({ error: 'Missing required fields: fullName, items, governorate, city, address' });
-            }
+            if (!fullName) return res.status(400).json({ error: 'حقل الاسم بالكامل مطلوب' });
+            if (!items || items.length === 0) return res.status(400).json({ error: 'يجب إضافة منتج واحد على الأقل للطلب' });
+            if (!governorate) return res.status(400).json({ error: 'حقل المحافظة مطلوب' });
+            if (!city) return res.status(400).json({ error: 'حقل المدينة مطلوب' });
+            if (!address) return res.status(400).json({ error: 'حقل العنوان التفصيلي مطلوب' });
 
             const safePhone = phone ? String(phone) : '0000000000';
 
@@ -62,8 +64,8 @@ export class OrdersController {
                 const dbProduct = validProducts.find(p => p.id === item.productId);
                 
                 if (!dbProduct) {
-                    console.error(`Product ID ${item.productId} (${item.name || 'Unknown'}) not found or inactive`);
-                    return res.status(400).json({ error: "One or more products in your cart are no longer available. Please refresh your cart." });
+                    console.error(`Product ID ${item.productId} not found or inactive`);
+                    return res.status(400).json({ error: `المنتج ذو الرقم ${item.productId} غير متوفر أو غير نشط حالياً` });
                 }
 
                 const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
@@ -165,6 +167,17 @@ export class OrdersController {
                     items: true,
                 },
             });
+
+            // 📦 [NOTIFICATION] TRIGGER
+            // If it is NOT an online payment (e.g. COD), notify immediately
+            const onlineMethods = ['paymob', 'paymob_wallet', 'online'];
+            if (!onlineMethods.includes(paymentMethod)) {
+                console.log(`🚀 [Notification] Triggering for COD Order #${orderNumber}`);
+                // Use the complete order with items
+                NotificationService.sendNewOrderNotification(completeOrder).catch(err => {
+                    console.error('Failed to send notification for COD order:', err);
+                });
+            }
 
             res.status(201).json(completeOrder);
         } catch (error: any) {
@@ -599,6 +612,19 @@ export class OrdersController {
                 await db.update(orders)
                     .set({ status: 'paid', updatedAt: new Date() })
                     .where(eq(orders.id, id));
+
+                // 📦 [NOTIFICATION] TRIGGER
+                // Fetch full order with items for notification
+                const completeOrder = await db.query.orders.findFirst({
+                    where: eq(orders.id, id),
+                    with: { items: true },
+                });
+                if (completeOrder) {
+                    console.log(`🚀 [Notification] Triggering for PAID Order #${completeOrder.orderNumber}`);
+                    NotificationService.sendNewOrderNotification(completeOrder).catch(err => {
+                        console.error('Failed to send notification for paid order:', err);
+                    });
+                }
 
                 return res.json({ status: 'paid', message: 'Payment verified successfully' });
             } else {

@@ -52,7 +52,7 @@ export function DashboardOverview() {
     return (
         <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-10">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 {[
                     { label: 'إجمالي الإيرادات',  value: stats.totalRevenue,    unit: 'ج.م',     icon: 'payments',      color: 'primary',    sub: `من ${stats.totalOrders} طلب`,         trend: 'trending_up' },
                     { label: 'إجمالي الطلبات',    value: stats.totalOrders,     unit: 'طلب',    icon: 'shopping_cart', color: 'blue-400',   sub: `${stats.completedOrders} مكتمل`,      trend: 'check_circle' },
@@ -62,19 +62,19 @@ export function DashboardOverview() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
                         key={idx}
-                        className={`glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-${item.color}/30 transition-all ${item.isAlert ? 'border-l-4 border-l-secondary' : ''}`}
+                        className={`glass-panel rounded-xl p-3 md:p-6 relative overflow-hidden group hover:border-${item.color}/30 transition-all ${item.isAlert ? 'border-l-4 border-l-secondary' : ''}`}
                     >
-                        <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-${item.color}`}>
-                            <span className="material-symbols-outlined text-6xl">{item.icon}</span>
+                        <div className={`absolute top-0 right-0 p-2 md:p-4 opacity-5 md:opacity-10 group-hover:opacity-20 transition-opacity text-${item.color}`}>
+                            <span className="material-symbols-outlined text-4xl md:text-6xl">{item.icon}</span>
                         </div>
-                        <div className="flex flex-col gap-1 relative z-10">
-                            <p className="text-slate-400 text-sm font-medium">{item.label}</p>
-                            <h3 className="text-2xl font-bold text-white mt-1">
-                                {item.value.toLocaleString('ar-EG')} <span className="text-sm font-normal text-slate-500">{item.unit}</span>
+                        <div className="flex flex-col gap-0.5 md:gap-1 relative z-10">
+                            <p className="text-slate-500 md:text-slate-400 text-[10px] md:text-sm font-bold truncate">{item.label}</p>
+                            <h3 className="text-lg md:text-2xl font-black text-white mt-0.5">
+                                {item.value.toLocaleString('ar-EG')} <span className="text-[10px] md:text-sm font-normal text-slate-500">{item.unit}</span>
                             </h3>
-                            <div className={`flex items-center gap-1 mt-2 text-${item.color} text-xs font-bold`}>
-                                <span className="material-symbols-outlined text-[16px]">{item.trend}</span>
-                                <span>{item.sub}</span>
+                            <div className={`flex items-center gap-1 mt-1 md:mt-2 text-${item.color} text-[10px] md:text-xs font-bold`}>
+                                <span className="material-symbols-outlined text-[14px] md:text-[16px]">{item.trend}</span>
+                                <span className="truncate">{item.sub}</span>
                             </div>
                         </div>
                     </motion.div>

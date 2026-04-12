@@ -95,11 +95,11 @@ export interface DashboardStats {
 
 // Hooks
 
-export function useAdminProducts(params?: { page?: number; limit?: number; search?: string }) {
+export function useAdminProducts(params?: { page?: number; limit?: number; search?: string; status?: string }) {
     return useQuery({
         queryKey: ['admin-products', params],
         queryFn: async () => {
-            const { data } = await api.get<ProductsResponse>('/products', { params: { ...params, status: '' } });
+            const { data } = await api.get<ProductsResponse>('/products', { params });
             return data;
         },
     });

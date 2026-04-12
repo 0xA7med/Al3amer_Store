@@ -4,6 +4,7 @@ import { products, productImages, categories, brands, reviews, orderItems, setti
 import { eq, like, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
 import { uploadToCloudinary } from '../lib/cloudinary.js';
 import { AIService } from '../services/ai.service.js';
+import { decryptText } from '../lib/crypto.utils.js';
 
 // In-memory tracker for popular/trending searches globally
 const searchHistoryTracker: Record<string, number> = {};
@@ -32,13 +33,16 @@ export class ProductsController {
 
             // Get Settings
             const appSettings = await db.query.settings.findFirst();
-            const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+
+            // Prefer the dedicated AI key, fall back to google key, then env var
+            const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+            const apiKey = rawKey ? (decryptText(rawKey) ?? rawKey) : undefined;
 
             if (!apiKey) {
-                return res.status(400).json({ error: 'Google API Key is not configured' });
+                return res.status(400).json({ error: 'Google API Key is not configured in settings' });
             }
 
-            const aiService = new AIService(apiKey);
+            const aiService = new AIService(apiKey.trim());
             const result = await aiService.generateProductDetails(
                 name,
                 appSettings?.aiLanguage || 'ar',

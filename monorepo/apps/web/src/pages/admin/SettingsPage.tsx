@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
-type Tab = 'general' | 'contact' | 'social' | 'shipping' | 'tax' | 'payment';
+type Tab = 'general' | 'contact' | 'social' | 'shipping' | 'tax' | 'payment' | 'notifications';
 
 export default function SettingsPage() {
     const queryClient = useQueryClient();
@@ -45,6 +45,22 @@ export default function SettingsPage() {
         paymobIntegrationCard: '',
         paymobIntegrationWallet: '',
         paymobIframeId: '',
+        // Telegram
+        telegramEnabled: false,
+        telegramBotToken: '',
+        telegramChatId: '',
+        // WhatsApp (CallMeBot)
+        whatsappEnabled: false,
+        whatsappApiKey: '',
+        whatsappRecipientPhone: '',
+        // Email
+        emailEnabled: false,
+        smtpHost: '',
+        smtpPort: 587,
+        smtpUser: '',
+        smtpPass: '',
+        emailFrom: '',
+        emailReceiver: '',
         // City Rates
         cityShippingRates: [] as { city: string; rate: number }[],
     });
@@ -109,6 +125,7 @@ export default function SettingsPage() {
         { id: 'shipping', label: 'الشحن', icon: 'local_shipping' },
         { id: 'tax', label: 'الضرائب', icon: 'receipt_long' },
         { id: 'payment', label: 'الدفع', icon: 'payments' },
+        { id: 'notifications', label: 'الإشعارات', icon: 'notifications_active' },
     ];
 
     return (
@@ -582,6 +599,185 @@ export default function SettingsPage() {
                                                 placeholder="e.g. 123456"
                                             />
                                             <p className="text-[10px] text-gray-500 italic">هذا المعرف مطلوب لعرض صفحة الدفع (Iframe) بشكل صحيح.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Notifications Tab */}
+                    {activeTab === 'notifications' && (
+                        <div className="space-y-8">
+                            <h2 className="text-white text-xl font-bold mb-4">نظام إشعارات الطلبات الجديدة (مجاني)</h2>
+
+                            {/* WhatsApp (CallMeBot) */}
+                            <div className="p-6 rounded-xl border border-white/10 bg-white/5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                                            <span className="material-symbols-outlined text-lg">chat</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-white font-bold">WhatsApp (via CallMeBot)</h4>
+                                            <p className="text-sm text-gray-400">إرسال إشعارات للواتساب مجاناً</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.whatsappEnabled}
+                                            onChange={(e) => setFormData({ ...formData, whatsappEnabled: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                </div>
+
+                                {formData.whatsappEnabled && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">رقم الهاتف (بصيغة دولية)</label>
+                                            <input
+                                                type="text"
+                                                value={formData.whatsappRecipientPhone || ''}
+                                                onChange={(e) => setFormData({ ...formData, whatsappRecipientPhone: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-green-500 transition-all"
+                                                placeholder="+201012345678"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">ApiKey (من CallMeBot)</label>
+                                            <input
+                                                type="password"
+                                                value={formData.whatsappApiKey || ''}
+                                                onChange={(e) => setFormData({ ...formData, whatsappApiKey: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-green-500 transition-all"
+                                                placeholder="••••••••"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg flex gap-3 text-[11px] text-yellow-500/80">
+                                                <span className="material-symbols-outlined text-[16px]">info</span>
+                                                <p>للحصول على المفتاح: أرسل رسالة <b>"I allow callmebot to send me messages"</b> لرقم الخدمة على الواتساب. <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" className="underline font-bold">التفاصيل هنا</a></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Telegram */}
+                            <div className="p-6 rounded-xl border border-white/10 bg-white/5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                                            <span className="material-symbols-outlined text-lg">send</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-white font-bold">Telegram Bot</h4>
+                                            <p className="text-sm text-gray-400">إشعارات تليجرام فورية وأكثر استقراراً</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.telegramEnabled}
+                                            onChange={(e) => setFormData({ ...formData, telegramEnabled: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                                    </label>
+                                </div>
+
+                                {formData.telegramEnabled && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">Bot Token</label>
+                                            <input
+                                                type="password"
+                                                value={formData.telegramBotToken || ''}
+                                                onChange={(e) => setFormData({ ...formData, telegramBotToken: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-all"
+                                                placeholder="123456789:ABCDEF..."
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">Chat ID</label>
+                                            <input
+                                                type="text"
+                                                value={formData.telegramChatId || ''}
+                                                onChange={(e) => setFormData({ ...formData, telegramChatId: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-all"
+                                                placeholder="e.g. 987654321"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Email */}
+                            <div className="p-6 rounded-xl border border-white/10 bg-white/5 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-500">
+                                            <span className="material-symbols-outlined text-lg">mail</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-white font-bold">Email Notifications</h4>
+                                            <p className="text-sm text-gray-400">ملخص الطلب عبر البريد</p>
+                                        </div>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.emailEnabled}
+                                            onChange={(e) => setFormData({ ...formData, emailEnabled: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                                    </label>
+                                </div>
+
+                                {formData.emailEnabled && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">Email Receiver (Admin)</label>
+                                            <input
+                                                type="email"
+                                                value={formData.emailReceiver || ''}
+                                                onChange={(e) => setFormData({ ...formData, emailReceiver: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 transition-all"
+                                                placeholder="admin@example.com"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">SMTP Host</label>
+                                            <input
+                                                type="text"
+                                                value={formData.smtpHost || ''}
+                                                onChange={(e) => setFormData({ ...formData, smtpHost: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 transition-all"
+                                                placeholder="smtp.gmail.com"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">SMTP User</label>
+                                            <input
+                                                type="text"
+                                                value={formData.smtpUser || ''}
+                                                onChange={(e) => setFormData({ ...formData, smtpUser: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 transition-all"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-gray-300 text-sm">SMTP App Password</label>
+                                            <input
+                                                type="password"
+                                                value={formData.smtpPass || ''}
+                                                onChange={(e) => setFormData({ ...formData, smtpPass: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 transition-all"
+                                                placeholder="••••••••"
+                                            />
                                         </div>
                                     </div>
                                 )}

@@ -6,6 +6,13 @@ import toast from 'react-hot-toast';
 import OrdersTable, { STATUS_CONFIG } from '../../components/admin/OrdersTable';
 import OrderDetailsModal from '../../components/admin/OrderDetailsModal';
 
+const GOVERNORATES = [
+    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
+    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
+    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
+    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
+];
+
 export default function OrdersManagement() {
     // Hooks
     const [searchParams, setSearchParams] = useSearchParams();
@@ -135,45 +142,41 @@ export default function OrdersManagement() {
     return (
         <div className="flex flex-col gap-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-white text-xl font-bold tracking-tight">إدارة الطلبات</h2>
-                    <div className="h-6 w-px bg-white/10 mx-2"></div>
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/5">
-                        <span className="material-symbols-outlined text-[16px] text-slate-400">calendar_today</span>
-                        <span className="text-slate-300 text-xs font-medium">اليوم: {new Date().toLocaleDateString('ar-EG')}</span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-white text-lg md:text-xl font-bold tracking-tight">إدارة الطلبات</h2>
+                    <div className="h-5 w-px bg-white/10 mx-1"></div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                        <span className="material-symbols-outlined text-[14px] text-slate-400">calendar_today</span>
+                        <span className="text-slate-300 text-[10px] font-medium">{new Date().toLocaleDateString('ar-EG')}</span>
                     </div>
                 </div>
                 <button
                     onClick={() => setIsCreateOrderOpen(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-primary to-blue-600 hover:from-blue-600 hover:to-primary text-white transition-all text-sm font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary to-blue-600 hover:from-blue-600 hover:to-primary text-white transition-all text-sm font-bold shadow-lg shadow-primary/25 active:scale-95"
                 >
-                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
                     <span>طلب يدوي</span>
                 </button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 {[
                     { label: 'إجمالي الطلبات',  value: totalOrders,      icon: 'shopping_cart',  color: 'blue-500',    glow: 'rgba(59,130,246,0.2)' },
-                    { label: 'قيد المعالجة',     value: processingOrders, icon: 'pending_actions', color: 'yellow-500', glow: 'rgba(234,179,8,0.2)',  alert: processingOrders > 0 },
+                    { label: 'بانتظار التجهيز',  value: processingOrders, icon: 'pending_actions', color: 'yellow-500', glow: 'rgba(234,179,8,0.2)',  alert: processingOrders > 0 },
                     { label: 'طلبات مكتملة',    value: completedOrders,  icon: 'check_circle',   color: 'emerald-500', glow: 'rgba(16,185,129,0.2)' },
-                    { label: 'ملغية / مرتجعة',  value: cancelledOrders,  icon: 'cancel',         color: 'red-500',     glow: 'rgba(239,68,68,0.2)' },
+                    { label: 'طلبات ملغاة',     value: cancelledOrders,  icon: 'cancel',         color: 'red-500',     glow: 'rgba(239,68,68,0.2)' },
                 ].map((card, i) => (
-                    <div key={i} className={`glass-panel p-5 rounded-xl relative overflow-hidden group hover:border-${card.color}/30 transition-all`}>
-                        <div className={`absolute right-0 top-0 w-24 h-24 bg-${card.color}/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110`}></div>
-                        <div className="flex justify-between items-start mb-4 relative z-10">
-                            <div className={`size-10 rounded-lg bg-${card.color}/10 flex items-center justify-center text-${card.color.replace('500', '400')} border border-${card.color}/20`} style={{ boxShadow: `0 0 15px ${card.glow}` }}>
-                                <span className="material-symbols-outlined">{card.icon}</span>
-                            </div>
+                    <div key={i} className={`glass-panel p-2.5 md:p-4 rounded-xl relative overflow-hidden group hover:border-${card.color}/40 transition-all flex items-center gap-3 md:gap-4`}>
+                        <div className={`size-9 md:size-12 rounded-lg bg-${card.color}/10 flex items-center justify-center text-${card.color.replace('500', '400')} border border-${card.color}/20 shrink-0 relative transition-transform group-hover:scale-110`} style={{ boxShadow: `0 0 15px ${card.glow}` }}>
+                            <span className="material-symbols-outlined text-[18px] md:text-[24px]">{card.icon}</span>
                             {card.alert && (
-                                <span className="text-xs font-bold text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20 animate-pulse">مطلوب إجراء</span>
+                                <span className="absolute -top-1 -left-1 size-2.5 bg-yellow-400 rounded-full border-2 border-[#1e2330] animate-pulse" />
                             )}
                         </div>
-                        <div className="relative z-10">
-                            <h3 className="text-2xl font-extrabold text-white mb-1">{card.value}</h3>
-                            <p className="text-slate-400 text-xs font-medium">{card.label}</p>
+                        <div className="flex flex-col min-w-0">
+                            <p className="text-slate-500 md:text-slate-400 text-[9px] md:text-xs font-bold truncate uppercase tracking-wider">{card.label}</p>
+                            <h3 className="text-base md:text-2xl font-black text-white leading-tight truncate">{card.value}</h3>
                         </div>
                     </div>
                 ))}
@@ -255,7 +258,9 @@ export default function OrdersManagement() {
                                         { key: 'shipped',    label: 'جاري التوصيل' },
                                         { key: 'delivered',  label: 'مكتمل' },
                                         { key: 'cancelled',  label: 'ملغي' },
-                                    ].map(tab => (
+                                    ]
+                                    .filter(tab => tab.key === 'all' || counts[tab.key] > 0)
+                                    .map(tab => (
                                         <button
                                             key={tab.key}
                                             onClick={() => setFilterStatus(tab.key)}
@@ -307,14 +312,19 @@ export default function OrdersManagement() {
     );
 }
 
-// ─────────────────────────────────────────────
-// CreateOrderModal (unchanged from original)
-// ─────────────────────────────────────────────
 function CreateOrderModal({ onClose }: { onClose: () => void }) {
-    const [customer, setCustomer] = useState({ name: '', phone: '', address: '', city: 'Cairo', governorate: 'Cairo' });
+    const [customer, setCustomer] = useState({ 
+        name: '', 
+        phone: '', 
+        phone2: '',
+        address: '', 
+        city: '', 
+        governorate: '', 
+        notes: '' 
+    });
     const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 5 });
+    const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const addToCart = (product: any) => { setCart([...cart, { product, quantity: 1 }]); setSearchTerm(''); };
@@ -327,43 +337,95 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
+            const finalNotes = (customer.phone2 ? `رقم إضافي: ${customer.phone2}\n` : '') + (customer.notes || '');
+            
             await api.post('/orders', {
-                fullName: customer.name, phone: customer.phone, address: customer.address,
-                city: customer.city, governorate: customer.governorate, paymentMethod: 'cod',
+                fullName: customer.name, 
+                phone: customer.phone, 
+                address: customer.address,
+                city: customer.city, 
+                governorate: customer.governorate, 
+                notes: finalNotes,
+                paymentMethod: 'cod',
                 items: cart.map(i => ({ productId: i.product.id, quantity: i.quantity }))
             });
             toast.success('تم إنشاء الطلب بنجاح');
             onClose();
-        } catch (error) {
-            console.error(error); toast.error('فشل إنشاء الطلب');
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'فشل إنشاء الطلب';
+            console.error(error); 
+            toast.error(msg);
         } finally { setIsSubmitting(false); }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glass-panel rounded-xl max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-white">إنشاء طلب جديد</h3>
-                    <button onClick={onClose}><span className="material-symbols-outlined text-slate-400 hover:text-white">close</span></button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-0 md:p-4">
+            <div className="glass-panel rounded-none md:rounded-xl w-full md:max-w-3xl flex flex-col h-full md:h-auto md:max-h-[90vh] overflow-hidden">
+                <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between bg-[#1e2330]/80 sticky top-0 z-10">
+                    <h3 className="text-lg md:text-xl font-bold text-white">إنشاء طلب جديد</h3>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><span className="material-symbols-outlined text-slate-400">close</span></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div className="space-y-4">
                         <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="الاسم بالكامل" className="px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10" />
-                            <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="رقم الهاتف" className="px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10" />
-                            <input value={customer.address} onChange={e => setCustomer({ ...customer, address: e.target.value })} placeholder="العنوان" className="px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 col-span-2" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
+                                <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="مثال: أحمد محمد" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-400 mr-2">رقم الهاتف الأساسي</label>
+                                <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="01xxxxxxxxx" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-400 mr-2">رقم هاتف إضافي (اختياري)</label>
+                                <input value={customer.phone2} onChange={e => setCustomer({ ...customer, phone2: e.target.value })} placeholder="رقم بديل" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-400 mr-2">المحافظة</label>
+                                <select 
+                                    value={customer.governorate} 
+                                    onChange={e => setCustomer({ ...customer, governorate: e.target.value })} 
+                                    className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none appearance-none"
+                                >
+                                    <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
+                                    {GOVERNORATES.map(gov => (
+                                        <option key={gov} value={gov} className="bg-[#1e2330]">{gov}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-400 mr-2">المدينة / الحي</label>
+                                <input value={customer.city} onChange={e => setCustomer({ ...customer, city: e.target.value })} placeholder="مثال: المعادي" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="text-xs text-slate-400 mr-2">العنوان بالتفصيل</label>
+                                <input value={customer.address} onChange={e => setCustomer({ ...customer, address: e.target.value })} placeholder="اسم الشارع، رقم العقار..." className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="text-xs text-slate-400 mr-2">ملاحظات الطلب (اختياري)</label>
+                                <textarea value={customer.notes} onChange={e => setCustomer({ ...customer, notes: e.target.value })} placeholder="أي ملاحظات إضافية..." rows={2} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none resize-none" />
+                            </div>
                         </div>
                     </div>
                     <div className="space-y-4">
-                        <h4 className="text-sm font-bold text-primary uppercase tracking-wider">المنتجات</h4>
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-primary uppercase tracking-wider">المنتجات المضافة ({cart.length})</h4>
+                        </div>
+                        
                         <div className="relative">
-                            <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="بحث عن منتج..." className="w-full px-4 py-3 bg-white/5 rounded-lg text-white border border-white/10 focus:ring-1 focus:ring-primary" />
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">search</span>
+                            <input 
+                                value={searchTerm} 
+                                onChange={e => setSearchTerm(e.target.value)} 
+                                placeholder="بحث عن منتج..." 
+                                className="w-full pl-10 pr-4 py-3 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none transition-all" 
+                            />
                             {searchTerm && productsData?.data && (
-                                <div className="absolute top-full left-0 w-full bg-[#1e2330] border border-white/10 rounded-lg mt-1 shadow-xl z-10 max-h-60 overflow-y-auto">
+                                <div className="absolute top-full left-0 w-full bg-[#1e2330] border border-white/10 rounded-lg mt-1 shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-white/5">
                                     {productsData.data.map(product => (
-                                        <div key={product.id} onClick={() => addToCart(product)} className="p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 border-b border-white/5 last:border-0">
-                                            {product.images?.[0]?.url && <img src={product.images[0].url} className="size-8 rounded object-cover" />}
+                                        <div key={product.id} onClick={() => addToCart(product)} className="p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 active:bg-primary/10">
+                                            {product.images?.[0]?.url && <img src={product.images[0].url} className="size-10 rounded object-cover shadow-lg" />}
                                             <div className="flex-1">
                                                 <div className="text-white text-sm font-bold">{product.name}</div>
                                                 <div className="text-slate-400 text-xs">{product.price} ج.م | المخزون: {product.stock}</div>
@@ -374,32 +436,59 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
                                 </div>
                             )}
                         </div>
-                        <div className="space-y-2">
-                            {cart.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-4 bg-white/5 p-3 rounded-lg">
-                                    <div className="flex-1 text-white font-medium">{item.product.name}</div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => updateQuantity(idx, -1)} className="size-6 rounded bg-white/10 flex items-center justify-center">-</button>
-                                        <span className="text-white w-6 text-center">{item.quantity}</span>
-                                        <button onClick={() => updateQuantity(idx, 1)} className="size-6 rounded bg-white/10 flex items-center justify-center">+</button>
+
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                            {cart.length === 0 ? (
+                                <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-xl">
+                                    <span className="material-symbols-outlined text-4xl text-white/10 mb-2">shopping_basket</span>
+                                    <p className="text-slate-500 text-sm">لم يتم إضافة منتجات بعد</p>
+                                </div>
+                            ) : cart.map((item, idx) => (
+                                <div key={idx} className="flex flex-col gap-2 bg-white/5 p-4 rounded-xl border border-white/5 group relative overflow-hidden">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            {item.product.images?.[0]?.url && <img src={item.product.images[0].url} className="size-10 rounded object-cover" />}
+                                            <div className="text-white font-medium text-sm leading-tight">{item.product.name}</div>
+                                        </div>
+                                        <button onClick={() => removeFromCart(idx)} className="text-red-400/50 hover:text-red-400 transition-colors">
+                                            <span className="material-symbols-outlined text-sm">delete</span>
+                                        </button>
                                     </div>
-                                    <div className="text-white font-bold w-20 text-left">{(item.quantity * Number(item.product.price)).toLocaleString()} ج.م</div>
-                                    <button onClick={() => removeFromCart(idx)} className="text-red-400 hover:text-red-300"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+                                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                                        <div className="flex items-center gap-2 bg-black/30 rounded-lg p-1">
+                                            <button onClick={() => updateQuantity(idx, -1)} className="size-7 rounded hover:bg-white/5 text-primary active:scale-95 transition-all">-</button>
+                                            <span className="text-white w-6 text-center text-sm font-bold">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(idx, 1)} className="size-7 rounded hover:bg-white/5 text-primary active:scale-95 transition-all">+</button>
+                                        </div>
+                                        <div className="text-primary font-bold">{(item.quantity * Number(item.product.price)).toLocaleString()} ج.م</div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                            <span className="text-lg font-bold text-white">الإجمالي</span>
-                            <span className="text-2xl font-bold text-primary">{total.toLocaleString()} ج.م</span>
-                        </div>
                     </div>
                 </div>
-                <div className="p-6 border-t border-white/5 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-6 py-2 rounded-lg text-slate-300 hover:bg-white/5">إلغاء</button>
-                    <button onClick={handleSubmit} disabled={isSubmitting || cart.length === 0 || !customer.name} className="px-6 py-2 rounded-lg bg-primary hover:brightness-110 text-white font-bold disabled:opacity-50 flex items-center gap-2">
-                        {isSubmitting && <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                        إنشاء الطلب
-                    </button>
+
+                <div className="p-4 md:p-6 border-t border-white/10 bg-[#1e2330]/90 backdrop-blur-md sticky bottom-0">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-slate-400 text-sm">إجمالي الطلب</span>
+                            <span className="text-2xl font-black text-primary">{total.toLocaleString()} <small className="text-xs font-normal">ج.م</small></span>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={onClose} className="flex-1 py-3 rounded-xl text-slate-300 hover:bg-white/5 border border-white/10 transition-colors text-sm font-medium">إلغاء</button>
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={isSubmitting || cart.length === 0 || !customer.name || !customer.address || !customer.governorate || !customer.city || !customer.phone} 
+                                className="flex-[2] py-3 rounded-xl bg-primary hover:brightness-110 text-white font-black shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.2)] disabled:opacity-30 disabled:grayscale transition-all flex items-center justify-center gap-2 text-sm"
+                            >
+                                {isSubmitting ? (
+                                    <span className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <><span>إنشاء الطلب</span><span className="material-symbols-outlined text-sm">auto_awesome</span></>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

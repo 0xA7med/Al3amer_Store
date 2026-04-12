@@ -23,22 +23,22 @@ export function AdminLayout() {
                 {/* Main Content */}
                 <main className="flex-1 flex flex-col min-w-0 bg-[#0f1115]">
                     {/* Mobile Menu Toggle Bar */}
-                    <div className="lg:hidden p-4 border-b border-white/5 bg-[#0d121c] flex items-center justify-between sticky top-[64px] z-30">
-                        <div className="flex items-center gap-3">
-                            <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                                <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    <div className="lg:hidden p-3 border-b border-white/5 bg-[#0d121c]/80 backdrop-blur-md flex items-center justify-between sticky top-[64px] z-40 transition-all shadow-lg">
+                        <div className="flex items-center gap-2">
+                            <div className="size-7 rounded-lg bg-primary/20 flex items-center justify-center text-primary border border-primary/20">
+                                <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
                             </div>
-                            <span className="text-white font-bold text-sm">لوحة الإدارة</span>
+                            <span className="text-white font-black text-xs tracking-tight">لوحة التحكم</span>
                         </div>
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all active:scale-90"
                         >
-                            <span className="material-symbols-outlined">menu</span>
+                            <span className="material-symbols-outlined text-[20px]">menu</span>
                         </button>
                     </div>
 
-                    <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto w-full max-w-[1600px] mx-auto">
+                    <div className="flex-1 p-3 md:p-6 lg:p-8 overflow-y-auto w-full max-w-[1600px] mx-auto scroll-smooth">
                         <Outlet />
                     </div>
                 </main>

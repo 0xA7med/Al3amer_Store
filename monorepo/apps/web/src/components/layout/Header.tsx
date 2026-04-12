@@ -563,19 +563,43 @@ export function Header() {
                         {/* Mobile Actions */}
                         <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-4">
                             {isAuthenticated ? (
-                                <Link
-                                    to="/account"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 text-gray-300 hover:text-white"
-                                >
-                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                                        {user?.name?.[0]}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-white">{user?.name}</span>
-                                        <span className="text-xs text-slate-400">عرض حسابي</span>
-                                    </div>
-                                </Link>
+                                <>
+                                    <Link
+                                        to="/account"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 text-gray-300 hover:text-white"
+                                    >
+                                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                            {user?.name?.[0]}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-white">{user?.name}</span>
+                                            <span className="text-xs text-slate-400">عرض حسابي</span>
+                                        </div>
+                                    </Link>
+
+                                    {user?.role === 'admin' && (
+                                        <Link
+                                            to="/admin"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                            className="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-bold"
+                                        >
+                                            <span className="material-symbols-outlined">admin_panel_settings</span>
+                                            <span>لوحة التحكم</span>
+                                        </Link>
+                                    )}
+
+                                    <button
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            logout();
+                                        }}
+                                        className="flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
+                                    >
+                                        <span className="material-symbols-outlined">logout</span>
+                                        <span>تسجيل الخروج</span>
+                                    </button>
+                                </>
                             ) : (
                                 <Link
                                     to="/login"

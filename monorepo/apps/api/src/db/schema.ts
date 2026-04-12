@@ -291,6 +291,25 @@ export const settings = pgTable('settings', {
         specs: boolean;
         price: boolean;
     }>(),
+
+    // Telegram Notifications
+    telegramEnabled: boolean('telegram_enabled').default(false),
+    telegramBotToken: text('telegram_bot_token'),
+    telegramChatId: text('telegram_chat_id'),
+
+    // WhatsApp Notifications (CallMeBot)
+    whatsappEnabled: boolean('whatsapp_enabled').default(false),
+    whatsappApiKey: text('whatsapp_api_key'),
+    whatsappRecipientPhone: text('whatsapp_recipient_phone'),
+
+    // Email Notifications (Simple SMTP)
+    emailEnabled: boolean('email_enabled').default(false),
+    smtpHost: text('smtp_host'),
+    smtpPort: integer('smtp_port').default(587),
+    smtpUser: text('smtp_user'),
+    smtpPass: text('smtp_pass'),
+    emailFrom: text('email_from'),
+    emailReceiver: text('email_receiver'),
 });
 
 // ============= BANNERS TABLE =============

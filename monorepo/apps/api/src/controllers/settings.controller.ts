@@ -23,6 +23,15 @@ export class SettingsController {
                 if (settingsRecord.aiApiKey) {
                     settingsRecord.aiApiKey = decryptText(settingsRecord.aiApiKey) || settingsRecord.aiApiKey;
                 }
+                if (settingsRecord.telegramBotToken) {
+                    settingsRecord.telegramBotToken = decryptText(settingsRecord.telegramBotToken) || settingsRecord.telegramBotToken;
+                }
+                if (settingsRecord.whatsappApiKey) {
+                    settingsRecord.whatsappApiKey = decryptText(settingsRecord.whatsappApiKey) || settingsRecord.whatsappApiKey;
+                }
+                if (settingsRecord.smtpPass) {
+                    settingsRecord.smtpPass = decryptText(settingsRecord.smtpPass) || settingsRecord.smtpPass;
+                }
                 return res.json(settingsRecord);
             }
 
@@ -153,6 +162,21 @@ export class SettingsController {
             if (updateData.aiApiKey) {
                 if (!updateData.aiApiKey.includes(':')) {
                     updateData.aiApiKey = encryptText(updateData.aiApiKey);
+                }
+            }
+            if (updateData.telegramBotToken) {
+                if (!updateData.telegramBotToken.includes(':')) {
+                    updateData.telegramBotToken = encryptText(updateData.telegramBotToken);
+                }
+            }
+            if (updateData.whatsappApiKey) {
+                if (!updateData.whatsappApiKey.includes(':')) {
+                    updateData.whatsappApiKey = encryptText(updateData.whatsappApiKey);
+                }
+            }
+            if (updateData.smtpPass) {
+                if (!updateData.smtpPass.includes(':')) {
+                    updateData.smtpPass = encryptText(updateData.smtpPass);
                 }
             }
 

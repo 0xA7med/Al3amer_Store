@@ -16,6 +16,7 @@ const CustomersManagement = () => {
     const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'blocked'>('all');
     const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<any>(null);
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     const handleDelete = async (customer: any) => {
         const confirmMsg = customer.type === 'guest' 
@@ -51,27 +52,27 @@ const CustomersManagement = () => {
     }
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-4 md:gap-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                    <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                         إدارة العملاء
                         <span className="h-6 w-px bg-white/10 mx-2"></span>
-                        <span className="text-slate-400 text-sm font-normal bg-white/5 px-2 py-1 rounded-md">
+                        <span className="text-slate-400 text-xs md:text-sm font-normal bg-white/5 px-2 py-1 rounded-md">
                             {customers.length} عميل
                         </span>
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-slate-300 transition-colors">
-                        <span className="material-symbols-outlined text-[20px]">file_download</span>
+                <div className="flex items-center gap-2 md:gap-3">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-slate-300 transition-colors text-sm">
+                        <span className="material-symbols-outlined text-[18px] md:text-[20px]">file_download</span>
                         تصدير
                     </button>
                     <button
                         onClick={() => setIsAddCustomerOpen(true)}
-                        className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                        className="flex-1 sm:flex-none justify-center bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
                     >
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         إضافة عميل
@@ -80,229 +81,201 @@ const CustomersManagement = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
-                    <div className="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <span className="material-symbols-outlined text-6xl text-primary">group</span>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-3 md:gap-4 relative overflow-hidden group hover:border-primary/30 transition-all">
+                    <div className="size-9 md:size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 transition-transform group-hover:scale-110">
+                        <span className="material-symbols-outlined text-[20px] md:text-[28px]">group</span>
                     </div>
-                    <div className="flex flex-col gap-1 relative z-10">
-                        <p className="text-slate-400 text-sm font-medium">إجمالي العملاء</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">{customers.length}</h3>
-                        <p className="text-emerald-400 text-xs flex items-center gap-1 mt-1">
-                            <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                            +12% هذا الشهر
-                        </p>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <p className="text-slate-400 text-[9px] md:text-sm font-medium truncate">إجمالي العملاء</p>
+                        <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{customers.length}</h3>
                     </div>
                 </div>
-                <div className="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-                    <div className="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <span className="material-symbols-outlined text-6xl text-emerald-500">person_add</span>
+
+                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-3 md:gap-4 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                    <div className="size-9 md:size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 transition-transform group-hover:scale-110">
+                        <span className="material-symbols-outlined text-[20px] md:text-[28px]">how_to_reg</span>
                     </div>
-                    <div className="flex flex-col gap-1 relative z-10">
-                        <p className="text-slate-400 text-sm font-medium">عملاء جدد</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">{customers.filter(c => new Date(c.joinDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</h3>
-                        <p className="text-slate-500 text-xs mt-1">آخر 30 يوم</p>
-                    </div>
-                </div>
-                <div className="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-secondary/30 transition-all">
-                    <div className="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <span className="material-symbols-outlined text-6xl text-secondary">shopping_cart</span>
-                    </div>
-                    <div className="flex flex-col gap-1 relative z-10">
-                        <p className="text-slate-400 text-sm font-medium">متوسط الطلبات</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">
-                            {customers.length ? (customers.reduce((acc, c) => acc + c.orders, 0) / customers.length).toFixed(1) : 0}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <p className="text-slate-400 text-[9px] md:text-sm font-medium truncate">عملاء جدد</p>
+                        <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">
+                            {customers.filter(c => new Date(c.joinDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
                         </h3>
-                        <p className="text-slate-500 text-xs mt-1"> لكل عميل</p>
                     </div>
                 </div>
-                <div className="glass-panel rounded-xl p-6 relative overflow-hidden group hover:border-red-500/30 transition-all">
-                    <div className="absolute top-0 left-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <span className="material-symbols-outlined text-6xl text-red-500">block</span>
+
+                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-3 md:gap-4 relative overflow-hidden group hover:border-amber-500/30 transition-all">
+                    <div className="size-9 md:size-12 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0 transition-transform group-hover:scale-110">
+                        <span className="material-symbols-outlined text-[20px] md:text-[28px]">shopping_cart_checkout</span>
                     </div>
-                    <div className="flex flex-col gap-1 relative z-10">
-                        <p className="text-slate-400 text-sm font-medium">حسابات محظورة</p>
-                        <h3 className="text-2xl font-bold text-white mt-1">{customers.filter(c => c.status === 'blocked').length}</h3>
-                        <p className="text-red-400 text-xs mt-1">يتطلب مراجعة</p>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <p className="text-slate-400 text-[9px] md:text-sm font-medium truncate">تكرار الشراء</p>
+                        <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{customers.filter(c => c.orders > 1).length}</h3>
+                    </div>
+                </div>
+
+                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-3 md:gap-4 relative overflow-hidden group hover:border-red-500/30 transition-all">
+                    <div className="size-9 md:size-12 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 shrink-0 transition-transform group-hover:scale-110">
+                        <span className="material-symbols-outlined text-[20px] md:text-[28px]">block</span>
+                    </div>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                        <p className="text-slate-400 text-[9px] md:text-sm font-medium truncate">حسابات محظورة</p>
+                        <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{customers.filter(c => c.status === 'blocked').length}</h3>
                     </div>
                 </div>
             </div>
 
-            {/* Customers Table */}
-            <div className="glass-panel rounded-xl overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="relative w-80">
-                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+            {/* Customers Listing */}
+            <div className="flex flex-col gap-4">
+                {/* Search & Tabs (Mobile: Collapsible) */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between lg:hidden px-1">
+                        <p className="text-slate-400 text-xs font-bold">تصفية النتائج</p>
+                        <button 
+                            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-xs font-bold transition-all"
+                        >
+                            <span className="material-symbols-outlined text-sm">{isFiltersOpen ? 'expand_less' : 'filter_list'}</span>
+                            {isFiltersOpen ? 'إغلاق' : 'فلترة'}
+                        </button>
+                    </div>
+
+                    <div className={`${isFiltersOpen ? 'flex' : 'hidden md:flex'} glass-panel rounded-xl p-4 flex-col md:flex-row items-stretch md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200`}>
+                        <div className="relative flex-1 md:max-w-xs">
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="بحث بالاسم، الإيميل، أو الهاتف..."
-                                className="w-full h-10 bg-[#161b26] border border-white/10 rounded-lg pr-10 pl-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-500 transition-all"
+                                className="w-full h-11 bg-[#161b26] border border-white/10 rounded-lg pr-10 pl-4 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-500 transition-all font-bold"
                             />
                         </div>
-                    </div>
-                    <div className="flex bg-[#161b26] rounded-lg p-1 border border-white/5">
-                        <button
-                            onClick={() => setFilterStatus('all')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === 'all' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            الكل
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('active')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === 'active' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            النشطة
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('blocked')}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === 'blocked' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            المحظورة
-                        </button>
+                        <div className="flex bg-[#161b26] rounded-lg p-1 border border-white/5 overflow-x-auto no-scrollbar">
+                            <button
+                                onClick={() => setFilterStatus('all')}
+                                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${filterStatus === 'all' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                الكل
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('active')}
+                                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${filterStatus === 'active' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                النشطة
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('blocked')}
+                                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all whitespace-nowrap ${filterStatus === 'blocked' ? 'bg-red-500 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                المحظورة
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-right">
-                        <thead className="bg-white/5 text-slate-400 font-medium">
-                            <tr>
-                                <th className="px-6 py-4 whitespace-nowrap">العميل</th>
-                                <th className="px-6 py-4 whitespace-nowrap">معلومات الاتصال</th>
-                                <th className="px-6 py-4 whitespace-nowrap">العنوان</th>
-                                <th className="px-6 py-4 whitespace-nowrap">الطلبات</th>
-                                <th className="px-6 py-4 whitespace-nowrap">إجمالي المشتريات</th>
-                                <th className="px-6 py-4 whitespace-nowrap">الحالة</th>
-                                <th className="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5 text-slate-300">
-                            {filteredCustomers.map((customer) => (
-                                <tr
-                                    key={customer.id}
-                                    className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                    onClick={() => navigate(`/admin/customers/${customer.phone}`)}
-                                >
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="size-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                                                <span className="material-symbols-outlined text-slate-400">person</span>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-bold text-white">{customer.name}</p>
-                                                    {customer.type === 'guest' && (
-                                                        <span className="text-[10px] bg-slate-500/20 text-slate-400 px-1.5 py-0.5 rounded border border-slate-500/20">زائر</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-slate-500 mt-1 font-mono dir-ltr">{customer.joinDate}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2 text-slate-300">
-                                                <span className="material-symbols-outlined text-[16px] text-slate-500">mail</span>
-                                                <span className="text-xs font-mono">{customer.email}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-slate-300">
-                                                <span className="material-symbols-outlined text-[16px] text-slate-500">call</span>
-                                                <span className="text-xs font-mono dir-ltr">{customer.phone}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-400">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-[16px]">location_on</span>
-                                                {customer.governorate && <span className="font-medium text-white">{customer.governorate}</span>}
-                                                {customer.city && <span className="text-xs">({customer.city})</span>}
-                                            </div>
-                                            {customer.address && <p className="text-xs text-slate-500">{customer.address}</p>}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-white">{customer.orders}</span>
-                                            <span className="text-xs text-slate-500">طلب</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-emerald-400 font-bold font-mono">{customer.totalSpent.toLocaleString()} ج.م</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${customer.status === 'active'
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                            : customer.status === 'blocked'
-                                                ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                                            }`}>
-                                            <span className={`size-1.5 rounded-full ${customer.status === 'active' ? 'bg-emerald-400' :
-                                                customer.status === 'blocked' ? 'bg-red-400' : 'bg-slate-400'
-                                                }`}></span>
-                                            {customer.status === 'active' ? 'نشط' : customer.status === 'blocked' ? 'محظور' : 'غير نشط'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-left">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    updateStatus(customer.id, customer.status === 'active' ? 'blocked' : 'active');
-                                                }}
-                                                className="p-1.5 rounded hover:bg-white/10 text-slate-400 transition-colors"
-                                                title={customer.status === 'active' ? 'حظر' : 'تنشيط'}
-                                            >
-                                                <span className={`material-symbols-outlined text-[20px] ${customer.status === 'active' ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                    {customer.status === 'active' ? 'block' : 'check_circle'}
-                                                </span>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setEditingCustomer(customer);
-                                                }}
-                                                className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition-colors"
-                                                title="تعديل"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDelete(customer);
-                                                }}
-                                                className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-colors"
-                                                title="حذف"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">delete</span>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/admin/customers/${customer.phone}`);
-                                                }}
-                                                className="p-1.5 rounded hover:bg-primary/20 text-slate-400 hover:text-primary transition-colors"
-                                                title="ملف العميل"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">person</span>
-                                            </button>
-                                            <a
-                                                href={`mailto:${customer.email}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                                                title="مراسلة"
-                                            >
-                                                <span className="material-symbols-outlined text-[20px]">mail</span>
-                                            </a>
-                                        </div>
-                                    </td>
+                <div className="hidden lg:block glass-panel rounded-xl overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-right">
+                            <thead className="bg-white/5 text-slate-400 font-medium">
+                                <tr>
+                                    <th className="px-6 py-4 whitespace-nowrap">العميل</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">معلومات الاتصال</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">العنوان</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">الطلبات</th>
+                                    <th className="px-6 py-4 whitespace-nowrap text-left">إجمالي المشتريات</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">الحالة</th>
+                                    <th className="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-white/5 text-slate-300">
+                                {filteredCustomers.map((customer) => (
+                                    <tr
+                                        key={customer.id}
+                                        className="hover:bg-white/5 transition-colors group cursor-pointer"
+                                        onClick={() => navigate(`/admin/customers/${customer.phone}`)}
+                                    >
+                                        <td className="px-6 py-4 font-bold text-white whitespace-nowrap">{customer.name}</td>
+                                        <td className="px-6 py-4 font-mono text-slate-400 whitespace-nowrap">{customer.phone}</td>
+                                        <td className="px-6 py-4 text-slate-400">{customer.governorate}</td>
+                                        <td className="px-6 py-4 font-bold text-white">{customer.orders}</td>
+                                        <td className="px-6 py-4 text-left font-bold text-emerald-400 font-mono">{customer.totalSpent.toLocaleString()} ج.م</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${customer.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                                                {customer.status === 'active' ? 'نشط' : 'محظور'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-left" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button onClick={() => updateStatus(customer.id, customer.status === 'active' ? 'blocked' : 'active')} className="p-1.5 rounded hover:bg-white/5 text-slate-400 transition-all"><span className="material-symbols-outlined text-[18px]">block</span></button>
+                                                <button onClick={() => setEditingCustomer(customer)} className="p-1.5 rounded hover:bg-white/5 text-slate-400 transition-all"><span className="material-symbols-outlined text-[18px]">edit</span></button>
+                                                <button onClick={() => handleDelete(customer)} className="p-1.5 rounded hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-all"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Mobile View (Cards) */}
+                <div className="lg:hidden flex flex-col gap-3 pb-4">
+                    {filteredCustomers.map((customer) => (
+                        <div 
+                            key={customer.id} 
+                            className="glass-panel rounded-xl p-4 flex flex-col gap-4 relative"
+                            onClick={() => navigate(`/admin/customers/${customer.phone}`)}
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="size-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shrink-0">
+                                        <span className="material-symbols-outlined text-slate-400 text-lg">person</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-white text-sm truncate">{customer.name}</p>
+                                        <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{customer.joinDate}</p>
+                                    </div>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border shrink-0 ${customer.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                                    {customer.status === 'active' ? 'نشط' : 'محظور'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500 font-bold">الهاتف</span>
+                                    <p className="text-xs text-white font-mono">{customer.phone}</p>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500 font-bold">المحافظة</span>
+                                    <p className="text-xs text-white">{customer.governorate || 'غير محدد'}</p>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500 font-bold">الطلبات</span>
+                                    <p className="text-xs text-white font-bold">{customer.orders} طلب</p>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-slate-500 font-bold">الإنفاق</span>
+                                    <p className="text-xs text-emerald-400 font-bold">{customer.totalSpent.toLocaleString('ar-EG')} ج.م</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center gap-2">
+                                    <a href={`tel:${customer.phone}`} className="size-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/10">
+                                        <span className="material-symbols-outlined text-lg">call</span>
+                                    </a>
+                                    <button onClick={() => setEditingCustomer(customer)} className="size-9 rounded-lg bg-white/5 text-slate-400 flex items-center justify-center border border-white/10">
+                                        <span className="material-symbols-outlined text-lg">edit</span>
+                                    </button>
+                                </div>
+                                <button onClick={() => handleDelete(customer)} className="size-9 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center border border-red-500/10">
+                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Pagination (Static for now) */}
