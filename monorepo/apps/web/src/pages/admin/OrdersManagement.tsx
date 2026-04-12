@@ -318,10 +318,16 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
         phone: '', 
         phone2: '',
         address: '', 
-        city: '', 
         governorate: '', 
         notes: '' 
     });
+    
+    // New payment options state
+    const [paymentOptions, setPaymentOptions] = useState({
+        type: 'cod', // 'cod', 'partial', 'paid'
+        advance: ''
+    });
+
     const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
@@ -339,14 +345,30 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
         try {
             const finalNotes = (customer.phone2 ? `رقم إضافي: ${customer.phone2}\n` : '') + (customer.notes || '');
             
+            let finalAdvance = 0;
+            let finalMethod = 'cod';
+            let totalAtDelivery = total;
+            
+            if (paymentOptions.type === 'partial') {
+                finalAdvance = Number(paymentOptions.advance) || 0;
+                finalMethod = 'cod';
+                totalAtDelivery = Math.max(0, total - finalAdvance);
+            } else if (paymentOptions.type === 'paid') {
+                finalAdvance = total;
+                finalMethod = 'manual_paid';
+                totalAtDelivery = 0;
+            }
+
             await api.post('/orders', {
                 fullName: customer.name, 
                 phone: customer.phone, 
                 address: customer.address,
-                city: customer.city, 
+                city: 'لا يوجد',
                 governorate: customer.governorate, 
                 notes: finalNotes,
-                paymentMethod: 'cod',
+                paymentMethod: finalMethod,
+                codAdvancePayment: finalAdvance,
+                totalAtDelivery: totalAtDelivery,
                 items: cart.map(i => ({ productId: i.product.id, quantity: i.quantity }))
             });
             toast.success('تم إنشاء الطلب بنجاح');
@@ -365,46 +387,75 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
                     <h3 className="text-lg md:text-xl font-bold text-white">إنشاء طلب جديد</h3>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><span className="material-symbols-outlined text-slate-400">close</span></button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    <div className="space-y-4">
-                        <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
-                                <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="مثال: أحمد محمد" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 space-y-6">
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
+                                    <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="مثال: أحمد محمد" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">رقم الهاتف الأساسي</label>
+                                    <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="01xxxxxxxxx" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">رقم هاتف إضافي (اختياري)</label>
+                                    <input value={customer.phone2} onChange={e => setCustomer({ ...customer, phone2: e.target.value })} placeholder="رقم بديل" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">المحافظة</label>
+                                    <select 
+                                        value={customer.governorate} 
+                                        onChange={e => setCustomer({ ...customer, governorate: e.target.value })} 
+                                        className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none appearance-none"
+                                    >
+                                        <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
+                                        {GOVERNORATES.map(gov => (
+                                            <option key={gov} value={gov} className="bg-[#1e2330]">{gov}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1 md:col-span-2">
+                                    <label className="text-xs text-slate-400 mr-2">العنوان بالتفصيل</label>
+                                    <input value={customer.address} onChange={e => setCustomer({ ...customer, address: e.target.value })} placeholder="اسم الشارع، رقم العقار..." className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-1 md:col-span-2">
+                                    <label className="text-xs text-slate-400 mr-2">ملاحظات الطلب (اختياري)</label>
+                                    <textarea value={customer.notes} onChange={e => setCustomer({ ...customer, notes: e.target.value })} placeholder="أي ملاحظات إضافية..." rows={2} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none resize-none" />
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-400 mr-2">رقم الهاتف الأساسي</label>
-                                <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="01xxxxxxxxx" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-400 mr-2">رقم هاتف إضافي (اختياري)</label>
-                                <input value={customer.phone2} onChange={e => setCustomer({ ...customer, phone2: e.target.value })} placeholder="رقم بديل" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-400 mr-2">المحافظة</label>
-                                <select 
-                                    value={customer.governorate} 
-                                    onChange={e => setCustomer({ ...customer, governorate: e.target.value })} 
-                                    className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none appearance-none"
-                                >
-                                    <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
-                                    {GOVERNORATES.map(gov => (
-                                        <option key={gov} value={gov} className="bg-[#1e2330]">{gov}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-400 mr-2">المدينة / الحي</label>
-                                <input value={customer.city} onChange={e => setCustomer({ ...customer, city: e.target.value })} placeholder="مثال: المعادي" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-1 md:col-span-2">
-                                <label className="text-xs text-slate-400 mr-2">العنوان بالتفصيل</label>
-                                <input value={customer.address} onChange={e => setCustomer({ ...customer, address: e.target.value })} placeholder="اسم الشارع، رقم العقار..." className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
-                            </div>
-                            <div className="space-y-1 md:col-span-2">
-                                <label className="text-xs text-slate-400 mr-2">ملاحظات الطلب (اختياري)</label>
-                                <textarea value={customer.notes} onChange={e => setCustomer({ ...customer, notes: e.target.value })} placeholder="أي ملاحظات إضافية..." rows={2} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none resize-none" />
+                        </div>
+
+                        {/* Payment Details Section */}
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-bold text-primary uppercase tracking-wider">تفاصيل الدفع</h4>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">طريقة الدفع</label>
+                                    <select 
+                                        value={paymentOptions.type} 
+                                        onChange={e => setPaymentOptions({ ...paymentOptions, type: e.target.value, advance: '' })} 
+                                        className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none appearance-none"
+                                    >
+                                        <option value="cod" className="bg-[#1e2330]">دفع عند الاستلام (بالكامل)</option>
+                                        <option value="partial" className="bg-[#1e2330]">دفع جزئي (عربون)</option>
+                                        <option value="paid" className="bg-[#1e2330]">مدفوع بالكامل (مقدماً)</option>
+                                    </select>
+                                </div>
+                                {paymentOptions.type === 'partial' && (
+                                    <div className="space-y-1 animate-in fade-in zoom-in-95 duration-200">
+                                        <label className="text-xs text-slate-400 mr-2">عربون (المبلغ المدفوع مقدماً)</label>
+                                        <input 
+                                            type="number"
+                                            value={paymentOptions.advance} 
+                                            onChange={e => setPaymentOptions({ ...paymentOptions, advance: e.target.value })} 
+                                            placeholder="أدخل مبلغ العربون" 
+                                            className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" 
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -478,7 +529,7 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
                             <button onClick={onClose} className="flex-1 py-3 rounded-xl text-slate-300 hover:bg-white/5 border border-white/10 transition-colors text-sm font-medium">إلغاء</button>
                             <button 
                                 onClick={handleSubmit} 
-                                disabled={isSubmitting || cart.length === 0 || !customer.name || !customer.address || !customer.governorate || !customer.city || !customer.phone} 
+                                disabled={isSubmitting || cart.length === 0 || !customer.name || !customer.address || !customer.governorate || !customer.phone || (paymentOptions.type === 'partial' && !paymentOptions.advance)} 
                                 className="flex-[2] py-3 rounded-xl bg-primary hover:brightness-110 text-white font-black shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.2)] disabled:opacity-30 disabled:grayscale transition-all flex items-center justify-center gap-2 text-sm"
                             >
                                 {isSubmitting ? (

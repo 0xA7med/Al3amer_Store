@@ -40,19 +40,34 @@ export class NotificationService {
     private static formatOrderMessage(order: any): string {
         const itemsList = order.items?.map((item: any) => `- ${item.name} (x${item.quantity}) - ${item.price} ج.م`).join('\n') || '';
         
+        let paymentInfo = `💳 *طريقة الدفع:* `;
+        if (order.paymentMethod === 'cod') {
+            if (order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0) {
+                paymentInfo += `عربون (دفع جزئي)\n💸 *المدفوع مقدماً:* ${order.codAdvancePayment} ج.م\n💵 *المطلوب عند الاستلام:* ${order.totalAtDelivery || (parseFloat(order.total) - parseFloat(order.codAdvancePayment))} ج.م`;
+            } else {
+                paymentInfo += `دفع عند الاستلام\n💵 *المطلوب عند الاستلام:* ${order.totalAtDelivery || order.total} ج.م`;
+            }
+        } else if (order.paymentMethod === 'manual_paid') {
+            paymentInfo += `مدفوع مقدماً بالكامل\n💵 *المطلوب عند الاستلام:* 0 ج.م`;
+        } else {
+            paymentInfo += `دفع إلكتروني\n💵 *المطلوب عند الاستلام:* 0 ج.م`;
+        }
+
+        const locationInfo = order.city && order.city !== 'لا يوجد' ? `${order.governorate} - ${order.city}` : `${order.governorate}`;
+
         return `📦 *طلب جديد رقم ${order.orderNumber}*
         
 👤 *العميل:* ${order.fullName}
 📞 *الهاتف:* ${order.phone}
-📍 *العنوان:* ${order.governorate} - ${order.city}
+📍 *العنوان:* ${locationInfo}
 🏠 *التفاصيل:* ${order.address}
 📝 *الملاحظات:* ${order.notes || 'لا يوجد'}
 
 🛒 *المنتجات:*
 ${itemsList}
 
-💰 *الإجمالي:* ${order.total} ج.م
-💳 *طريقة الدفع:* ${order.paymentMethod === 'cod' ? 'دفع عند الاستلام' : 'دفع إلكتروني'}
+💰 *إجمالي قيمة الطلب:* ${order.total} ج.م
+${paymentInfo}
 
 ---
 نتمنى لك يوماً سعيداً! 🚀`;
@@ -76,7 +91,8 @@ ${itemsList}
         try {
             // CallMeBot API: https://api.callmebot.com/whatsapp.php?phone=[phone]&text=[text]&apikey=[apikey]
             const encodedText = encodeURIComponent(message.replace(/\*/g, '')); // CallMeBot doesn't support markdown well
-            const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodedText}&apikey=${apiKey}`;
+            const encodedPhone = encodeURIComponent(phone.trim());
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${encodedPhone}&text=${encodedText}&apikey=${apiKey}`;
             
             await axios.get(url);
             console.log('✅ [Notification] WhatsApp (CallMeBot) message sent');

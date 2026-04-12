@@ -193,7 +193,10 @@ export function CheckoutPage() {
             })),
             shippingCost,
             taxAmount: vatAmount,
-            extraFee: codExtraFee,
+            extraFee: codReturnFee, // Legacy fallback
+            codAdvancePayment: codAdvancePaymentAmount,
+            codReturnShipping: codReturnFee,
+            totalAtDelivery: codTotalAtDelivery,
             couponCode: appliedCoupon ? appliedCoupon.code : undefined,
             totalAmount: finalTotal,
             discountAmount: discountAmount,
@@ -228,11 +231,6 @@ export function CheckoutPage() {
         ? (totalPrice * (parseFloat(settings.taxPercentage || '0') / 100))
         : 0;
 
-    // COD Extra fee if selected
-    const codExtraFee = (formData.paymentMethod === 'cod' && settings.codEnabled)
-        ? parseFloat(settings.codExtraFee || '0')
-        : 0;
-
     // Calculate Discount
     let discountAmount = 0;
     if (appliedCoupon) {
@@ -247,7 +245,31 @@ export function CheckoutPage() {
         discountAmount = Math.min(discountAmount, totalPrice);
     }
 
-    const finalTotal = Math.max(0, totalPrice + shippingCost + vatAmount + codExtraFee - discountAmount);
+    // COD Advanced Settings and logic
+    const isCodEnabled = settings.codEnabled ?? true;
+    const isCodSelected = formData.paymentMethod === 'cod' && isCodEnabled;
+    const codAdvancePaymentSetting = parseFloat(settings.codAdvancePayment || '100');
+    const codReturnShippingBaseAmount = parseFloat(settings.codReturnShippingBaseAmount || '1000');
+    const codReturnShippingBaseFee = parseFloat(settings.codReturnShippingBaseFee || '30');
+    const codReturnShippingExtraAmount = parseFloat(settings.codReturnShippingExtraAmount || '1000');
+    const codReturnShippingExtraFee = parseFloat(settings.codReturnShippingExtraFee || '5');
+
+    // COD Return fee calculation
+    let codReturnFee = 0;
+    if (isCodSelected) {
+        const amountForCODCalc = totalPrice; // Calculate return fee based on subtotal (products price)
+        if (amountForCODCalc > 0) {
+            const remainingAmount = Math.max(0, amountForCODCalc - codReturnShippingBaseAmount);
+            const extraChunks = Math.ceil(remainingAmount / codReturnShippingExtraAmount);
+            codReturnFee = codReturnShippingBaseFee + (extraChunks * codReturnShippingExtraFee);
+        }
+    }
+
+    const codAdvancePaymentAmount = isCodSelected ? codAdvancePaymentSetting : 0;
+    const finalTotal = Math.max(0, totalPrice + shippingCost + vatAmount + codReturnFee - discountAmount);
+    
+    // Total At Delivery = Final Total - Advance Payment (but never less than 0)
+    const codTotalAtDelivery = isCodSelected ? Math.max(0, finalTotal - codAdvancePaymentAmount) : finalTotal;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -520,22 +542,27 @@ export function CheckoutPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="block text-slate-400 text-sm font-medium">المحافظة</label>
+                                    <div className="space-y-2 relative">
+                                        <label className="text-white text-sm font-medium flex items-center justify-between">
+                                            <span>المحافظة *</span>
+                                        </label>
                                         <div className="relative">
                                             <select
                                                 required
                                                 value={formData.governorate}
-                                                onChange={e => setFormData({ ...formData, governorate: e.target.value })}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer hover:bg-white/[0.07]"
+                                                onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
+                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none"
                                             >
-                                                <option value="" className="bg-[#181a20]">اختر المحافظة...</option>
-                                                {GOVERNORATES.map(gov => (
-                                                    <option key={gov} value={gov} className="bg-[#181a20]">{gov}</option>
+                                                <option value="" disabled>اختر المحافظة...</option>
+                                                {GOVERNORATES.map((gov) => (
+                                                    <option key={gov} value={gov}>{gov}</option>
                                                 ))}
                                             </select>
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <span className="material-symbols-outlined text-lg">expand_more</span>
+                                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                                map
+                                            </span>
+                                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                                expand_more
                                             </span>
                                         </div>
                                     </div>
@@ -783,25 +810,37 @@ export function CheckoutPage() {
                             ))}
                         </div>
 
-                        <div className="border-t border-white/10 pt-4 space-y-2 text-sm">
+                        <div className="border-t border-white/10 pt-4 space-y-3 text-sm">
                             <div className="flex justify-between text-slate-400">
                                 <span>المجموع الفرعي</span>
                                 <span>{totalPrice.toLocaleString()} ج.م</span>
                             </div>
+
                             <div className="flex justify-between text-slate-400">
-                                <span>الشحن</span>
+                                <span>مصاريف الشحن</span>
                                 <span>{shippingCost === 0 ? 'مجاني' : `${shippingCost.toLocaleString()} ج.م`}</span>
                             </div>
+
+                            {/* COD Return Fee (if applicable) */}
+                            {isCodSelected && codReturnFee > 0 && (
+                                <div className="flex justify-between text-slate-400 group relative">
+                                    <span className="flex items-center gap-1 cursor-help underline decoration-dashed underline-offset-4 decoration-slate-500">
+                                        رسوم شحن عودة المبلغ (COD)
+                                        <span className="material-symbols-outlined text-[14px] text-slate-500">info</span>
+                                        
+                                        {/* Tooltip */}
+                                        <div className="absolute top-6 right-0 w-64 bg-[#1a1d24] text-slate-300 text-xs p-3 rounded-lg border border-[#3b4354] shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                            تقوم شركة الشحن بخصم هذه المصاريف كعمولة تحصيل لترد لنا قيمة الطلب نقداً.
+                                        </div>
+                                    </span>
+                                    <span className="text-orange-400 font-bold">+{codReturnFee.toFixed(2)} ج.م</span>
+                                </div>
+                            )}
+
                             {settings.vatEnabled && vatAmount > 0 && (
                                 <div className="flex justify-between text-slate-400">
                                     <span>ضريبة القيمة المضافة ({settings.taxPercentage}%)</span>
                                     <span>{vatAmount.toFixed(2)} ج.م</span>
-                                </div>
-                            )}
-                            {codExtraFee > 0 && (
-                                <div className="flex justify-between text-slate-400">
-                                    <span>رسوم الدفع عند الاستلام</span>
-                                    <span>{codExtraFee.toLocaleString()} ج.م</span>
                                 </div>
                             )}
 
@@ -848,9 +887,34 @@ export function CheckoutPage() {
                                 </div>
                             )}
                             <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
-                                <span>الإجمالي</span>
+                                <span>الإجمالي الكلي</span>
                                 <span className="text-primary">{finalTotal.toLocaleString()} ج.م</span>
                             </div>
+
+                            {/* COD Advance Payment Notice */}
+                            {isCodSelected && (
+                                <div className="mt-4 space-y-3">
+                                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                                        <div className="flex items-start gap-2">
+                                            <span className="material-symbols-outlined text-orange-400 text-sm mt-0.5">error</span>
+                                            <div>
+                                                <h4 className="text-orange-400 font-bold text-xs mb-1">لتأكيد الطلب</h4>
+                                                <p className="text-gray-300 text-[11px] leading-relaxed">
+                                                    سيتم التواصل معك لتحصيل <strong className="text-white">{codAdvancePaymentAmount.toLocaleString()} ج.م</strong> كمقدم تأكيد طلب (فودافون كاش / إنستاباي).
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm text-gray-400">
+                                        <span>مطلوب دفعه مقدماً لتأكيد الطلب</span>
+                                        <span className="text-white">{codAdvancePaymentAmount.toLocaleString()} ج.م</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm font-bold bg-white/5 p-3 rounded-lg border border-white/10">
+                                        <span className="text-white">المبلغ المُتبقي وقت الاستلام</span>
+                                        <span className="text-emerald-400">{codTotalAtDelivery.toLocaleString()} ج.م</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

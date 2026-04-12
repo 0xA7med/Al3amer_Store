@@ -5,6 +5,13 @@ import toast from 'react-hot-toast';
 
 type Tab = 'general' | 'contact' | 'social' | 'shipping' | 'tax' | 'payment' | 'notifications';
 
+const EGYPT_GOVERNORATES = [
+    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
+    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
+    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
+    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
+];
+
 export default function SettingsPage() {
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<Tab>('general');
@@ -40,6 +47,11 @@ export default function SettingsPage() {
         // Payment
         codEnabled: true,
         codExtraFee: '0',
+        codAdvancePayment: '100',
+        codReturnShippingBaseFee: '30',
+        codReturnShippingBaseAmount: '1000',
+        codReturnShippingExtraFee: '5',
+        codReturnShippingExtraAmount: '1000',
         paymobEnabled: false,
         paymobApiKey: '',
         paymobIntegrationCard: '',
@@ -397,17 +409,20 @@ export default function SettingsPage() {
                                         <div key={index} className="flex gap-4 items-end bg-black/20 p-4 rounded-xl border border-white/5">
                                             <div className="flex-1 space-y-2">
                                                 <label className="text-gray-400 text-xs">المحافظة / المدينة</label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={rate.city}
                                                     onChange={(e) => {
                                                         const newRates = [...formData.cityShippingRates];
                                                         newRates[index].city = e.target.value;
                                                         setFormData({ ...formData, cityShippingRates: newRates });
                                                     }}
-                                                    className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-all text-sm"
-                                                    placeholder="مثال: القاهرة"
-                                                />
+                                                    className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-all text-sm appearance-none"
+                                                >
+                                                    <option value="" disabled>اختر المحافظة...</option>
+                                                    {EGYPT_GOVERNORATES.map(gov => (
+                                                        <option key={gov} value={gov}>{gov}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div className="w-40 space-y-2">
                                                 <label className="text-gray-400 text-xs">التكلفة (ج.م)</label>
@@ -442,6 +457,63 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* COD Settings */}
+                            <div className="border-t border-white/10 pt-6 space-y-4">
+                                <h4 className="text-white font-bold flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">local_shipping</span>
+                                    إعدادات الدفع عند الاستلام (COD)
+                                </h4>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-xs font-medium" title="المبلغ الذي يتم تحصيله من العميل عبر فودافون كاش قبل الشحن كجدية حجز">المقدم المطلوب (ج.م) <span className="material-symbols-outlined text-[10px] text-gray-500 cursor-help">info</span></label>
+                                        <input
+                                            type="number"
+                                            value={formData.codAdvancePayment || ''}
+                                            onChange={(e) => setFormData({ ...formData, codAdvancePayment: e.target.value })}
+                                            className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-xs font-medium" title="هذا هو المبلغ الأساسي الذي تطبق عليه الرسوم (مثلاً: أول 1000 ج.م)">المبلغ الأساسي للرسوم (ج.م)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.codReturnShippingBaseAmount || ''}
+                                            onChange={(e) => setFormData({ ...formData, codReturnShippingBaseAmount: e.target.value })}
+                                            className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-xs font-medium" title="الرسوم التي تأخذها شركة الشحن على المبلغ الأساسي (مثلاً: 30 ج.م)">الرسوم الأساسية للتحصيل (ج.م)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.codReturnShippingBaseFee || ''}
+                                            onChange={(e) => setFormData({ ...formData, codReturnShippingBaseFee: e.target.value })}
+                                            className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-xs font-medium" title="شريحة المبلغ الإضافية التي تطبق عليها الرسوم الإضافية (مثلاً: 1000 ج.م)">شريحة الزيادة الإضافية (ج.م)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.codReturnShippingExtraAmount || ''}
+                                            onChange={(e) => setFormData({ ...formData, codReturnShippingExtraAmount: e.target.value })}
+                                            className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-xs font-medium" title="الرسوم التي تطبق على كل شريحة زيادة (مثلاً: 5 ج.م على كل 1000 ج.م زيادة)">الرسوم الإضافية للتحصيل (ج.م)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.codReturnShippingExtraFee || ''}
+                                            onChange={(e) => setFormData({ ...formData, codReturnShippingExtraFee: e.target.value })}
+                                            className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     )}
 

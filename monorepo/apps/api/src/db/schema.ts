@@ -178,6 +178,9 @@ export const orders = pgTable('orders', {
     status: text('status').default('pending'), // pending | processing | shipping | delivered
     subtotal: numeric('subtotal', { precision: 10, scale: 2 }).notNull(),
     shippingCost: numeric('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('0'),
+    codReturnShipping: numeric('cod_return_shipping', { precision: 10, scale: 2 }).default('0'),
+    totalAtDelivery: numeric('total_at_delivery', { precision: 10, scale: 2 }).default('0'),
     taxAmount: numeric('tax_amount', { precision: 10, scale: 2 }).default('0'),
     extraFee: numeric('extra_fee', { precision: 10, scale: 2 }).default('0'),
     total: numeric('total', { precision: 10, scale: 2 }).notNull(),
@@ -257,6 +260,12 @@ export const settings = pgTable('settings', {
     paymobIframeId: text('paymob_iframe_id'),
     codEnabled: boolean('cod_enabled').default(true),
     codExtraFee: numeric('cod_extra_fee', { precision: 10, scale: 2 }).default('0'),
+    // COD Advanced Shipment Settings
+    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('100'),
+    codReturnShippingBaseFee: numeric('cod_return_shipping_base_fee', { precision: 10, scale: 2 }).default('30'),
+    codReturnShippingBaseAmount: numeric('cod_return_shipping_base_amount', { precision: 10, scale: 2 }).default('1000'),
+    codReturnShippingExtraFee: numeric('cod_return_shipping_extra_fee', { precision: 10, scale: 2 }).default('5'),
+    codReturnShippingExtraAmount: numeric('cod_return_shipping_extra_amount', { precision: 10, scale: 2 }).default('1000'),
     // Shipping
     shippingFlatRate: numeric('shipping_flat_rate', { precision: 10, scale: 2 }).default('50'),
     freeShippingThreshold: numeric('free_shipping_threshold', { precision: 10, scale: 2 }).default('2000'),

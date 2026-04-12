@@ -24,6 +24,9 @@ export class OrdersController {
                 shippingCost = 0,
                 taxAmount = 0,
                 extraFee = 0,
+                codAdvancePayment = 0,
+                codReturnShipping = 0,
+                totalAtDelivery = 0,
                 couponCode,
                 walletNumber,
                 paymobOrderId, // Provided for pre-paid online orders
@@ -142,6 +145,9 @@ export class OrdersController {
                 shippingCost: shippingCost.toString(),
                 taxAmount: taxAmount.toString(),
                 extraFee: extraFee.toString(),
+                codAdvancePayment: codAdvancePayment.toString(),
+                codReturnShipping: codReturnShipping.toString(),
+                totalAtDelivery: totalAtDelivery.toString(),
                 total: total.toString(),
                 status: orderStatus,
                 paymobOrderId: null, // Will be set during payment verification
