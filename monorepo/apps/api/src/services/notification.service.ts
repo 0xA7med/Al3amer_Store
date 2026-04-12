@@ -16,19 +16,19 @@ export class NotificationService {
 
             // 1. Telegram
             if (appSettings.telegramEnabled && appSettings.telegramBotToken && appSettings.telegramChatId) {
-                const token = decryptText(appSettings.telegramBotToken);
+                const token = decryptText(appSettings.telegramBotToken) ?? appSettings.telegramBotToken;
                 await this.sendTelegram(token, appSettings.telegramChatId, message);
             }
 
             // 2. WhatsApp (CallMeBot)
             if (appSettings.whatsappEnabled && appSettings.whatsappApiKey && appSettings.whatsappRecipientPhone) {
-                const apiKey = decryptText(appSettings.whatsappApiKey);
+                const apiKey = decryptText(appSettings.whatsappApiKey) ?? appSettings.whatsappApiKey;
                 await this.sendWhatsAppCallMeBot(apiKey, appSettings.whatsappRecipientPhone, message);
             }
 
             // 3. Email
             if (appSettings.emailEnabled && appSettings.smtpHost && appSettings.smtpPass) {
-                const pass = decryptText(appSettings.smtpPass);
+                const pass = decryptText(appSettings.smtpPass) ?? appSettings.smtpPass;
                 await this.sendEmail(appSettings, pass, order);
             }
 

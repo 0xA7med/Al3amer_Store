@@ -446,7 +446,7 @@ export function CategoryModal({ category, onClose, onSave, isSaving }: {
         >
             <div
                 className="bg-[#1a1f2e] border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-xl flex flex-col"
-                style={{ maxHeight: 'calc(100vh - 0rem)', height: 'auto', maxHeightSm: 'calc(100vh - 2rem)' }}
+                style={{ maxHeight: 'calc(100vh - 0rem)', height: 'auto' }}
                 onClick={e => e.stopPropagation()}
             >
                 {/* Drag handle (mobile) */}

@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import InventorySyncModal from '../../components/admin/InventorySyncModal';
 
-const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string }> = {
-    active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle' },
-    draft: { color: 'text-slate-500', label: 'غير نشط', icon: 'visibility_off' },
+const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string; bgColor: string; borderColor: string }> = {
+    active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20' },
+    draft:  { color: 'text-slate-500',   label: 'غير نشط', icon: 'visibility_off', bgColor: 'bg-slate-500/10', borderColor: 'border-slate-500/20' },
 };
 
 function getProductStatus(product: Product): string {
