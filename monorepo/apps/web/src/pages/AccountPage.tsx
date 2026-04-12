@@ -707,9 +707,6 @@ export function AccountPage() {
                     </form>
                 </div>
             )}
-        </div>
-    </div>
-</div>
 
             {/* Order Details Modal */}
             {selectedOrder && (
