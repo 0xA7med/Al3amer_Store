@@ -55,7 +55,6 @@ export default function CustomerProfile() {
             phone: phone || '',
             address: latestOrder?.address || '',
             governorate: latestOrder?.governorate || '',
-            city: latestOrder?.city || '',
         });
         setIsEditing(true);
     };
@@ -112,6 +111,13 @@ export default function CustomerProfile() {
                     >
                         <span className="material-symbols-outlined text-lg">edit</span>
                         تعديل
+                    </button>
+                    <button 
+                        onClick={() => navigate(`/admin/orders?createOrderFor=${phone}`)}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl font-bold transition-all"
+                    >
+                        <span className="material-symbols-outlined text-lg">add_shopping_cart</span>
+                        إنشاء طلب
                     </button>
                     <button 
                         onClick={handleToggleStatus}
@@ -231,7 +237,7 @@ export default function CustomerProfile() {
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
+                                <div className="col-span-2 md:col-span-1">
                                     <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
                                     <select
                                         value={editForm.governorate}
@@ -241,15 +247,6 @@ export default function CustomerProfile() {
                                         <option value="">اختر المحافظة...</option>
                                         {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov}</option>)}
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 mb-1">المدينة</label>
-                                    <input
-                                        type="text"
-                                        value={editForm.city}
-                                        onChange={e => setEditForm({ ...editForm, city: e.target.value })}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
-                                    />
                                 </div>
                             </div>
                             <div>

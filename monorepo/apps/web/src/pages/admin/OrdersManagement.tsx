@@ -38,6 +38,11 @@ export default function OrdersManagement() {
             const order = orders.find(o => o.id === orderId);
             if (order) { setSelectedOrder(order); setIsDetailsOpen(true); }
         }
+
+        const createFor = searchParams.get('createOrderFor');
+        if (createFor) {
+            setIsCreateOrderOpen(true);
+        }
     }, [searchParams, orders]);
 
     // Click-outside for bulk dropdown
@@ -306,16 +311,22 @@ export default function OrdersManagement() {
 
             {/* Create Order Modal */}
             {isCreateOrderOpen && (
-                <CreateOrderModal onClose={() => setIsCreateOrderOpen(false)} />
+                <CreateOrderModal 
+                    initialPhone={searchParams.get('createOrderFor') || ''}
+                    onClose={() => {
+                        setIsCreateOrderOpen(false);
+                        setSearchParams(p => { p.delete('createOrderFor'); return p; });
+                    }} 
+                />
             )}
         </div>
     );
 }
 
-function CreateOrderModal({ onClose }: { onClose: () => void }) {
+function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, initialPhone?: string }) {
     const [customer, setCustomer] = useState({ 
         name: '', 
-        phone: '', 
+        phone: initialPhone || '', 
         phone2: '',
         address: '', 
         governorate: '', 
@@ -332,6 +343,29 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
     const [searchTerm, setSearchTerm] = useState('');
     const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (customer.phone.length >= 10) {
+                try {
+                    const { data } = await api.get('/users', { params: { search: customer.phone } });
+                    if (data?.data && data.data.length > 0) {
+                        const found = data.data.find((u: any) => u.phone === customer.phone);
+                        if (found) {
+                            setCustomer(prev => ({
+                                ...prev,
+                                name: prev.name || found.name,
+                                address: prev.address || found.address || '',
+                                governorate: prev.governorate || found.governorate || '',
+                            }));
+                        }
+                    }
+                } catch (e) {}
+            }
+        };
+        const timeout = setTimeout(fetchUserData, 500);
+        return () => clearTimeout(timeout);
+    }, [customer.phone]);
 
     const addToCart = (product: any) => { setCart([...cart, { product, quantity: 1 }]); setSearchTerm(''); };
     const removeFromCart = (idx: number) => { setCart(cart.filter((_, i) => i !== idx)); };
@@ -393,12 +427,12 @@ function CreateOrderModal({ onClose }: { onClose: () => void }) {
                             <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
-                                    <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="مثال: أحمد محمد" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
-                                </div>
-                                <div className="space-y-1">
                                     <label className="text-xs text-slate-400 mr-2">رقم الهاتف الأساسي</label>
                                     <input value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} placeholder="01xxxxxxxxx" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">الاسم بالكامل</label>
+                                    <input value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} placeholder="مثال: أحمد محمد" className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs text-slate-400 mr-2">رقم هاتف إضافي (اختياري)</label>

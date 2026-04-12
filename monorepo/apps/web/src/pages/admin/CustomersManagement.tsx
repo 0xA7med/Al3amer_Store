@@ -334,7 +334,7 @@ const CustomersManagement = () => {
                                     className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all placeholder:text-slate-600"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
                                     <select
@@ -345,15 +345,6 @@ const CustomersManagement = () => {
                                         <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
                                         {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 mb-1">المدينة</label>
-                                    <input
-                                        type="text"
-                                        value={editingCustomer.city || ''}
-                                        onChange={e => setEditingCustomer({ ...editingCustomer, city: e.target.value })}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
-                                    />
                                 </div>
                             </div>
                             <div>
@@ -403,7 +394,6 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
         password: '',
         address: '',
         governorate: '',
-        city: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -444,7 +434,7 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
                         <label className="block text-xs font-bold text-slate-400 mb-1">كلمة المرور</label>
                         <input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
                             <select
@@ -455,14 +445,6 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
                                 <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
                                 {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
                             </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-400 mb-1">المدينة</label>
-                            <input
-                                value={formData.city}
-                                onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary"
-                            />
                         </div>
                     </div>
                     <div>
