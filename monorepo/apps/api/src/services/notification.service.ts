@@ -56,25 +56,23 @@ export class NotificationService {
             return `• ${item.name} (x${qty}) — ${(price * qty).toLocaleString('en')} ج.م`;
         }).join('\n') || 'لا توجد منتجات';
 
-        let paymentInfo = `💳 *طريقة الدفع:* `;
+        const subtotal = parseFloat(order.subtotal || '0');
         const shipping = parseFloat(order.shippingCost || '0');
-        
+        const total = parseFloat(order.total || '0');
+        const advance = parseFloat(order.codAdvancePayment || '0');
+        const atDelivery = parseFloat(order.totalAtDelivery || '0');
+
+        let paymentStatus = '';
         if (order.paymentMethod === 'cod') {
-            if (order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0) {
-                const advance = parseFloat(order.codAdvancePayment);
-                const atDelivery = order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (parseFloat(order.total) - advance);
-                paymentInfo += `عربون (دفع جزئي)\n💰 *المدفوع مقدماً:* ${advance} ج.م\n💵 *المطلوب عند الاستلام:* ${atDelivery} ج.م`;
+            if (advance > 0) {
+                paymentStatus = `💳 *حالة الدفع:* تم دفع عربون (${advance.toLocaleString('en')} ج.م)`;
             } else {
-                paymentInfo += `دفع عند الاستلام\n💵 *المطلوب عند الاستلام:* ${order.totalAtDelivery || order.total} ج.م`;
+                paymentStatus = `💳 *حالة الدفع:* الدفع عند الاستلام بالكامل`;
             }
         } else if (order.paymentMethod === 'manual_paid') {
-            paymentInfo += `مدفوع بالكامل مقدماً\n💵 *المطلوب عند الاستلام:* ${shipping} ج.م (مصاريف الشحن)`;
-        } else if (order.paymentMethod === 'paymob_wallet') {
-            paymentInfo += `محفظة إلكترونية`;
-        } else if (order.paymentMethod === 'paymob') {
-            paymentInfo += `بطاقة ائتمان (فيزا)`;
+            paymentStatus = `✅ *حالة الدفع:* تم دفع ثمن المنتجات (${subtotal.toLocaleString('en')} ج.م)`;
         } else {
-            paymentInfo += `دفع إلكتروني`;
+            paymentStatus = `✅ *حالة الدفع:* مدفوع إلكترونياً بالكامل`;
         }
 
         const locationInfo = order.city && order.city !== 'لا يوجد' ? `${order.governorate} - ${order.city}` : `${order.governorate}`;
@@ -93,8 +91,12 @@ export class NotificationService {
             `🛒 *المنتجات:*`,
             itemsList,
             '',
-            `💰 *إجمالي قيمة الطلب:* ${order.total} ج.م`,
-            paymentInfo,
+            `💰 *إجمالي المنتجات:* ${subtotal.toLocaleString('en')} ج.م`,
+            `🚚 *مصاريف الشحن:* ${shipping.toLocaleString('en')} ج.م`,
+            `💵 *إجمالي الطلب:* ${total.toLocaleString('en')} ج.م`,
+            '',
+            paymentStatus,
+            `💵 *المطلوب عند الاستلام:* ${atDelivery.toLocaleString('en')} ج.م`,
             '',
             '---',
             'نتمنى لك يوماً سعيداً! 🚀'
