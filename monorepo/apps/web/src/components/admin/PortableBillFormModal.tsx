@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { type Order } from '../../hooks/useAdmin';
 
 interface PortableBillFormModalProps {
@@ -21,7 +21,7 @@ export function PortableBillFormModal({ order, onClose }: PortableBillFormModalP
     const [paymentOption, setPaymentOption] = useState(hasCost ? `مقابل: ${parseInt(initialAmount?.toString() || '0').toLocaleString('ar-EG')} ج.م` : 'مقابل: بدون مقابل');
     
     const [itemsStr, setItemsStr] = useState(
-        order.items?.map(i => `• ${i.product?.shortNameAwb || i.product?.name || i.name} (x${i.quantity})`).join('\n') || ''
+        order.items?.map((i: any) => `• ${(i.product as any)?.shortNameAwb || i.product?.name || i.name} (x${i.quantity})`).join('\n') || ''
     );
 
     const traderBranding = order.trader?.traderBranding;
