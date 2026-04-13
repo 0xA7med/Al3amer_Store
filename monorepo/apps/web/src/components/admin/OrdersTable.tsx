@@ -157,6 +157,8 @@ interface SharedOrdersTableProps {
     showPayment?: boolean;
 }
 
+import { PortableBillFormModal } from './PortableBillFormModal';
+
 // ─────────────────────────────────────────────
 // SharedOrdersTable
 // ─────────────────────────────────────────────
@@ -170,8 +172,14 @@ export default function SharedOrdersTable({
     onDelete,
     showPayment = true,
 }: SharedOrdersTableProps) {
+    const [printingOrder, setPrintingOrder] = useState<any>(null);
+
     return (
         <div className="w-full">
+            {printingOrder && (
+                <PortableBillFormModal order={printingOrder} onClose={() => setPrintingOrder(null)} />
+            )}
+            
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm text-right border-collapse">
@@ -335,7 +343,7 @@ export default function SharedOrdersTable({
                                                 <button onClick={() => onViewDetails(order)} className="size-8 flex items-center justify-center rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all">
                                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
                                                 </button>
-                                                <button onClick={() => window.open(`/admin/orders/${order.id}/print`, '_blank')} className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-all">
+                                                <button onClick={() => setPrintingOrder(order)} className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-all">
                                                     <span className="material-symbols-outlined text-[18px]">print</span>
                                                 </button>
                                                 {onDelete && (
@@ -485,7 +493,7 @@ export default function SharedOrdersTable({
                                             <span className="material-symbols-outlined text-[20px]">visibility</span>
                                         </button>
                                         <button
-                                            onClick={() => window.open(`/admin/orders/${order.id}/print`, '_blank')}
+                                            onClick={() => setPrintingOrder(order)}
                                             className="size-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-300 border border-white/10"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">print</span>

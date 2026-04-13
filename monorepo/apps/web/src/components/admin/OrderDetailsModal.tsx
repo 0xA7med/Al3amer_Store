@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { type Order, useUpdateOrder } from '../../hooks/useAdmin';
+import { PortableBillFormModal } from './PortableBillFormModal';
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -29,6 +30,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
     const updateOrder = useUpdateOrder();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [showBillModal, setShowBillModal] = useState(false);
     const [editForm, setEditForm] = useState({
         fullName: order.fullName || order.user?.name || '',
         phone: order.phone || order.user?.phone || '',
@@ -312,14 +314,13 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                     )}
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
-                        <Link
-                            to={`/admin/orders/${order.id}/print`}
-                            target="_blank"
+                        <button
+                            onClick={() => setShowBillModal(true)}
                             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 text-slate-300 rounded-xl text-sm font-bold transition-all border border-white/10 active:scale-95"
                         >
                             <span className="material-symbols-outlined text-[20px]">print</span>
                             <span className="md:inline">طباعة</span>
-                        </Link>
+                        </button>
                         <button
                             onClick={onClose}
                             className="flex-1 md:flex-none px-6 py-2.5 bg-primary text-background-dark rounded-xl text-sm font-black transition-all shadow-lg shadow-primary/20 active:scale-95"
@@ -329,6 +330,11 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                     </div>
                 </div>
             </div>
+
+            {/* Bill Form Modal */}
+            {showBillModal && (
+                <PortableBillFormModal order={order} onClose={() => setShowBillModal(false)} />
+            )}
         </div>
     );
 }

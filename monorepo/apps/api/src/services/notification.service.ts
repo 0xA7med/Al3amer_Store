@@ -79,7 +79,7 @@ export class NotificationService {
         
         const lines = [
             `📦 *طلب جديد رقم ${order.orderNumber}*`,
-            '',
+            order.trader ? `🏪 *التاجر:* ${order.trader.name || order.trader.traderBranding?.storeName || 'تاجر مسجل'}` : '',
             `👤 *العميل:* ${order.fullName}`,
             `📞 *الهاتف:* ${order.phone}`,
             order.phone2 ? `📞 *هاتف إضافي:* ${order.phone2}` : '',
@@ -87,16 +87,16 @@ export class NotificationService {
             `🏠 *التفاصيل:* ${order.address}`,
             order.notes ? `📝 *الملاحظات:* ${order.notes}` : '',
             '',
-            order.trader ? `🏪 *التاجر:* ${order.trader.name || order.trader.traderBranding?.storeName || 'تاجر مسجل'}\n` : '',
             `🛒 *المنتجات:*`,
             itemsList,
             '',
-            `💰 *إجمالي المنتجات:* ${subtotal.toLocaleString('en')} ج.م`,
-            `🚚 *مصاريف الشحن:* ${shipping.toLocaleString('en')} ج.م`,
-            `💵 *إجمالي الطلب:* ${total.toLocaleString('en')} ج.م`,
-            '',
-            paymentStatus,
-            `💵 *المطلوب عند الاستلام:* ${atDelivery.toLocaleString('en')} ج.م`,
+            `💰 *إجمالي قيمة الطلب:* ${subtotal.toLocaleString('en')} ج.م`,
+            `💳 *طريقة الدفع:* ${order.paymentMethod === 'cod' ? 'الدفع عند الاستلام' : order.paymentMethod === 'manual_paid' ? 'مدفوع بالكامل مقدماً' : 'دفع إلكتروني'}`,
+            `💵 *المطلوب عند الاستلام:* ${
+                order.paymentMethod === 'manual_paid' 
+                    ? `${shipping.toLocaleString('en')} ج.م (مصاريف الشحن)` 
+                    : `${atDelivery.toLocaleString('en')} ج.م`
+            }`,
             '',
             '---',
             'نتمنى لك يوماً سعيداً! 🚀'
