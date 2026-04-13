@@ -122,10 +122,16 @@ export class NotificationService {
             // 1. Format the recipient phone correctly (CallMeBot needs country code, no '+')
             const cleanPhone = this.formatWhatsAppPhone(phone);
             
-            // 2. Strip characters that break URL query params (especially '#' which marks a fragment)
-            // also remove markdown bold markers for cleaner CallMeBot display
-            const cleanMessage = message.replace(/\*/g, '').replace(/#/g, 'No.');
+            // 2. Optimized message for WhatsApp URL limits
+            // CallMeBot sometimes fails with very long URLs or specific symbols
+            let cleanMessage = message.replace(/\*/g, '').replace(/#/g, 'No.');
             
+            // If message is too long (> 1500 chars), we truncate the items list part to save space
+            if (cleanMessage.length > 1500) {
+                console.warn(`⚠️ [WA] Message too long (${cleanMessage.length} chars), truncating for URL safety...`);
+                cleanMessage = cleanMessage.substring(0, 1500) + '\n\n... (تكملة الطلب في سجلات الإدارة)';
+            }
+
             const encodedText = encodeURIComponent(cleanMessage);
             const encodedPhone = encodeURIComponent(cleanPhone);
             const url = `https://api.callmebot.com/whatsapp.php?phone=${encodedPhone}&text=${encodedText}&apikey=${apiKey}`;
@@ -133,17 +139,8 @@ export class NotificationService {
             console.log(`📤 [WA] Sending to phone: ${cleanPhone} (original: ${phone})`);
             console.log(`📤 [WA] URL length: ${url.length} chars`);
 
-            // Safety: If URL is excessively long (>7000), truncate message
-            if (url.length > 7500) {
-                console.warn(`⚠️ [WA] URL too long (${url.length}), truncating message...`);
-                const shorter = cleanMessage.substring(0, 1000) + '\n\n... (Message Truncated)';
-                const shortUrl = `https://api.callmebot.com/whatsapp.php?phone=${encodedPhone}&text=${encodeURIComponent(shorter)}&apikey=${apiKey}`;
-                const resp = await axios.get(shortUrl, { timeout: 15000 });
-                console.log(`✅ [WA] WhatsApp sent (truncated). Response: ${resp.status}`);
-                return;
-            }
-
-            const resp = await axios.get(url, { timeout: 15000 });
+            // Use a longer timeout (30s) as CallMeBot can be slow
+            const resp = await axios.get(url, { timeout: 30000 });
             console.log(`✅ [WA] WhatsApp (CallMeBot) sent. Response status: ${resp.status}`);
         } catch (error: any) {
             console.error('❌ [WA] WhatsApp FULL Error Object:', JSON.stringify({
