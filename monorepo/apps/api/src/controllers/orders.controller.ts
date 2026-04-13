@@ -14,6 +14,7 @@ export class OrdersController {
                 userId,
                 fullName,
                 phone,
+                phone2,
                 email,
                 governorate,
                 city,
@@ -137,6 +138,7 @@ export class OrdersController {
                 userId: userId ? String(userId) : null,
                 fullName,
                 phone: safePhone,
+                phone2,
                 email,
                 governorate,
                 city,
@@ -176,6 +178,8 @@ export class OrdersController {
                 where: eq(orders.id, order.id),
                 with: {
                     items: true,
+                    user: true,
+                    trader: true,
                 },
             });
 

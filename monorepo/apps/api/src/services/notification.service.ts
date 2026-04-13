@@ -53,49 +53,54 @@ export class NotificationService {
         const itemsList = order.items?.map((item: any) => {
             const price = parseFloat(item.price || '0');
             const qty = item.quantity || 1;
-            const lineTotal = price * qty;
-            return `- ${item.name} (x${qty}) — ${price.toLocaleString('en')} ج.م`;
+            return `• ${item.name} (x${qty}) — ${(price * qty).toLocaleString('en')} ج.م`;
         }).join('\n') || 'لا توجد منتجات';
 
-        let paymentInfo = `💳 طريقة الدفع: `;
+        let paymentInfo = `💳 *طريقة الدفع:* `;
+        const shipping = parseFloat(order.shippingCost || '0');
+        
         if (order.paymentMethod === 'cod') {
             if (order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0) {
                 const advance = parseFloat(order.codAdvancePayment);
                 const atDelivery = order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (parseFloat(order.total) - advance);
-                paymentInfo += `عربون (دفع جزئي)\n💸 المدفوع مقدما: ${advance} ج.م\n💵 المطلوب عند الاستلام: ${atDelivery} ج.م`;
+                paymentInfo += `عربون (دفع جزئي)\n💰 *المدفوع مقدماً:* ${advance} ج.م\n💵 *المطلوب عند الاستلام:* ${atDelivery} ج.م`;
             } else {
-                paymentInfo += `دفع عند الاستلام\n💵 المطلوب عند الاستلام: ${order.totalAtDelivery || order.total} ج.م`;
+                paymentInfo += `دفع عند الاستلام\n💵 *المطلوب عند الاستلام:* ${order.totalAtDelivery || order.total} ج.م`;
             }
         } else if (order.paymentMethod === 'manual_paid') {
-            paymentInfo += `مدفوع بالكامل مقدما\n💵 المطلوب عند الاستلام: 0 ج.م`;
+            paymentInfo += `مدفوع بالكامل مقدماً\n💵 *المطلوب عند الاستلام:* ${shipping} ج.م (مصاريف الشحن)`;
         } else if (order.paymentMethod === 'paymob_wallet') {
-            paymentInfo += `محفظة الكترونية`;
+            paymentInfo += `محفظة إلكترونية`;
         } else if (order.paymentMethod === 'paymob') {
             paymentInfo += `بطاقة ائتمان (فيزا)`;
         } else {
-            paymentInfo += `دفع الكتروني`;
+            paymentInfo += `دفع إلكتروني`;
         }
 
         const locationInfo = order.city && order.city !== 'لا يوجد' ? `${order.governorate} - ${order.city}` : `${order.governorate}`;
-
-        return [
-            `📦 طلب جديد رقم ${order.orderNumber}`,
+        
+        const lines = [
+            `📦 *طلب جديد رقم ${order.orderNumber}*`,
             '',
-            `👤 العميل: ${order.fullName}`,
-            `📞 الهاتف: ${order.phone}`,
-            `📍 العنوان: ${locationInfo}`,
-            `🏠 التفاصيل: ${order.address}`,
-            order.notes ? `📝 الملاحظات: ${order.notes}` : '',
+            `👤 *العميل:* ${order.fullName}`,
+            `📞 *الهاتف:* ${order.phone}`,
+            order.phone2 ? `📞 *هاتف إضافي:* ${order.phone2}` : '',
+            `📍 *العنوان:* ${locationInfo}`,
+            `🏠 *التفاصيل:* ${order.address}`,
+            order.notes ? `📝 *الملاحظات:* ${order.notes}` : '',
             '',
-            `🛒 المنتجات:`,
+            order.trader ? `🏪 *التاجر:* ${order.trader.name || order.trader.traderBranding?.storeName || 'تاجر مسجل'}\n` : '',
+            `🛒 *المنتجات:*`,
             itemsList,
             '',
-            `💰 اجمالي قيمة الطلب: ${order.total} ج.م`,
+            `💰 *إجمالي قيمة الطلب:* ${order.total} ج.م`,
             paymentInfo,
             '',
             '---',
-            'نتمنى لك يوما سعيدا! 🚀'
-        ].filter(Boolean).join('\n');
+            'نتمنى لك يوماً سعيداً! 🚀'
+        ];
+
+        return lines.filter(line => line !== null && line !== undefined && line !== '').join('\n');
     }
 
     private static async sendTelegram(token: string, chatId: string, message: string) {

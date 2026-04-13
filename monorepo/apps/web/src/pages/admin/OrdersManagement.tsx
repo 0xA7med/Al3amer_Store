@@ -338,7 +338,8 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
     // New payment options state
     const [paymentOptions, setPaymentOptions] = useState({
         type: 'cod', // 'cod', 'partial', 'paid'
-        advance: ''
+        advance: '',
+        shippingCost: ''
     });
 
     const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
@@ -402,30 +403,33 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
     const handleSubmit = async () => {
         setIsSubmitting(true);
         try {
-            const finalNotes = (customer.phone2 ? `رقم إضافي: ${customer.phone2}\n` : '') + (customer.notes || '');
+            const finalNotes = customer.notes || '';
+            const shipping = Number(paymentOptions.shippingCost) || 0;
             
             let finalAdvance = 0;
             let finalMethod = 'cod';
-            let totalAtDelivery = total;
+            let totalAtDelivery = total + shipping;
             
             if (paymentOptions.type === 'partial') {
                 finalAdvance = Number(paymentOptions.advance) || 0;
                 finalMethod = 'cod';
-                totalAtDelivery = Math.max(0, total - finalAdvance);
+                totalAtDelivery = Math.max(0, (total + shipping) - finalAdvance);
             } else if (paymentOptions.type === 'paid') {
                 finalAdvance = total;
                 finalMethod = 'manual_paid';
-                totalAtDelivery = 0;
+                totalAtDelivery = shipping; // Requested: المطلوب عند الاستلام هو مصاريف الشحن
             }
 
             await api.post('/orders', {
                 fullName: customer.name, 
                 phone: customer.phone, 
+                phone2: customer.phone2,
                 address: customer.address,
                 city: 'لا يوجد',
                 governorate: customer.governorate, 
                 notes: finalNotes,
                 paymentMethod: finalMethod,
+                shippingCost: shipping,
                 codAdvancePayment: finalAdvance,
                 totalAtDelivery: totalAtDelivery,
                 items: cart.map(i => ({ productId: i.product.id, quantity: i.quantity }))
@@ -560,6 +564,16 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                                         />
                                     </div>
                                 )}
+                                <div className="space-y-1">
+                                    <label className="text-xs text-slate-400 mr-2">مصاريف الشحن</label>
+                                    <input 
+                                        type="number"
+                                        value={paymentOptions.shippingCost} 
+                                        onChange={e => setPaymentOptions({ ...paymentOptions, shippingCost: e.target.value })} 
+                                        placeholder="مثال: 50" 
+                                        className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none" 
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -187,6 +187,7 @@ export const orders = pgTable('orders', {
     userId: uuid('user_id').references(() => users.id),
     fullName: text('full_name').notNull(),
     phone: text('phone').notNull(),
+    phone2: text('phone2'),
     email: text('email'),
     governorate: text('governorate').notNull(),
     city: text('city').notNull(),
