@@ -33,6 +33,7 @@ export function AccountPage() {
         name: '',
         email: '',
         phone: '',
+        phone2: '',
     });
     const [profileLoading, setProfileLoading] = useState(false);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -68,6 +69,7 @@ export function AccountPage() {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
+                phone2: user.phone2 || '',
             });
             fetchAddresses();
             fetchWishlist();
@@ -98,6 +100,7 @@ export function AccountPage() {
             await api.put('/users/profile', {
                 name: profileData.name,
                 phone: profileData.phone,
+                phone2: profileData.phone2,
                 traderBranding: localBranding,
                 discountConfig: localDiscount
             });
@@ -675,8 +678,9 @@ export function AccountPage() {
                                     className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                                 />
                             </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">رقم الهاتف</label>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">رقم الهاتف الأساسي</label>
                                 <input
                                     type="tel"
                                     value={profileData.phone}
@@ -684,6 +688,17 @@ export function AccountPage() {
                                     className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left dir-ltr"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">رقم هاتف إضافي</label>
+                                <input
+                                    type="tel"
+                                    value={profileData.phone2 || ''}
+                                    onChange={(e) => setProfileData({ ...profileData, phone2: e.target.value })}
+                                    className="w-full h-12 bg-[#181a20] border border-white/10 rounded-xl px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left dir-ltr"
+                                    placeholder="اختياري"
+                                />
+                            </div>
+                        </div>
                         </div>
 
                         <div>

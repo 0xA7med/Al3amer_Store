@@ -251,12 +251,13 @@ export class UsersController {
             const userId = (req as any).user?.id;
             if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-            const { name, phone } = req.body;
-            if (!name && !phone) return res.status(400).json({ error: 'No fields to update' });
+            const { name, phone, phone2 } = req.body;
+            if (!name && !phone && !phone2) return res.status(400).json({ error: 'No fields to update' });
 
             const updateData: any = {};
             if (name) updateData.name = name;
             if (phone) updateData.phone = phone;
+            if (phone2) updateData.phone2 = phone2;
             updateData.updatedAt = new Date();
 
             const [updatedUser] = await db.update(users).set(updateData).where(eq(users.id, userId)).returning();
@@ -342,7 +343,7 @@ export class UsersController {
     static async updateCustomer(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, email, phone, address, governorate, city } = req.body;
+            const { name, email, phone, phone2, address, governorate, city } = req.body;
 
             // Basic Validation
             if (!name) return res.status(400).json({ error: 'الاسم مطلوب' });
@@ -352,7 +353,15 @@ export class UsersController {
                 const existing = await db.query.users.findFirst({ where: eq(users.phone, oldPhone) });
                 
                 if (existing) {
-                    const updateData: any = { name, phone, address, updatedAt: new Date() };
+                    const updateData: any = { 
+                        name, 
+                        phone, 
+                        phone2, 
+                        address, 
+                        governorate, 
+                        city, 
+                        updatedAt: new Date() 
+                    };
                     if (email) updateData.email = email;
 
                     const [updated] = await db.update(users)
@@ -366,7 +375,10 @@ export class UsersController {
                     name,
                     email: email || `guest_${phone || oldPhone}@al3amer.store`,
                     phone: phone || oldPhone,
+                    phone2: phone2 || null,
                     address: address || null,
+                    governorate: governorate || null,
+                    city: city || null,
                     role: 'customer',
                     status: 'active',
                     password: '---'
@@ -374,7 +386,15 @@ export class UsersController {
                 return res.json(newUser);
             }
 
-            const updateData: any = { name, phone, address, updatedAt: new Date() };
+            const updateData: any = { 
+                name, 
+                phone, 
+                phone2, 
+                address, 
+                governorate, 
+                city, 
+                updatedAt: new Date() 
+            };
             if (email) updateData.email = email;
 
             const [updatedUser] = await db.update(users)

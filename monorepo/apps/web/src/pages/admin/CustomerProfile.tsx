@@ -52,9 +52,11 @@ export default function CustomerProfile() {
             id: customerId,
             name: customerName,
             email: customerEmail || '',
-            phone: phone || '',
+            phone: latestOrder?.user?.phone || latestOrder?.phone || phone || '',
+            phone2: latestOrder?.user?.phone2 || latestOrder?.phone2 || '',
             address: latestOrder?.address || '',
             governorate: latestOrder?.governorate || '',
+            city: latestOrder?.city || '',
         });
         setIsEditing(true);
     };
@@ -265,6 +267,29 @@ export default function CustomerProfile() {
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-1">رقم الهاتف الأساسي</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={editForm.phone}
+                                        onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all text-left"
+                                        dir="ltr"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 mb-1">رقم هاتف إضافي</label>
+                                    <input
+                                        type="tel"
+                                        value={editForm.phone2}
+                                        onChange={e => setEditForm({ ...editForm, phone2: e.target.value })}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all text-left"
+                                        dir="ltr"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1">
                                     <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
                                     <select
@@ -275,6 +300,16 @@ export default function CustomerProfile() {
                                         <option value="">اختر المحافظة...</option>
                                         {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov}</option>)}
                                     </select>
+                                </div>
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-xs font-bold text-slate-400 mb-1">المدينة/المركز</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.city}
+                                        onChange={e => setEditForm({ ...editForm, city: e.target.value })}
+                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
+                                        placeholder="مثلاً: اجا، المنصورة..."
+                                    />
                                 </div>
                             </div>
                             <div>
