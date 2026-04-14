@@ -172,12 +172,41 @@ export default function SharedOrdersTable({
     onDelete,
     showPayment = true,
 }: SharedOrdersTableProps) {
-    const [printingOrder, setPrintingOrder] = useState<any>(null);
+    const [printingOrders, setPrintingOrders] = useState<Order[] | null>(null);
+
+    const handleBulkPrint = () => {
+        const selectedOrders = orders.filter(o => selectedRows.includes(o.id));
+        if (selectedOrders.length > 0) {
+            setPrintingOrders(selectedOrders);
+        }
+    };
 
     return (
         <div className="w-full">
-            {printingOrder && (
-                <PortableBillFormModal order={printingOrder} onClose={() => setPrintingOrder(null)} />
+            {printingOrders && (
+                <PortableBillFormModal orders={printingOrders} onClose={() => setPrintingOrders(null)} />
+            )}
+            
+            {/* Bulk Actions Floating Bar */}
+            {selectedRows.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[60] bg-[#1e2330] border border-primary/20 rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-6 animate-in slide-in-from-bottom-10 duration-300">
+                    <div className="flex items-center gap-2">
+                        <span className="size-6 flex items-center justify-center rounded-full bg-primary text-background-dark text-xs font-black">
+                            {selectedRows.length}
+                        </span>
+                        <span className="text-sm font-bold text-slate-300">طلبات مختارة</span>
+                    </div>
+                    <div className="w-px h-6 bg-white/10" />
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handleBulkPrint}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-background-dark text-xs font-black shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">print</span>
+                            طباعة البوليصات المجمعة
+                        </button>
+                    </div>
+                </div>
             )}
             
             {/* Desktop Table View */}
@@ -343,7 +372,7 @@ export default function SharedOrdersTable({
                                                 <button onClick={() => onViewDetails(order)} className="size-8 flex items-center justify-center rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all">
                                                     <span className="material-symbols-outlined text-[18px]">visibility</span>
                                                 </button>
-                                                <button onClick={() => setPrintingOrder(order)} className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-all">
+                                                <button onClick={() => setPrintingOrders([order])} className="size-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-all">
                                                     <span className="material-symbols-outlined text-[18px]">print</span>
                                                 </button>
                                                 {onDelete && (
@@ -493,7 +522,7 @@ export default function SharedOrdersTable({
                                             <span className="material-symbols-outlined text-[20px]">visibility</span>
                                         </button>
                                         <button
-                                            onClick={() => setPrintingOrder(order)}
+                                            onClick={() => setPrintingOrders([order])}
                                             className="size-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-300 border border-white/10"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">print</span>

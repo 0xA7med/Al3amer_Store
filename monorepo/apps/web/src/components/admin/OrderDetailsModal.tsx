@@ -31,6 +31,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
 
     const [isEditing, setIsEditing] = useState(false);
     const [showBillModal, setShowBillModal] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [editForm, setEditForm] = useState({
         fullName: order.fullName || order.user?.name || '',
         phone: order.phone || order.user?.phone || '',
@@ -46,6 +47,43 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
             await updateOrder.mutateAsync({ orderId: order.id, data: editForm });
             setIsEditing(false);
         } catch {}
+    };
+
+    const handleCopyMessage = () => {
+        const itemsList = (order.items || [])
+            .map(it => `- ${it.name || it.product?.name || 'منتج'} (الكمية: ${it.quantity})`)
+            .join('\n');
+
+        const advancePaid = parseFloat(order.codAdvancePayment || '0');
+        const productTotal = parseFloat(order.subtotal || '0');
+        const shipping = parseFloat(order.shippingCost || '0');
+        const remainingProduct = productTotal - advancePaid;
+        const totalAtDelivery = (order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (remainingProduct + shipping)).toLocaleString('ar-EG');
+
+        let financialDetail = `💵 *إجمالي المنتجات:* ${productTotal.toLocaleString('ar-EG')} ج.م`;
+        if (advancePaid > 0) {
+            financialDetail += `\n💳 *المدفوع (عربون):* ${advancePaid.toLocaleString('ar-EG')} ج.م`;
+        }
+        financialDetail += `\n🚚 *مصاريف الشحن:* ${shipping.toLocaleString('ar-EG')} ج.م`;
+        financialDetail += `\n💰 *المبلغ المطلوب عند الاستلام:* ${totalAtDelivery} ج.م`;
+        
+        if (advancePaid > 0) {
+            financialDetail += `\n(تفصيل: ${remainingProduct.toLocaleString('ar-EG')} باقي المنتجات + ${shipping.toLocaleString('ar-EG')} شحن)`;
+        }
+            
+        const message = `*تفاصيل الطلب #${order.orderNumber}*
+---------------------------
+👤 *العميل:* ${order.fullName || order.user?.name || 'غير معروف'}
+📱 *الهاتف:* ${order.phone || order.user?.phone || ''} ${order.phone2 ? ` / ${order.phone2}` : ''}
+📍 *العنوان:* ${order.governorate}${order.city ? `، ${order.city}` : ''} - ${order.address || ''}
+📦 *المنتجات:* 
+${itemsList}
+---------------------------
+${financialDetail}`;
+
+        navigator.clipboard.writeText(message);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const customerName = order.fullName || order.user?.name || 'غير معروف';
@@ -70,12 +108,21 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                         </h3>
                         <p className="text-[10px] md:text-sm text-slate-500 mt-0.5">{date} — {time}</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="size-9 md:size-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all border border-white/5"
-                    >
-                        <span className="material-symbols-outlined text-[20px]">close</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleCopyMessage}
+                            className={`size-9 md:size-10 flex items-center justify-center rounded-xl transition-all border border-white/5 ${copied ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'hover:bg-white/10 text-slate-400 hover:text-white'}`}
+                            title="نسخ بيانات الطلب للواتساب"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">{copied ? 'done' : 'content_copy'}</span>
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="size-9 md:size-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all border border-white/5"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">close</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Scrollable Content */}
@@ -169,7 +216,6 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                         </h4>
                         <div className="space-y-2">
                             {order.items?.map((item, idx) => {
-                                // slug may exist at runtime even if not in TS type
                                 const slug = (item.product as any)?.slug;
                                 const productUrl = slug ? `/product/${slug}` : null;
                                 const imageUrl = item.product?.images?.[0]?.url;
@@ -187,7 +233,6 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
 
                                 return (
                                     <div key={item.id || idx} className="flex items-center gap-3 md:gap-4 bg-white/5 rounded-xl p-2 md:p-3 border border-white/5">
-                                        {/* Product image — clickable if slug exists */}
                                         {productUrl ? (
                                             <Link to={productUrl} target="_blank" rel="noopener noreferrer" title="فتح صفحة المنتج">
                                                 {imageEl}
@@ -195,7 +240,6 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                                         ) : imageEl}
 
                                         <div className="flex-1 min-w-0">
-                                            {/* Product name — clickable if slug exists */}
                                             {productUrl ? (
                                                 <Link
                                                     to={productUrl}
@@ -242,7 +286,6 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                                     : 'دفع إلكتروني'}
                             </span>
                         </div>
-                        {/* COD Advance Payment breakdown */}
                         {order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0 && (
                             <>
                                 <div className="flex justify-between text-xs md:text-sm">
@@ -316,10 +359,10 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <button
                             onClick={() => setShowBillModal(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 text-slate-300 rounded-xl text-sm font-bold transition-all border border-white/10 active:scale-95"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-xl text-sm font-black transition-all border border-blue-500/20 active:scale-95 shadow-lg shadow-blue-500/5"
                         >
                             <span className="material-symbols-outlined text-[20px]">print</span>
-                            <span className="md:inline">طباعة</span>
+                            طـبـاعة البوليصة
                         </button>
                         <button
                             onClick={onClose}
@@ -333,7 +376,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
 
             {/* Bill Form Modal */}
             {showBillModal && (
-                <PortableBillFormModal order={order} onClose={() => setShowBillModal(false)} />
+                <PortableBillFormModal orders={[order]} onClose={() => setShowBillModal(false)} />
             )}
         </div>
     );

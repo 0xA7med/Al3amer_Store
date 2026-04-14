@@ -220,10 +220,40 @@ export const ProductDetailsPage = () => {
                                     خصم {discountPercent}%
                                 </span>
                             )}
-                            <span className="px-3 py-1.5 bg-emerald-600/90 backdrop-blur text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-900/20 border border-emerald-500/30 flex items-center gap-1">
-                                <Truck className="w-3.5 h-3.5" />
-                                شحن مجاني
-                            </span>
+                        </div>
+                        {/* Wishlist + Share overlay — top-left of image */}
+                        <div className="absolute top-3 left-3 z-30 flex gap-2">
+                            <button
+                                onClick={() => {
+                                    if (!isAuthenticated) {
+                                        toast.error('يرجى تسجيل الدخول لإضافة المنتج للمفضلة');
+                                        return;
+                                    }
+                                    if (product?.id) toggleWishlist(product.id);
+                                }}
+                                className={`size-9 rounded-xl flex items-center justify-center backdrop-blur-md border shadow-lg transition-all ${
+                                    isWishlisted
+                                        ? 'bg-red-500/90 border-red-400/50 text-white'
+                                        : 'bg-surface-dark/80 border-white/10 text-slate-300 hover:bg-red-500/80 hover:text-white hover:border-red-400/30'
+                                }`}
+                            >
+                                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const shareUrl = window.location.href;
+                                    if (navigator.share) {
+                                        try { await navigator.share({ title: product.name, url: shareUrl }); }
+                                        catch (err) { if ((err as any).name !== 'AbortError') toast.error('فشلت عملية المشاركة'); }
+                                    } else {
+                                        navigator.clipboard.writeText(shareUrl);
+                                        toast.success('تم نسخ الرابط');
+                                    }
+                                }}
+                                className="size-9 rounded-xl flex items-center justify-center backdrop-blur-md border bg-surface-dark/80 border-white/10 text-slate-300 hover:bg-primary/80 hover:text-white hover:border-primary/30 shadow-lg transition-all"
+                            >
+                                <Share2 className="w-4 h-4" />
+                            </button>
                         </div>
                         <div
                             className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in relative"
@@ -327,37 +357,7 @@ export const ProductDetailsPage = () => {
                             </div>
                         </div>
 
-                        {/* Mobile wishlist + share row */}
-                        <div className="flex lg:hidden items-center justify-end gap-2">
-                            <button
-                                onClick={() => {
-                                    if (!isAuthenticated) {
-                                        toast.error('يرجى تسجيل الدخول لإضافة المنتج للمفضلة');
-                                        return;
-                                    }
-                                    if (product?.id) toggleWishlist(product.id);
-                                }}
-                                className={`transition-colors p-1.5 rounded-lg bg-white/5 border border-white/10 ${isWishlisted ? 'text-red-500' : 'text-slate-400'}`}
-                            >
-                                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    const shareUrl = window.location.href;
-                                    if (navigator.share) {
-                                        try { await navigator.share({ title: product.name, url: shareUrl }); }
-                                        catch (err) { if ((err as any).name !== 'AbortError') toast.error('فشلت عملية المشاركة'); }
-                                    } else {
-                                        navigator.clipboard.writeText(shareUrl);
-                                        toast.success('تم نسخ الرابط');
-                                    }
-                                }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400"
-                            >
-                                <Share2 className="w-4 h-4" />
-                                <span className="text-xs font-bold">مشاركة</span>
-                            </button>
-                        </div>
+
                         {/* Title — hidden on mobile (shown above gallery) */}
                         <h1 className="hidden lg:block text-3xl md:text-4xl font-extrabold text-white leading-tight tracking-tight mt-1 mb-1">
                             {product.name}

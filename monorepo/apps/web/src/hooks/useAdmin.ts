@@ -52,11 +52,13 @@ export interface Order {
     notes: string;
     createdAt: string;
     paymobOrderId?: string | null;
+    phone2?: string;
     user: {
         id: string;
         name: string;
         email: string;
         phone: string;
+        phone2?: string;
     } | null;
     items: {
         id: string;
