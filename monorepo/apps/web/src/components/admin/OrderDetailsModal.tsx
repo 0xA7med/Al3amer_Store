@@ -57,18 +57,24 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
         const advancePaid = parseFloat(order.codAdvancePayment || '0');
         const productTotal = parseFloat(order.subtotal || '0');
         const shipping = parseFloat(order.shippingCost || '0');
+        const returnFee = parseFloat(order.codReturnShipping || '0');
         const remainingProduct = productTotal - advancePaid;
-        const totalAtDelivery = (order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (remainingProduct + shipping)).toLocaleString('ar-EG');
+        const totalAtDelivery = (order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (remainingProduct + shipping + returnFee)).toLocaleString('ar-EG');
 
         let financialDetail = `💵 *إجمالي المنتجات:* ${productTotal.toLocaleString('ar-EG')} ج.م`;
         if (advancePaid > 0) {
             financialDetail += `\n💳 *المدفوع (عربون):* ${advancePaid.toLocaleString('ar-EG')} ج.م`;
         }
-        financialDetail += `\n🚚 *مصاريف الشحن:* ${shipping.toLocaleString('ar-EG')} ج.م`;
+        financialDetail += `\n🚚 *مصاريف الشحن (ذهاب):* ${shipping.toLocaleString('ar-EG')} ج.م`;
+        if (returnFee > 0) {
+            financialDetail += `\n↩️ *مصاريف الشحن (عودة):* ${returnFee.toLocaleString('ar-EG')} ج.م`;
+        }
         financialDetail += `\n💰 *المبلغ المطلوب عند الاستلام:* ${totalAtDelivery} ج.م`;
         
         if (advancePaid > 0) {
-            financialDetail += `\n(تفصيل: ${remainingProduct.toLocaleString('ar-EG')} باقي المنتجات + ${shipping.toLocaleString('ar-EG')} شحن)`;
+            const breakdown = [`${remainingProduct.toLocaleString('ar-EG')} باقي المنتجات`, `${shipping.toLocaleString('ar-EG')} شحن ذهاب`];
+            if (returnFee > 0) breakdown.push(`${returnFee.toLocaleString('ar-EG')} شحن عودة`);
+            financialDetail += `\n(تفصيل: ${breakdown.join(' + ')})`;
         }
             
         const message = `*تفاصيل الطلب #${order.orderNumber}*
@@ -268,15 +274,34 @@ ${financialDetail}`;
 
                     {/* Order Summary */}
                     <div className="bg-primary/5 rounded-xl p-4 space-y-2 border border-primary/10">
+                        {/* Subtotal */}
                         <div className="flex justify-between text-xs md:text-sm">
                             <span className="text-slate-500 font-bold">المجموع الفرعي</span>
                             <span className="text-white font-mono">{parseFloat(order.subtotal || '0').toLocaleString('ar-EG')} ج.م</span>
                         </div>
+
+                        {/* Shipping go */}
                         <div className="flex justify-between text-xs md:text-sm">
-                            <span className="text-slate-500 font-bold">الشحن</span>
-                            <span className="text-white font-mono">{parseFloat(order.shippingCost || '0').toLocaleString('ar-EG')} ج.م</span>
+                            <span className="text-slate-500 font-bold flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px] text-sky-400">local_shipping</span>
+                                مصاريف الشحن (ذهاب)
+                            </span>
+                            <span className="text-sky-300 font-mono">{parseFloat(order.shippingCost || '0').toLocaleString('ar-EG')} ج.م</span>
                         </div>
-                        <div className="flex justify-between text-xs md:text-sm">
+
+                        {/* Return shipping fee — only visible when present */}
+                        {order.codReturnShipping && parseFloat(order.codReturnShipping) > 0 && (
+                            <div className="flex justify-between text-xs md:text-sm">
+                                <span className="text-slate-500 font-bold flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px] text-orange-400">undo</span>
+                                    مصاريف الشحن (عودة / COD)
+                                </span>
+                                <span className="text-orange-400 font-mono">{parseFloat(order.codReturnShipping).toLocaleString('ar-EG')} ج.م</span>
+                            </div>
+                        )}
+
+                        {/* Payment method */}
+                        <div className="flex justify-between text-xs md:text-sm pt-1 border-t border-white/5">
                             <span className="text-slate-500 font-bold">طريقة الدفع</span>
                             <span className="text-white font-bold">
                                 {order.paymentMethod === 'cod' ? 'الدفع عند الاستلام' 
@@ -286,11 +311,13 @@ ${financialDetail}`;
                                     : 'دفع إلكتروني'}
                             </span>
                         </div>
+
+                        {/* Advance payment (Arboun) */}
                         {order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0 && (
                             <>
                                 <div className="flex justify-between text-xs md:text-sm">
                                     <span className="text-amber-400 font-bold">المدفوع مقدماً (عربون)</span>
-                                    <span className="text-amber-400 font-mono">{parseFloat(order.codAdvancePayment).toLocaleString('ar-EG')} ج.م</span>
+                                    <span className="text-amber-400 font-mono">- {parseFloat(order.codAdvancePayment).toLocaleString('ar-EG')} ج.م</span>
                                 </div>
                                 <div className="flex justify-between text-xs md:text-sm">
                                     <span className="text-emerald-400 font-bold">المتبقي عند الاستلام</span>
@@ -300,12 +327,15 @@ ${financialDetail}`;
                                 </div>
                             </>
                         )}
+
                         {order.paymentMethod === 'manual_paid' && (
                             <div className="flex justify-between text-xs md:text-sm">
                                 <span className="text-emerald-400 font-bold">المتبقي عند الاستلام</span>
                                 <span className="text-emerald-400 font-mono">0 ج.م</span>
                             </div>
                         )}
+
+                        {/* Grand total */}
                         <div className="flex justify-between items-center pt-2 border-t border-white/5">
                             <span className="text-primary font-black uppercase text-xs tracking-wider">الإجمالي النهائى</span>
                             <div className="text-left">

@@ -351,17 +351,29 @@ export const settings = pgTable('settings', {
     smtpPass: text('smtp_pass'),
     emailFrom: text('email_from'),
     emailReceiver: text('email_receiver'),
-    // Bill Design Settings
-    billLogoX: integer('bill_logo_x').default(0),
-    billLogoY: integer('bill_logo_y').default(0),
-    billLogoWidth: integer('bill_logo_width').default(130),
-    billLogoHeight: integer('bill_logo_height').default(130),
-    billHeaderX: integer('bill_header_x').default(0),
-    billHeaderY: integer('bill_header_y').default(0),
-    billHeaderSize: integer('bill_header_size').default(23),
-    billHeaderText: text('bill_header_text').default('مركز العامر لأنظمة الكاشير والباركود'),
-    billFooterY: integer('bill_footer_y').default(0),
-    billFooterText: text('bill_footer_text').default('مركز العامر :: 01026043165 - 01555883536'),
+    
+    // Interactive Bill Settings
+    billLayoutConfig: jsonb('bill_layout_config').$type<{
+        logo?: { 
+            x: number; 
+            y: number; 
+            height: number; 
+            width?: number; 
+            marginRight?: number; 
+            marginTop?: number; 
+            marginBottom?: number; 
+            marginLeft?: number 
+        };
+        title?: { 
+            x: number; 
+            y: number; 
+            fontSize: number; 
+            text?: string; 
+            color?: string; 
+            xOffset?: number; 
+            yOffset?: number 
+        };
+    }>(),
 });
 
 // ============= BANNERS TABLE =============
