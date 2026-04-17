@@ -34,6 +34,8 @@ export function decryptText(text: string | null | undefined): string | undefined
 
     try {
         const textParts = text.split(':');
+        if (textParts.length < 2) return text; // Actually impossible due to includes(':') above but safe
+
         const iv = Buffer.from(textParts.shift()!, 'hex');
         const encryptedText = Buffer.from(textParts.join(':'), 'hex');
         
@@ -49,7 +51,7 @@ export function decryptText(text: string | null | undefined): string | undefined
         return decrypted.toString('utf8');
     } catch (e) {
         // Fallback in case of wrong key or corrupted data
-        console.error('Failed to decrypt text, returning original or masked:', e);
-        return text;
+        console.error('❌ Decryption failed. This usually means ENCRYPTION_KEY has changed or is invalid.');
+        return undefined; // Return undefined to signal failure
     }
 }

@@ -297,4 +297,35 @@ export class SettingsController {
             });
         }
     }
+
+    // POST /api/settings/test-notification - Test order notifications
+    static async testNotification(req: Request, res: Response) {
+        try {
+            const { type, config } = req.body;
+
+            if (!type || !config) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'بيانات الاختبار غير مكتملة'
+                });
+            }
+
+            console.log(`🧪 Received test notification request for channel: ${type}`);
+
+            const { NotificationService } = await import('../services/notification.service.js');
+            await NotificationService.sendTestNotification(type, config);
+
+            return res.json({
+                success: true,
+                message: `تم إرسال رسالة الاختبار بنجاح عبر ${type}`
+            });
+        } catch (error: any) {
+            console.error('❌ SettingsController testNotification failure:', error);
+            return res.status(500).json({
+                success: false,
+                error: 'فشل إرسال رسالة الاختبار',
+                message: error.message
+            });
+        }
+    }
 }

@@ -49,6 +49,39 @@ export class NotificationService {
         }
     }
 
+    /**
+     * Sends a test notification to a specific channel
+     */
+    static async sendTestNotification(type: 'whatsapp' | 'telegram' | 'email', config: any) {
+        const testMessage = `🔔 رسالة تجريبية من متجر العامر\n\nإذا كنت ترى هذه الرسالة، فهذا يعني أن نظام إشعارات ${type === 'whatsapp' ? 'الوواتساب' : type === 'telegram' ? 'التليجرام' : 'البريد'} يعمل بنجاح! ✅\n\nالتوقيت: ${new Date().toLocaleString('ar-EG')}`;
+
+        try {
+            if (type === 'whatsapp') {
+                await this.sendWhatsAppCallMeBot(config.apiKey, config.phone, testMessage);
+            } else if (type === 'telegram') {
+                await this.sendTelegram(config.token, config.chatId, testMessage);
+            } else if (type === 'email') {
+                // Mock a minimal order for the email template
+                const mockOrder = {
+                    orderNumber: 'TEST-123',
+                    fullName: 'مستخدم تجريبي',
+                    phone: '+201000000000',
+                    governorate: 'القاهرة',
+                    city: 'اختبار',
+                    address: 'عنوان تجريبي',
+                    paymentMethod: 'cod',
+                    total: '0',
+                    items: [{ name: 'منتج تجريبي', quantity: 1, price: '0' }]
+                };
+                await this.sendEmail(config, config.pass, mockOrder);
+            }
+            return { success: true };
+        } catch (error: any) {
+            console.error(`❌ [NotificationService] Test failure (${type}):`, error);
+            throw error;
+        }
+    }
+
     private static formatOrderMessage(order: any): string {
         const itemsList = order.items?.map((item: any) => {
             const price = parseFloat(item.price || '0');

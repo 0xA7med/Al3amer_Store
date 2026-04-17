@@ -36,10 +36,16 @@ export class ProductsController {
 
             // Prefer the dedicated AI key, fall back to google key, then env var
             const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
-            const apiKey = rawKey ? (decryptText(rawKey) ?? rawKey) : undefined;
+            
+            // If the key is encrypted (has ':') but decryptText returns the same raw string or undefined, it failed
+            const apiKey = rawKey ? decryptText(rawKey) : undefined;
 
             if (!apiKey) {
-                return res.status(400).json({ error: 'Google API Key is not configured in settings' });
+                const isProbablyEncrypted = rawKey?.includes(':');
+                const errorMessage = isProbablyEncrypted 
+                    ? 'فشل فك تشفير مفتاح API. يرجى إعادة إدخال مفتاح Google API في الإعدادات.'
+                    : 'مفتاح Google API غير مهيأ في الإعدادات';
+                return res.status(400).json({ error: errorMessage });
             }
 
             const aiService = new AIService(apiKey.trim());
@@ -600,10 +606,29 @@ export class ProductsController {
             });
 
             res.json(updatedProduct);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating product:', error);
+            
+            // Handle unique constraint violations (Postgres error 23505)
+            if (error?.code === '23505') {
+                let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
+                if (error.detail?.includes('external_id')) {
+                    message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';
+                } else if (error.detail?.includes('sku')) {
+                    message = 'هذا الكود (SKU) مستخدم بالفعل لمنتج آخر';
+                } else if (error.detail?.includes('slug')) {
+                    message = 'هذا الرابط (Slug) مستخدم بالفعل لمنتج آخر، يرجى تغيير اسم المنتج';
+                }
+                
+                return res.status(400).json({ 
+                    message,
+                    error: 'DUPLICATE_ENTRY',
+                    detail: error.detail 
+                });
+            }
+
             res.status(500).json({
-                message: 'Error updating product',
+                message: 'حدث خطأ أثناء تحديث المنتج',
                 error: error instanceof Error ? error.message : 'Unknown error',
                 details: error
             });

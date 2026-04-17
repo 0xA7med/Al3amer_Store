@@ -140,6 +140,48 @@ export default function SettingsPage() {
         { id: 'notifications', label: 'الإشعارات', icon: 'notifications_active' },
     ];
 
+    const [testing, setTesting] = useState({ whatsapp: false, telegram: false, email: false });
+
+    const handleTestNotification = async (type: 'whatsapp' | 'telegram' | 'email') => {
+        setTesting(prev => ({ ...prev, [type]: true }));
+        try {
+            let config: any = {};
+            if (type === 'whatsapp') {
+                config = {
+                    apiKey: formData.whatsappApiKey,
+                    phone: formData.whatsappRecipientPhone
+                };
+            } else if (type === 'telegram') {
+                config = {
+                    token: formData.telegramBotToken,
+                    chatId: formData.telegramChatId
+                };
+            } else if (type === 'email') {
+                config = {
+                    smtpHost: formData.smtpHost,
+                    smtpPort: formData.smtpPort,
+                    smtpUser: formData.smtpUser,
+                    pass: formData.smtpPass,
+                    emailReceiver: formData.emailReceiver,
+                    emailFrom: formData.emailFrom
+                };
+            }
+
+            const { data } = await api.post('/settings/test-notification', { type, config });
+            if (data.success) {
+                toast.success(data.message || 'تم إرسال رسالة الاختبار بنجاح');
+            } else {
+                toast.error(data.error || 'فشل إرسال رسالة الاختبار');
+            }
+        } catch (error: any) {
+            console.error('Test notification error:', error);
+            const msg = error.response?.data?.error || error.response?.data?.message || 'فشل إرسال رسالة الاختبار. تأكد من صحة البيانات.';
+            toast.error(msg);
+        } finally {
+            setTesting(prev => ({ ...prev, [type]: false }));
+        }
+    };
+
     return (
         <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-10 z-10 scroll-smooth">
             <div className="max-w-5xl mx-auto flex flex-col gap-6">
@@ -734,6 +776,21 @@ export default function SettingsPage() {
                                                 <p>للحصول على المفتاح: أرسل رسالة <b>"I allow callmebot to send me messages"</b> لرقم الخدمة على الواتساب. <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" className="underline font-bold">التفاصيل هنا</a></p>
                                             </div>
                                         </div>
+                                        <div className="md:col-span-2 flex justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTestNotification('whatsapp')}
+                                                disabled={testing.whatsapp}
+                                                className="bg-green-500/20 hover:bg-green-500/30 text-green-500 text-sm font-bold py-2.5 px-6 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                                            >
+                                                {testing.whatsapp ? (
+                                                    <div className="size-4 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                                )}
+                                                اختبار الواتساب
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -782,6 +839,21 @@ export default function SettingsPage() {
                                                 className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-all"
                                                 placeholder="e.g. 987654321"
                                             />
+                                        </div>
+                                        <div className="md:col-span-2 flex justify-end mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTestNotification('telegram')}
+                                                disabled={testing.telegram}
+                                                className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-500 text-sm font-bold py-2.5 px-6 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                                            >
+                                                {testing.telegram ? (
+                                                    <div className="size-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                                )}
+                                                اختبار تليجرام
+                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -850,6 +922,21 @@ export default function SettingsPage() {
                                                 className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 transition-all"
                                                 placeholder="••••••••"
                                             />
+                                        </div>
+                                        <div className="md:col-span-2 flex justify-end mt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTestNotification('email')}
+                                                disabled={testing.email}
+                                                className="bg-purple-500/20 hover:bg-purple-500/30 text-purple-500 text-sm font-bold py-2.5 px-6 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                                            >
+                                                {testing.email ? (
+                                                    <div className="size-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                                )}
+                                                اختبار البريد
+                                            </button>
                                         </div>
                                     </div>
                                 )}

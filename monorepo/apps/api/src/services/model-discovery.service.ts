@@ -92,7 +92,7 @@ export class ModelDiscoveryService {
      * Priority: flash-1.5 > pro-1.5 > flash > pro > others
      */
     private static prioritizeModels(models: string[]): string[] {
-        const priority = ['1.5-flash', '1.5-pro', 'flash', 'pro'];
+        const priority = ['2.0-flash', '1.5-flash', '1.5-pro', 'flash', 'pro'];
 
         return models.sort((a, b) => {
             const aIndex = priority.findIndex(p => a.includes(p));
@@ -112,7 +112,6 @@ export class ModelDiscoveryService {
     private static getFallbackModels(): string[] {
         console.log('⚠️ Using fallback model list');
         return [
-            'gemini-2.5-flash',
             'gemini-2.0-flash',
             'gemini-1.5-flash',
             'gemini-1.5-pro'
