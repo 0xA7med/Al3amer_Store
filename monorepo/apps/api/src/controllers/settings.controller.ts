@@ -219,8 +219,8 @@ export class SettingsController {
             console.log("🚀 Starting Dynamic Model Discovery Test...");
 
             // Step 1: Discover available models
-            const { ModelDiscoveryService } = await import('../services/model-discovery.service');
-            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1beta');
+            const { ModelDiscoveryService } = await import('../services/model-discovery.service.js');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
 
             if (availableModels.length === 0) {
                 return res.status(500).json({

@@ -31,7 +31,7 @@ export class AIService {
         this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
-            apiVersion: 'v1beta',
+            apiVersion: 'v1',
         });
     }
 
@@ -44,8 +44,8 @@ export class AIService {
         }
 
         try {
-            const { ModelDiscoveryService } = await import('./model-discovery.service');
-            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1beta');
+            const { ModelDiscoveryService } = await import('./model-discovery.service.js');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
             console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
         } catch (error) {
             console.warn('⚠️ Model discovery failed, using fallback models');
