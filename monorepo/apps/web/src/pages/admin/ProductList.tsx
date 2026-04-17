@@ -477,8 +477,8 @@ export function ProductList() {
     const [selectedStatus, setSelectedStatus] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; product: Product | null }>({ show: false, product: null });
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
     // Modal states
     const [showPriceModal, setShowPriceModal] = useState(false);
@@ -575,7 +575,8 @@ export function ProductList() {
                 (product.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
             const matchesCategory = selectedCategory === '' || product.category?.name === selectedCategory;
             const matchesStatus = selectedStatus === '' || product.status === selectedStatus;
-            return matchesSearch && matchesCategory && matchesStatus;
+            const matchesLowStock = !showLowStockOnly || (product.stock < 10 && product.stock > 0);
+            return matchesSearch && matchesCategory && matchesStatus && matchesLowStock;
         });
 
         result.sort((a, b) => {
@@ -588,7 +589,7 @@ export function ProductList() {
         });
 
         return result;
-    }, [productsList, searchQuery, selectedCategory, selectedStatus, sortBy]);
+    }, [productsList, searchQuery, selectedCategory, selectedStatus, sortBy, showLowStockOnly]);
 
     if (isLoading) {
         return (
@@ -620,7 +621,14 @@ export function ProductList() {
             
             {/* Stats Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
-                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group hover:border-primary/30 transition-all">
+                <button 
+                    onClick={() => {
+                        setSelectedStatus('');
+                        setShowLowStockOnly(false);
+                    }}
+                    className={`glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group transition-all text-right
+                        ${selectedStatus === '' && !showLowStockOnly ? 'border-primary ring-1 ring-primary/20 bg-primary/5' : 'hover:border-primary/30'}`}
+                >
                     <div className="size-10 md:size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 transition-all group-hover:scale-110">
                         <span className="material-symbols-outlined text-[20px] md:text-[28px]">inventory</span>
                     </div>
@@ -628,19 +636,33 @@ export function ProductList() {
                         <p className="text-slate-400 text-[9px] md:text-xs font-bold truncate">إجمالي المنتجات</p>
                         <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{statsData?.totalProducts || totalProducts}</h3>
                     </div>
-                </div>
+                </button>
                 
-                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                <button 
+                    onClick={() => {
+                        setSelectedStatus('active');
+                        setShowLowStockOnly(false);
+                    }}
+                    className={`glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group transition-all text-right
+                        ${selectedStatus === 'active' ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-500/5' : 'hover:border-emerald-500/30'}`}
+                >
                     <div className="size-10 md:size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 transition-all group-hover:scale-110">
                         <span className="material-symbols-outlined text-[20px] md:text-[28px]">visibility</span>
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
-                        <p className="text-slate-400 text-[9px] md:text-xs font-bold truncate">منتجات ظاهرة</p>
+                        <p className="text-slate-400 text-[9px] md:text-xs font-bold truncate">منتجات نشطة</p>
                         <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{statsData?.activeProducts || 0}</h3>
                     </div>
-                </div>
+                </button>
 
-                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group hover:border-slate-500/30 transition-all">
+                <button 
+                    onClick={() => {
+                        setSelectedStatus('draft');
+                        setShowLowStockOnly(false);
+                    }}
+                    className={`glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group transition-all text-right
+                        ${selectedStatus === 'draft' ? 'border-slate-500 ring-1 ring-slate-500/20 bg-slate-500/5' : 'hover:border-slate-500/30'}`}
+                >
                     <div className="size-10 md:size-12 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-400 shrink-0 transition-all group-hover:scale-110">
                         <span className="material-symbols-outlined text-[20px] md:text-[28px]">visibility_off</span>
                     </div>
@@ -648,7 +670,7 @@ export function ProductList() {
                         <p className="text-slate-400 text-[9px] md:text-xs font-bold truncate">منتجات مخفية</p>
                         <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{statsData?.inactiveProducts || 0}</h3>
                     </div>
-                </div>
+                </button>
 
                 <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group hover:border-emerald-400/30 transition-all">
                     <div className="size-10 md:size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 transition-all group-hover:scale-110">
@@ -660,7 +682,11 @@ export function ProductList() {
                     </div>
                 </div>
 
-                <div className="glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group hover:border-secondary/30 transition-all border-l-2 border-secondary/50 col-span-2 lg:col-span-1">
+                <button 
+                    onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                    className={`glass-panel rounded-xl p-2.5 md:p-4 flex items-center gap-4 relative overflow-hidden group transition-all border-l-2 border-secondary/50 col-span-2 lg:col-span-1 text-right
+                        ${showLowStockOnly ? 'border-secondary ring-1 ring-secondary/20 bg-secondary/5' : 'hover:border-secondary/30'}`}
+                >
                     <div className="size-10 md:size-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0 transition-all group-hover:scale-110">
                         <span className="material-symbols-outlined text-[20px] md:text-[28px]">warning</span>
                     </div>
@@ -668,7 +694,7 @@ export function ProductList() {
                         <p className="text-slate-400 text-[9px] md:text-xs font-bold truncate">تنبيهات المخزون</p>
                         <h3 className="text-base md:text-xl font-bold text-white leading-none truncate">{lowStockCount}</h3>
                     </div>
-                </div>
+                </button>
             </div>
 
             {/* Filters & Actions */}
