@@ -477,6 +477,7 @@ export function ProductList() {
     const [selectedStatus, setSelectedStatus] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; product: Product | null }>({ show: false, product: null });
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
     const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 
@@ -523,7 +524,7 @@ export function ProductList() {
     };
 
     const toggleSelect = useCallback((id: string) => {
-        setSelectedIds(prev => {
+        setSelectedIds((prev: Set<string>) => {
             const newSelected = new Set(prev);
             if (newSelected.has(id)) newSelected.delete(id);
             else newSelected.add(id);
