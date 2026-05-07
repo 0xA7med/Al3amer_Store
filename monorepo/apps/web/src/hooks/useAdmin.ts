@@ -20,6 +20,16 @@ export interface Product {
     brand: { id: string; name: string } | null;
     images: { url: string; isPrimary: boolean }[];
     createdAt?: string;
+    accountingMultiplier?: string | null;
+    salesTiers?: Array<{
+        id: string;
+        quantity: number;
+        label: string;
+        adjustmentType: 'percentage' | 'fixed' | 'multiplier';
+        adjustmentValue: string;
+        imageUrl?: string;
+        price?: string;
+    }> | null;
 }
 
 export interface ProductsResponse {
@@ -299,13 +309,15 @@ export function useBulkAction() {
     return useMutation({
         mutationFn: async (payload: {
             ids: string[];
-            action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category';
+            action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category' | 'group';
             payload?: {
                 priceMode?: 'add_fixed' | 'subtract_fixed' | 'add_percent' | 'subtract_percent' | 'set_fixed';
                 priceValue?: number;
                 stockMode?: 'add' | 'subtract' | 'set';
                 stockValue?: number;
                 categoryId?: string;
+                groupName?: string;
+                variants?: { id: string; options: Record<string, string> }[];
             };
         }) => {
             const response = await api.post('/products/bulk-action', payload);

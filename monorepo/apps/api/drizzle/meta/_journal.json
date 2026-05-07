@@ -8,6 +8,13 @@
       "when": 1774457650618,
       "tag": "0000_brief_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776470428647,
+      "tag": "0001_easy_jackpot",
+      "breakpoints": true
     }
   ]
 }

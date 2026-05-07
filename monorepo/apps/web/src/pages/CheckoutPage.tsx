@@ -158,6 +158,8 @@ export function CheckoutPage() {
     const [draftOrderId, setDraftOrderId] = useState<string | null>(localStorage.getItem('checkout_draft_order_id'));
 
     // Check for Paymob external errors returning via URL
+    const [isDevMode, setIsDevMode] = useState(false);
+
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const externalError = urlParams.get('error');
@@ -165,6 +167,14 @@ export function CheckoutPage() {
             setError(externalError);
             // Optionally remove it from the URL so it doesn't linger on reload
             window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        // Developer mode backdoor for testing payments (add ?dev=true to URL)
+        if (urlParams.get('dev') === 'true') {
+            localStorage.setItem('devMode', 'true');
+            setIsDevMode(true);
+        } else if (localStorage.getItem('devMode') === 'true') {
+            setIsDevMode(true);
         }
     }, []);
 
@@ -215,6 +225,7 @@ export function CheckoutPage() {
 
     // Calculate shipping cost based on city/governorate if available
     const getShippingCost = () => {
+        if (!formData.governorate) return 0;
         if (totalPrice >= freeShippingThreshold) return 0;
 
         const cityRates = settings.cityShippingRates || [];
@@ -259,7 +270,7 @@ export function CheckoutPage() {
 
     // COD Return fee calculation
     let codReturnFee = 0;
-    if (isCodSelected) {
+    if (step >= 2 && isCodSelected) {
         const amountForCODCalc = totalPrice; // Calculate return fee based on subtotal (products price)
         if (amountForCODCalc > 0) {
             const remainingAmount = Math.max(0, amountForCODCalc - codReturnShippingBaseAmount);
@@ -268,11 +279,11 @@ export function CheckoutPage() {
         }
     }
 
-    const codAdvancePaymentAmount = isCodSelected ? codAdvancePaymentSetting : 0;
+    const codAdvancePaymentAmount = (step >= 2 && isCodSelected) ? codAdvancePaymentSetting : 0;
     const finalTotal = Math.max(0, totalPrice + shippingCost + vatAmount + codReturnFee - discountAmount);
     
     // Total At Delivery = Final Total - Advance Payment (but never less than 0)
-    const codTotalAtDelivery = isCodSelected ? Math.max(0, finalTotal - codAdvancePaymentAmount) : finalTotal;
+    const codTotalAtDelivery = (step >= 2 && isCodSelected) ? Math.max(0, finalTotal - codAdvancePaymentAmount) : finalTotal;
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -633,56 +644,62 @@ export function CheckoutPage() {
                                                     />
                                                 </div>
                                                 <p className="text-slate-400 text-sm mt-1">ادفع نقداً عند استلام طلبك</p>
-                                                {parseFloat(settings.codExtraFee || '0') > 0 && (
-                                                    <p className="text-primary text-[10px] font-bold mt-1">+ {settings.codExtraFee} ج.م رسوم إضافية</p>
-                                                )}
                                             </div>
                                         </label>
                                     )}
 
                                     {settings.paymobEnabled && (
                                         <>
-                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all relative ${isDevMode ? 'cursor-pointer hover:border-white/20' : 'cursor-not-allowed opacity-60 grayscale'} ${formData.paymentMethod === 'paymob' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5'}`}>
                                                 <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
                                                     <span className="material-symbols-outlined text-2xl">credit_card</span>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-white font-bold text-lg">بطاقة بنكية (Credit/Debit)</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-white font-bold text-lg">بطاقة بنكية (Credit/Debit)</span>
+                                                            {!isDevMode && <span className="bg-primary/20 text-primary text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap">قريباً</span>}
+                                                        </div>
                                                         <input
                                                             type="radio"
                                                             name="payment"
                                                             value="paymob"
+                                                            disabled={!isDevMode}
                                                             checked={formData.paymentMethod === 'paymob'}
-                                                            onChange={() => setFormData({ ...formData, paymentMethod: 'paymob' })}
-                                                            className="accent-primary w-5 h-5"
+                                                            onChange={() => isDevMode && setFormData({ ...formData, paymentMethod: 'paymob' })}
+                                                            className="accent-primary w-5 h-5 disabled:opacity-50"
                                                         />
                                                     </div>
                                                     <p className="text-slate-400 text-sm mt-1">Paymob (Visa / Mastercard)</p>
                                                 </div>
+                                                {!isDevMode && <div className="absolute inset-0 z-10" onClick={(e) => { e.preventDefault(); setError("هذه الطريقة غير متاحة حالياً، سيتم تفعيلها قريباً."); }} />}
                                             </label>
 
-                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${formData.paymentMethod === 'paymob_wallet' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5 hover:border-white/20'}`}>
+                                            <label className={`flex items-center gap-4 p-4 rounded-xl border transition-all relative ${isDevMode ? 'cursor-pointer hover:border-white/20' : 'cursor-not-allowed opacity-60 grayscale'} ${formData.paymentMethod === 'paymob_wallet' ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-white/10 bg-white/5'}`}>
                                                 <div className="flex items-center justify-center size-12 rounded-full bg-white/10 text-primary">
                                                     <span className="material-symbols-outlined text-2xl">account_balance_wallet</span>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-white font-bold text-lg">محفظة إلكترونية</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-white font-bold text-lg">محفظة إلكترونية</span>
+                                                            {!isDevMode && <span className="bg-primary/20 text-primary text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap">قريباً</span>}
+                                                        </div>
                                                         <input
                                                             type="radio"
                                                             name="payment"
                                                             value="paymob_wallet"
+                                                            disabled={!isDevMode}
                                                             checked={formData.paymentMethod === 'paymob_wallet'}
-                                                            onChange={() => setFormData({ ...formData, paymentMethod: 'paymob_wallet' })}
-                                                            className="accent-primary w-5 h-5"
+                                                            onChange={() => isDevMode && setFormData({ ...formData, paymentMethod: 'paymob_wallet' })}
+                                                            className="accent-primary w-5 h-5 disabled:opacity-50"
                                                         />
                                                     </div>
                                                     <p className="text-slate-400 text-sm mt-1">Vodafone Cash / Etisalat / Orange</p>
 
                                                     {/* Wallet Number Input */}
-                                                    {formData.paymentMethod === 'paymob_wallet' && (
-                                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2">
+                                                    {formData.paymentMethod === 'paymob_wallet' && isDevMode && (
+                                                        <div className="mt-3 animate-in fade-in slide-in-from-top-2 relative z-20">
                                                             <label className="text-white text-xs mb-1 block">رقم المحفظة (مطلوب)</label>
                                                             <input
                                                                 type="tel"
@@ -699,6 +716,7 @@ export function CheckoutPage() {
                                                         </div>
                                                     )}
                                                 </div>
+                                                {!isDevMode && <div className="absolute inset-0 z-10" onClick={(e) => { e.preventDefault(); setError("هذه الطريقة غير متاحة حالياً، سيتم تفعيلها قريباً."); }} />}
                                             </label>
                                         </>
                                     )}
@@ -856,13 +874,15 @@ export function CheckoutPage() {
                                 <span>{totalPrice.toLocaleString()} ج.م</span>
                             </div>
 
-                            <div className="flex justify-between text-slate-400">
-                                <span>مصاريف الشحن</span>
-                                <span>{shippingCost === 0 ? 'مجاني' : `${shippingCost.toLocaleString()} ج.م`}</span>
-                            </div>
+                            {formData.governorate && (
+                                <div className="flex justify-between text-slate-400">
+                                    <span>مصاريف الشحن</span>
+                                    <span>{shippingCost === 0 ? 'مجاني' : `${shippingCost.toLocaleString()} ج.م`}</span>
+                                </div>
+                            )}
 
                             {/* COD Return Fee (if applicable) */}
-                            {isCodSelected && codReturnFee > 0 && (
+                            {step >= 2 && isCodSelected && codReturnFee > 0 && (
                                 <div className="flex justify-between text-slate-400 group relative">
                                     <span className="flex items-center gap-1 cursor-help underline decoration-dashed underline-offset-4 decoration-slate-500">
                                         رسوم شحن عودة المبلغ (COD)
@@ -932,7 +952,7 @@ export function CheckoutPage() {
                             </div>
 
                             {/* COD Advance Payment Notice */}
-                            {isCodSelected && (
+                            {step >= 2 && isCodSelected && (
                                 <div className="mt-4 space-y-3">
                                     <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
                                         <div className="flex items-start gap-2">

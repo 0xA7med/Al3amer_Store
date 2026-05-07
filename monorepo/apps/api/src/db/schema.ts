@@ -146,6 +146,18 @@ export const products = pgTable('products', {
     dynamicAttributes: jsonb('dynamic_attributes').$type<Record<string, string | string[]>>().default({}),
     shortNameAwb: text('short_name_awb'), // الاسم المختصر للبوليسة (عالمي)
     tags: text('tags').array(),
+
+    // --- Variation & Bulk Pricing Fields ---
+    parentId: uuid('parent_id').references((): any => products.id), // Link child variants to a parent product
+    variantOptions: jsonb('variant_options').$type<Record<string, string>>(), // e.g. { "Size": "38x50", "Length": "80m" }
+    accountingMultiplier: numeric('accounting_multiplier', { precision: 10, scale: 2 }), // e.g. 100 for a box of 100
+    salesTiers: jsonb('sales_tiers').$type<Array<{
+        quantity: number;
+        label: string; // e.g. "1 قطعة"
+        adjustmentType: 'percentage' | 'fixed' | 'multiplier';
+        adjustmentValue: number; // e.g. 1.5 if multiplier
+    }>>(),
+
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -236,6 +248,8 @@ export const orderItems = pgTable('order_items', {
     name: text('name').notNull(),
     price: numeric('price', { precision: 10, scale: 2 }).notNull(),
     quantity: integer('quantity').notNull(),
+    selectedTierId: text('selected_tier_id'),
+    multiplier: integer('multiplier').default(1),
 });
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({

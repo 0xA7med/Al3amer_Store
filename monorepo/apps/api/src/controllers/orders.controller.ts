@@ -74,8 +74,17 @@ export class OrdersController {
                     return res.status(400).json({ error: `المنتج ذو الرقم ${item.productId} غير متوفر أو غير نشط حالياً` });
                 }
 
-                const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
+                const itemPrice = parseFloat(item.price); // Use client-provided price (tier price)
+                const effectivePrice = isNaN(itemPrice) ? (dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price)) : itemPrice;
+                
                 const quantity = Number(item.quantity) || 1;
+                const multiplier = Number(item.multiplier) || 1;
+                const totalDeduction = quantity * multiplier;
+
+                // Check Stock
+                if ((dbProduct.stock ?? 0) < totalDeduction) {
+                    return res.status(400).json({ error: `كمية المنتج ${dbProduct.name} المطلوبة غير متوفرة في المخزن. المتاح: ${dbProduct.stock}` });
+                }
 
                 subtotal += effectivePrice * quantity;
                 
@@ -83,7 +92,14 @@ export class OrdersController {
                    ...item,
                    price: effectivePrice,
                    name: dbProduct.name,
+                   multiplier: multiplier,
+                   selectedTierId: item.selectedTierId
                 });
+
+                // Deduct Stock immediately
+                await db.update(products)
+                    .set({ stock: (dbProduct.stock ?? 0) - totalDeduction })
+                    .where(eq(products.id, dbProduct.id));
             }
 
             // Calculate discount if coupon provided
@@ -167,6 +183,8 @@ export class OrdersController {
                 name: item.name,
                 price: item.price.toString(),
                 quantity: item.quantity,
+                multiplier: item.multiplier || 1,
+                selectedTierId: item.selectedTierId || null,
             }));
 
             await db.insert(orderItems).values(orderItemsData);
@@ -339,6 +357,8 @@ export class OrdersController {
                 name: item.name,
                 price: item.price.toString(),
                 quantity: item.quantity,
+                multiplier: item.multiplier || 1,
+                selectedTierId: item.selectedTierId || null,
             }));
             await db.insert(orderItems).values(orderItemsData);
 

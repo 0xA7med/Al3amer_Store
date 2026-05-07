@@ -55,6 +55,19 @@ export interface Product {
             name: string;
         }
     }[];
+    variants?: Product[];
+    parent?: Product | null;
+    variantOptions?: { attributeName: string; value: string }[] | null;
+    accountingMultiplier?: string | null;
+    salesTiers?: Array<{
+        id: string;
+        quantity: number;
+        label: string;
+        adjustmentType: 'percentage' | 'fixed' | 'multiplier';
+        adjustmentValue: string;
+        imageUrl?: string;
+        price?: string;
+    }> | null;
 }
 
 export interface ProductsResponse {

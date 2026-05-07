@@ -96,11 +96,96 @@ export const ProductDetailsPage = () => {
         );
     }
 
-    // Get images - use product images or fallback
-    const productImagesData = product.images || [];
-    const images = productImagesData.length > 0
-        ? productImagesData.map(img => img.url)
-        : ['https://via.placeholder.com/600x600/181a20/ffffff?text=No+Image'];
+    // Variant State Logic
+    const hasVariants = product.variants && product.variants.length > 0;
+    const allVariants = hasVariants ? product.variants! : (product.parent ? [product] : []);
+    
+    // Auto-select logic
+    const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    const [selectedTierIndex, setSelectedTierIndex] = useState<number>(0);
+
+    useEffect(() => {
+        if (!product) return;
+        
+        let initialVariant = null;
+        if (product.parent) {
+            initialVariant = product as Product;
+        } else if (hasVariants) {
+            initialVariant = product.variants![0];
+        }
+
+        setSelectedVariant(initialVariant);
+        setSelectedTierIndex(0); // Reset tier when product/variant changes
+
+        if (initialVariant?.variantOptions) {
+            const defaults: Record<string, string> = {};
+            initialVariant.variantOptions.forEach((opt: any) => {
+                defaults[opt.attributeName] = opt.value;
+            });
+            setSelectedOptions(defaults);
+        } else {
+            setSelectedOptions({});
+        }
+    }, [product?.id]);
+
+    // Derived available attributes
+    const availableAttributes = (() => {
+        if (allVariants.length === 0) return {};
+        const attrs: Record<string, Set<string>> = {};
+        allVariants.forEach(v => {
+            if (v.variantOptions) {
+                v.variantOptions.forEach((opt: any) => {
+                    if (!attrs[opt.attributeName]) attrs[opt.attributeName] = new Set();
+                    attrs[opt.attributeName].add(opt.value);
+                });
+            }
+        });
+        const result: Record<string, string[]> = {};
+        for (const key in attrs) {
+            result[key] = Array.from(attrs[key]);
+        }
+        return result;
+    })();
+
+    // Handle Option Click
+    const handleOptionSelect = (attributeName: string, value: string) => {
+        const newOptions = { ...selectedOptions, [attributeName]: value };
+        setSelectedOptions(newOptions);
+
+        // Find matching variant
+        const matched = allVariants.find(v => {
+            if (!v.variantOptions) return false;
+            return v.variantOptions.every((opt: any) => newOptions[opt.attributeName] === opt.value);
+        });
+
+        if (matched) {
+            setSelectedVariant(matched);
+            setSelectedTierIndex(0); // Reset tier for new variant
+            setUserSelectedImage(null); 
+        }
+    };
+
+    // Which product to display data for?
+    const displayProduct = selectedVariant || product;
+    const currentTier = displayProduct.salesTiers?.[selectedTierIndex];
+
+    // Get images - include tier image if available
+    const productImagesData = displayProduct.images && displayProduct.images.length > 0 
+        ? [...displayProduct.images] 
+        : (product.images ? [...product.images] : []);
+
+    // Active Image logic
+    const tierImageUrl = currentTier?.imageUrl;
+    
+    const images = productImagesData.map(img => img.url);
+    if (tierImageUrl && !images.includes(tierImageUrl)) {
+        images.unshift(tierImageUrl);
+    }
+    
+    if (images.length === 0) {
+        images.push('https://via.placeholder.com/600x600/181a20/ffffff?text=No+Image');
+    }
 
     // Get primary image index
     const primaryIndex = Math.max(0, productImagesData.findIndex(img => img.isPrimary) ?? 0);
@@ -108,7 +193,7 @@ export const ProductDetailsPage = () => {
     // Active index defaults to primaryIndex if user hasn't selected one
     const activeImageIndex = userSelectedImage !== null ? userSelectedImage : primaryIndex;
 
-    // Parse specifications correctly (using the fix from previous turn)
+    // Parse specifications correctly
     const parseSpecs = (s: any): { key: string; value: string }[] => {
         if (!s) return [];
         if (!Array.isArray(s) && typeof s === 'object') {
@@ -129,7 +214,7 @@ export const ProductDetailsPage = () => {
         });
     };
 
-    const specifications = parseSpecs(product.specifications);
+    const specifications = parseSpecs(displayProduct.specifications || product.specifications);
 
     const displayLabelMap: Record<string, string> = {
         'connectivity': 'طرق الاتصال',
@@ -138,9 +223,18 @@ export const ProductDetailsPage = () => {
         'الاستخدام': 'نمط الاستخدام'
     };
 
-    // Price formatting
-    const price = parseFloat(product.price);
-    const discountPrice = product.discountPrice ? parseFloat(product.discountPrice) : null;
+    // Price formatting - override with tier if set
+    const basePrice = parseFloat(displayProduct.price);
+    const baseDiscount = displayProduct.discountPrice ? parseFloat(displayProduct.discountPrice) : null;
+
+    // Tier-adjusted price
+    let price = basePrice;
+    if (currentTier) {
+        const factor = parseFloat(String(currentTier.adjustmentValue || currentTier.quantity || '1'));
+        price = basePrice * factor;
+    }
+    const discountPrice = currentTier ? null : baseDiscount; // Tiers represent bulk pricing
+    
     const hasDiscount = discountPrice && discountPrice < price;
     const discountPercent = hasDiscount ? Math.round((1 - (discountPrice! / price)) * 100) : 0;
 
@@ -415,6 +509,78 @@ export const ProductDetailsPage = () => {
                     <div className="glass-panel p-4 md:p-6 rounded-2xl flex flex-col gap-4 md:gap-6 shadow-2xl shadow-black/40 border-t border-t-white/10 relative overflow-hidden group">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red via-primary to-brand-red opacity-50"></div>
 
+                        {/* Variant Selector */}
+                        {Object.keys(availableAttributes).length > 0 && (
+                            <div className="flex flex-col gap-5 relative z-10 pb-4 border-b border-white/5">
+                                {Object.entries(availableAttributes).map(([attrName, values]) => (
+                                    <div key={attrName} className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-sm md:text-base font-bold text-slate-300">
+                                                {displayLabelMap[attrName.toLowerCase()] || attrName}
+                                            </h4>
+                                            {selectedOptions[attrName] && (
+                                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                                                    {selectedOptions[attrName]}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-2.5">
+                                            {values.map(val => {
+                                                const isSelected = selectedOptions[attrName] === val;
+                                                return (
+                                                    <button
+                                                        key={val}
+                                                        onClick={() => handleOptionSelect(attrName, val)}
+                                                        className={`px-4 md:px-5 py-2.5 md:py-3 rounded-xl text-sm font-bold border transition-all active:scale-95 ${
+                                                            isSelected 
+                                                                ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(19,91,236,0.15)] ring-1 ring-primary/50' 
+                                                                : 'bg-surface-dark border-white/10 text-slate-400 hover:border-slate-500 hover:text-white hover:bg-white/5 shadow-sm'
+                                                        }`}
+                                                    >
+                                                        {val}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Sales Tiers (Bulk Packs) */}
+                        {displayProduct.salesTiers && displayProduct.salesTiers.length > 0 && (
+                            <div className="flex flex-col gap-4 relative z-10 pb-4 border-b border-white/5">
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm md:text-base font-bold text-slate-300">الكمية / العرض</h4>
+                                    <span className="text-[10px] text-slate-500 font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5">اختر حجم العبوة</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    {displayProduct.salesTiers.map((tier: any, idx: number) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setSelectedTierIndex(idx);
+                                                setUserSelectedImage(null);
+                                            }}
+                                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all active:scale-95 ${
+                                                selectedTierIndex === idx 
+                                                    ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(19,91,236,0.15)] ring-1 ring-primary/50' 
+                                                    : 'bg-surface-dark border-white/10 text-slate-400 hover:border-slate-500 hover:text-white hover:bg-white/5 shadow-sm'
+                                            }`}
+                                        >
+                                            <span className="text-xs font-black mb-1">{tier.quantity} {tier.quantity === 1 ? 'بكرة' : 'بكرة'}</span>
+                                            <span className="text-[10px] opacity-70">
+                                                {parseFloat(tier.price).toLocaleString('ar-EG')} ج.م
+                                            </span>
+                                            {tier.quantity > 1 && (
+                                                <span className="text-[8px] mt-1 bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">توفير bulk</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex items-end gap-3 flex-wrap relative z-10">
                             <div className="flex flex-col">
                                 {hasDiscount && (
@@ -424,7 +590,7 @@ export const ProductDetailsPage = () => {
                                 )}
                                 <div className="flex items-baseline gap-1 flex-wrap">
                                     <span className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-brand-red tracking-tight">
-                                        {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
+                                        {price?.toLocaleString('ar-EG', { useGrouping: false })}
                                     </span>
                                     <span className="text-base sm:text-xl font-medium text-slate-300">جنية مصري</span>
                                 </div>
@@ -459,16 +625,18 @@ export const ProductDetailsPage = () => {
                                 <button
                                     onClick={() => {
                                         addToCart({
-                                            id: product.id,
-                                            name: product.name,
-                                            price: hasDiscount ? discountPrice! : price,
-                                            image: images[0],
+                                            id: displayProduct.id,
+                                            name: displayProduct.name,
+                                            price: price,
+                                            image: tierImageUrl || images[0],
                                             quantity,
-                                            sku: product.sku
+                                            sku: displayProduct.sku,
+                                            selectedTierId: currentTier?.id,
+                                            multiplier: currentTier?.quantity || 1
                                         });
                                         toast.success('تم إضافة المنتج للسلة بنجاح');
                                     }}
-                                    disabled={product.stock === 0}
+                                    disabled={displayProduct.stock === 0}
                                     className="col-span-7 md:col-span-8 bg-primary hover:bg-blue-600 disabled:bg-slate-700 text-white font-bold rounded-xl h-12 flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98] group/btn"
                                 >
                                     <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:animate-bounce" />
@@ -479,25 +647,27 @@ export const ProductDetailsPage = () => {
                             <button
                                 onClick={() => {
                                     addToCart({
-                                        id: product.id,
-                                        name: product.name,
-                                        price: hasDiscount ? discountPrice! : price,
-                                        image: images[0],
+                                        id: displayProduct.id,
+                                        name: displayProduct.name,
+                                        price: price,
+                                        image: tierImageUrl || images[0],
                                         quantity,
-                                        sku: product.sku
+                                        sku: displayProduct.sku,
+                                        selectedTierId: currentTier?.id,
+                                        multiplier: currentTier?.quantity || 1
                                     });
                                     navigate('/checkout');
                                 }}
-                                disabled={product.stock === 0}
+                                disabled={displayProduct.stock === 0}
                                 className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 text-white font-bold rounded-xl h-14 flex items-center justify-center gap-3 shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/40 transition-all active:scale-[0.98] group/btn"
                             >
                                 <ShoppingBag className="w-6 h-6 group-hover/btn:animate-bounce" />
                                 <span className="text-base">شراء الآن</span>
                             </button>
 
-                            {product.stock === 0 && (
+                            {displayProduct.stock === 0 && (
                                 <a
-                                    href={`https://wa.me/${settings.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`مرحباً، أود الاستفسار عن توفر منتج: ${product.name}`)}`}
+                                    href={`https://wa.me/${settings.whatsapp?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`مرحباً، أود الاستفسار عن توفر منتج: ${displayProduct.name}`)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl h-14 flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 hover:shadow-green-900/40 transition-all active:scale-[0.98] group/btn mt-2"
@@ -1023,7 +1193,7 @@ export const ProductDetailsPage = () => {
                                     <img src={images[0]} alt={product.name} className="w-full h-full object-contain p-1" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-white font-bold text-sm truncate">{product.name}</p>
+                                    <p className="text-white font-bold text-sm truncate">{displayProduct.name}</p>
                                     <div className="flex items-baseline gap-1.5">
                                         <span className="text-brand-red font-extrabold text-lg leading-none">
                                             {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
@@ -1046,16 +1216,16 @@ export const ProductDetailsPage = () => {
                                 <button
                                     onClick={() => {
                                         addToCart({
-                                            id: product.id,
-                                            name: product.name,
+                                            id: displayProduct.id,
+                                            name: displayProduct.name,
                                             price: hasDiscount ? discountPrice! : price,
                                             image: images[0],
                                             quantity: 1,
-                                            sku: product.sku
+                                            sku: displayProduct.sku
                                         });
                                         if (!isInCart) toast.success('تم إضافة المنتج للسلة');
                                     }}
-                                    disabled={product.stock === 0}
+                                    disabled={displayProduct.stock === 0}
                                     className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] border ${
                                         isInCart
                                             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
@@ -1068,16 +1238,16 @@ export const ProductDetailsPage = () => {
                                 <button
                                     onClick={() => {
                                         addToCart({
-                                            id: product.id,
-                                            name: product.name,
+                                            id: displayProduct.id,
+                                            name: displayProduct.name,
                                             price: hasDiscount ? discountPrice! : price,
                                             image: images[0],
                                             quantity: 1,
-                                            sku: product.sku
+                                            sku: displayProduct.sku
                                         });
                                         navigate('/checkout');
                                     }}
-                                    disabled={product.stock === 0}
+                                    disabled={displayProduct.stock === 0}
                                     className="flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-primary hover:bg-blue-500 disabled:bg-slate-700 text-white shadow-lg shadow-primary/25 transition-all active:scale-[0.97]"
                                 >
                                     <ShoppingBag className="w-4 h-4" />

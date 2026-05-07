@@ -1,9 +1,61 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CheckCircle, Package, Home, Receipt } from 'lucide-react';
+import { CheckCircle, Package, Home, Receipt, MessageCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../lib/api';
+import { useSettings } from '../context/SettingsContext';
 
 export function OrderSuccessPage() {
     const { id } = useParams();
+    const { settings } = useSettings();
+
+    const { data: order } = useQuery({
+        queryKey: ['order-success', id],
+        queryFn: async () => {
+            const { data } = await api.get(`/orders/${id}`);
+            return data;
+        },
+        enabled: !!id,
+    });
+
+    const isCod = order?.paymentMethod === 'cod';
+    const whatsappNumber = settings?.whatsapp ? settings.whatsapp.replace(/\D/g, '') : '201093166540';
+    const advanceAmountNum = Number(settings?.codAdvancePayment || '100');
+    
+    // Formatting data for WhatsApp
+    const orderNum = order?.orderNumber || id?.slice(-8).toUpperCase();
+    const subtotal = Number(order?.subtotal || 0).toLocaleString('ar-EG');
+    const advance = advanceAmountNum.toLocaleString('ar-EG');
+    const shipping = Number(order?.shippingCost || 0).toLocaleString('ar-EG');
+    const extraFeeNum = Number(order?.extraFee || 0);
+    const extraFeeStr = extraFeeNum > 0 ? ` + ${extraFeeNum.toLocaleString('ar-EG')} رسوم COD` : '';
+    
+    const productsTotalNum = Number(order?.subtotal || 0);
+    const productsRestNum = Math.max(0, productsTotalNum - advanceAmountNum);
+    
+    const grandTotalNum = Number(order?.total || 0);
+    const requiredAtDeliveryNum = Number(order?.totalAtDelivery !== undefined ? order.totalAtDelivery : Math.max(0, grandTotalNum - advanceAmountNum));
+    const requiredAtDelivery = requiredAtDeliveryNum.toLocaleString('ar-EG');
+
+    const productsList = order?.items?.map((item: any) => `▪ ${item.name || 'منتج'} (الكمية: ${item.quantity || 1})`).join('\n') || '▪ جاري تحميل المنتجات...';
+
+    // Construct WhatsApp message with dynamic number
+    const whatsappMessage = encodeURIComponent(
+`مرحباً، أود إتمام إجراءات تأكيد الطلب التالي 👇
+*رقم الطلب:* #${orderNum}
+---------------------------
+*العميل:* ${order?.fullName || ''} 
+*الهاتف:* ${order?.phone || ''} 
+*العنوان:* ${order?.governorate || ''}، ${order?.city || ''} - ${order?.address || ''} 
+*المنتجات:* 
+${productsList}
+---------------------------
+*إجمالي المنتجات:* ${subtotal} ج.م
+*مصاريف الشحن:* ${shipping} ج.م
+*المطلوب تحويله الآن (عربون):* ${advance} ج.م
+*المبلغ المتبقي عند الاستلام:* ${requiredAtDelivery} ج.م
+(تفصيل المتبقي: ${productsRestNum.toLocaleString('ar-EG')} منتجات + ${shipping} شحن${extraFeeStr})`
+    );
 
     // Frame Buster: Force parent window to reload/redirect if inside an iframe (Payment Modal)
     // This is critical for Paymob payments that redirect to success inside the iframe.
@@ -79,7 +131,7 @@ export function OrderSuccessPage() {
                         <div className="flex flex-col gap-4">
                             <div className="flex justify-between items-center pb-4 border-b border-white/5">
                                 <span className="text-slate-400 text-sm">رقم الطلب</span>
-                                <span className="font-mono font-bold text-white text-lg tracking-wider">#{id?.slice(-8).toUpperCase()}</span>
+                                <span className="font-mono font-bold text-white text-lg tracking-wider">#{orderNum}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-slate-400 text-sm">حالة الطلب</span>
@@ -89,6 +141,31 @@ export function OrderSuccessPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* WhatsApp COD Confirmation */}
+                    {isCod && (
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-6 mb-8 mt-2 text-right dir-rtl relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                            <div className="flex flex-col gap-3 relative z-10">
+                                <h3 className="text-orange-400 font-bold text-lg flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-xl">error</span>
+                                    خطوة أخيرة لتأكيد طلبك!
+                                </h3>
+                                <p className="text-white/80 text-sm leading-relaxed mb-2 text-justify">
+                                    بما أنك اخترت "الدفع عند الاستلام"، يُرجى التواصل معنا عبر واتساب لتحويل <strong>مقدم تأكيد الطلب ({advanceAmountNum} ج.م)</strong> حتى نتمكن من شحن طلبك فوراً.
+                                </p>
+                                <a 
+                                    href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-[#25D366]/20 active:scale-[0.98]"
+                                >
+                                    <MessageCircle className="size-5" />
+                                    تأكيد الطلب وتسداد المقدم عبر واتساب
+                                </a>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -109,13 +186,8 @@ export function OrderSuccessPage() {
                     </div>
 
                     {/* Footer Info */}
-                    <div className="mt-12 pt-8 border-t border-white/5">
-                        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <Receipt className="size-4 text-primary" />
-                                <span>وصلك بريد إلكتروني بالتفاصيل</span>
-                            </div>
-                        </div>
+                    <div className="mt-8 pt-6 border-t border-white/5 text-center text-sm text-slate-500">
+                        <p>شكراً لثقتك في متجر العامر</p>
                     </div>
                 </div>
             </div>

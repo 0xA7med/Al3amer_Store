@@ -344,6 +344,27 @@ export class ProductsController {
                 return res.status(404).json({ error: 'Product not found' });
             }
 
+            // Handle Variants (Multi-Variant Product System)
+            let variants: any[] = [];
+            let parentProduct = null;
+
+            if (product.parentId) {
+                // This is a child variant. Fetch the parent and all siblings.
+                parentProduct = await db.query.products.findFirst({
+                    where: eq(products.id, product.parentId),
+                });
+                variants = await db.query.products.findMany({
+                    where: and(eq(products.parentId, product.parentId), eq(products.status, 'active')),
+                    with: { images: true }
+                });
+            } else {
+                // Check if this is a parent product (has children)
+                variants = await db.query.products.findMany({
+                    where: and(eq(products.parentId, product.id), eq(products.status, 'active')),
+                    with: { images: true }
+                });
+            }
+
             // Calculate metrics
             const salesCount = product.orderItems.reduce((acc, item) => acc + item.quantity, 0);
             const reviewCount = product.reviews.length;
@@ -356,6 +377,8 @@ export class ProductsController {
 
             res.json({
                 ...product,
+                parent: parentProduct,
+                variants,
                 salesCount,
                 reviewCount,
                 averageRating: Number(averageRating.toFixed(1)),
@@ -690,7 +713,7 @@ export class ProductsController {
         try {
             const { ids, action, payload } = req.body as {
                 ids: string[];
-                action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category';
+                action: 'show' | 'hide' | 'delete' | 'price' | 'stock' | 'category' | 'group';
                 payload?: {
                     // price action
                     priceMode?: 'add_fixed' | 'subtract_fixed' | 'add_percent' | 'subtract_percent' | 'set_fixed';
@@ -700,6 +723,11 @@ export class ProductsController {
                     stockValue?: number;
                     // category action
                     categoryId?: string;
+                    // group action
+                    groupName?: string;
+                    variants?: Array<{ id: string; options: Record<string, string> }>;
+                    accountingMultiplier?: number;
+                    salesTiers?: any;
                 };
             };
 
@@ -781,6 +809,40 @@ export class ProductsController {
                     .set({ stock: stockExpr, updatedAt: new Date() })
                     .where(inArray(products.id, ids));
                 affected = ids.length;
+
+            } else if (action === 'group') {
+                if (!payload?.groupName || !payload?.variants) {
+                    return res.status(400).json({ error: 'groupName and variants mapping are required' });
+                }
+
+                // Get first child to inherit category and brand
+                const firstChild = await db.query.products.findFirst({
+                    where: eq(products.id, payload.variants[0].id)
+                });
+                
+                // Create Parent Product
+                const [parentProduct] = await db.insert(products).values({
+                    name: payload.groupName,
+                    slug: ProductsController.slugify(payload.groupName) + '-' + Math.floor(Math.random() * 10000),
+                    price: '0', 
+                    status: 'active',
+                    categoryId: firstChild?.categoryId,
+                    brandId: firstChild?.brandId,
+                    accountingMultiplier: payload.accountingMultiplier ? String(payload.accountingMultiplier) : null,
+                    salesTiers: payload.salesTiers || null,
+                }).returning();
+
+                // Link children variants and update their multipliers/tiers if needed
+                for (const variant of payload.variants) {
+                    await db.update(products).set({
+                        parentId: parentProduct.id,
+                        variantOptions: variant.options,
+                        accountingMultiplier: payload.accountingMultiplier ? String(payload.accountingMultiplier) : null,
+                        salesTiers: payload.salesTiers || null,
+                        updatedAt: new Date()
+                    }).where(eq(products.id, variant.id));
+                }
+                affected = payload.variants.length;
 
             } else {
                 return res.status(400).json({ error: `Unknown action: ${action}` });

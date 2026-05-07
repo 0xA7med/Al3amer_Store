@@ -8,6 +8,8 @@ export interface CartItem {
     image: string;
     quantity: number;
     sku?: string;
+    selectedTierId?: string;
+    multiplier?: number;
 }
 
 interface CartContextType {
@@ -98,9 +100,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
                         return null; // Will be filtered out
                     }
 
-                    // 2. Quantity Cap based on Stock
-                    if (finalQuantity > stock) {
-                        finalQuantity = stock;
+                    // 2. Quantity Cap based on Stock (considering multiplier)
+                    const multiplier = item.multiplier || 1;
+                    const requiredStock = finalQuantity * multiplier;
+                    
+                    if (requiredStock > stock) {
+                        // Adjust quantity to max possible given the multiplier
+                        const maxPossibleQuantity = Math.floor(stock / multiplier);
+                        
+                        if (maxPossibleQuantity <= 0) {
+                            removalCount++;
+                            changesMade = true;
+                            return null;
+                        }
+                        
+                        finalQuantity = maxPossibleQuantity;
                         stockAdjustments++;
                         changesMade = true;
                     }

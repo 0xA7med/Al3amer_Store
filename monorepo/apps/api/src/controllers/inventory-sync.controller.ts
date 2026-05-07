@@ -125,24 +125,23 @@ export class InventorySyncController {
                 return res.status(400).json({ error: 'Excel file is empty or has no data' });
             }
 
-            // Map Excel columns to DB fields
+            // We'll map the rows first, then in the next step when we have existing products, we'll adjust the stock
             const excelRows: ExcelRow[] = rawData.map((row) => {
                 const mapped: any = {};
                 for (const [excelHeader, dbField] of Object.entries(COLUMN_MAP)) {
                     const value = row[excelHeader];
                     if (dbField === 'stock') {
-                        mapped[dbField] = parseInt(value) || 0;
+                        mapped[dbField] = parseFloat(value) || 0; // Use float initially
                     } else if (dbField === 'price' || dbField === 'cost') {
                         mapped[dbField] = parseFloat(value) || 0;
                     } else if (dbField === 'externalId') {
-                        // Convert Arabic numerals to English for external_id
                         mapped[dbField] = convertArabicToEnglishNumbers(value?.toString()?.trim() || '');
                     } else {
                         mapped[dbField] = value?.toString()?.trim() || '';
                     }
                 }
                 return mapped as ExcelRow;
-            }).filter(row => row.externalId); // Filter out rows without Pro_ID
+            }).filter(row => row.externalId);
 
             if (excelRows.length === 0) {
                 return res.status(400).json({
@@ -163,6 +162,7 @@ export class InventorySyncController {
                     price: true,
                     stock: true,
                     cost: true,
+                    accountingMultiplier: true,
                 }
             });
 
@@ -185,6 +185,13 @@ export class InventorySyncController {
 
             for (const excelRow of excelRows) {
                 const existing = productMap.get(excelRow.externalId);
+                let incomingStock = excelRow.stock;
+                
+                // If product has a multiplier, incoming stock from Excel (e.g. 10 units) 
+                // should be converted to base units (e.g. 10 * 100 = 1000 pieces)
+                if (existing?.accountingMultiplier) {
+                    incomingStock = excelRow.stock * Number(existing.accountingMultiplier);
+                }
 
                 if (!existing) {
                     // New product
@@ -204,22 +211,29 @@ export class InventorySyncController {
                     // Existing product - check for changes
                     const changes: DiffItem['changes'] = {};
 
+                    const accountingMultiplier = existing.accountingMultiplier ? parseFloat(existing.accountingMultiplier.toString()) : 1;
+
                     // Ensure we handle null/undefined from DB as 0
                     const existingPrice = parseFloat(existing.price?.toString() || '0');
                     const existingStock = existing.stock || 0;
                     const existingCost = parseFloat(existing.cost?.toString() || '0');
 
+                    // Convert Excel data to DB standard (DB Standard = Pieces) using the multiplier
+                    const convertedExcelPrice = excelRow.price / accountingMultiplier;
+                    const convertedExcelStock = excelRow.stock * accountingMultiplier;
+                    const convertedExcelCost = excelRow.cost / accountingMultiplier;
+
                     if (existing.name !== excelRow.name) {
                         changes.name = { old: existing.name, new: excelRow.name };
                     }
-                    if (Math.abs(existingPrice - excelRow.price) > 0.01) {
-                        changes.price = { old: existingPrice, new: excelRow.price };
+                    if (Math.abs(existingPrice - convertedExcelPrice) > 0.01) {
+                        changes.price = { old: existingPrice, new: convertedExcelPrice };
                     }
-                    if (existingStock !== excelRow.stock) {
-                        changes.stock = { old: existingStock, new: excelRow.stock };
+                    if (existingStock !== convertedExcelStock) {
+                        changes.stock = { old: existingStock, new: convertedExcelStock };
                     }
-                    if (Math.abs(existingCost - excelRow.cost) > 0.01) {
-                        changes.cost = { old: existingCost, new: excelRow.cost };
+                    if (Math.abs(existingCost - convertedExcelCost) > 0.01) {
+                        changes.cost = { old: existingCost, new: convertedExcelCost };
                     }
 
                     if (Object.keys(changes).length > 0) {
