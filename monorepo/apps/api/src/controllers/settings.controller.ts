@@ -6,6 +6,49 @@ import { GoogleGenAI } from '@google/genai';
 import { encryptText, decryptText } from '../lib/crypto.utils.js';
 import { getMergedSettings } from '../lib/settings-helper.js';
 
+const defaultSettings = {
+    storeNameAr: '',
+    storeNameEn: '',
+    supportPhone: '',
+    supportEmail: '',
+    address: '',
+    logoUrl: '',
+    faviconUrl: '',
+    facebook: '',
+    instagram: '',
+    whatsapp: '',
+    twitterX: '',
+    codEnabled: true,
+    vatEnabled: true,
+    taxPercentage: '14',
+    pricesIncludeTax: true,
+    shippingFlatRate: '50',
+    freeShippingThreshold: '2000',
+    aiEnabled: true,
+    aiTone: 'Marketing',
+    aiLanguage: 'ar',
+};
+
+const defaultSettingsPublic = {
+    storeNameAr: '',
+    storeNameEn: '',
+    supportPhone: '',
+    supportEmail: '',
+    address: '',
+    logoUrl: '',
+    faviconUrl: '',
+    facebook: '',
+    instagram: '',
+    whatsapp: '',
+    twitterX: '',
+    codEnabled: true,
+    vatEnabled: true,
+    taxPercentage: '14',
+    pricesIncludeTax: true,
+    shippingFlatRate: '50',
+    freeShippingThreshold: '2000',
+};
+
 const GENERAL_FIELDS = ['storeNameAr', 'storeNameEn', 'supportPhone', 'supportEmail', 'address', 'logoUrl', 'faviconUrl', 'facebook', 'instagram', 'whatsapp', 'twitterX', 'vatEnabled', 'taxPercentage', 'taxRegistrationNumber', 'pricesIncludeTax', 'facebookPixelId', 'facebookPixelEnabled', 'ga4MeasurementId', 'ga4Enabled', 'metaTitle', 'metaDescription', 'metaKeywords', 'billLayoutConfig'] as const;
 const PAYMENT_FIELDS = ['paymobEnabled', 'paymobApiKey', 'paymobIntegrationCard', 'paymobIntegrationWallet', 'paymobIframeId', 'codEnabled', 'codExtraFee', 'codAdvancePayment', 'codReturnShippingBaseFee', 'codReturnShippingBaseAmount', 'codReturnShippingExtraFee', 'codReturnShippingExtraAmount'] as const;
 const NOTIFICATION_FIELDS = ['telegramEnabled', 'telegramBotToken', 'telegramChatId', 'whatsappEnabled', 'whatsappApiKey', 'whatsappRecipientPhone', 'emailEnabled', 'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'emailFrom', 'emailReceiver'] as const;
@@ -70,25 +113,12 @@ export class SettingsController {
             const refreshed = await getMergedSettings();
             return res.json({
                 id: settingsId,
-                storeNameAr: 'مركز العامر لأنظمة الكاشير',
-                storeNameEn: 'Al3amer POS Systems',
-                supportPhone: '+20 101 234 5678',
-                supportEmail: 'support@al3amer.com',
-                address: 'القاهرة، مدينة نصر، شارع عباس العقاد',
-                codEnabled: true,
-                shippingFlatRate: '50',
-                freeShippingThreshold: '2000',
-                vatEnabled: true,
-                taxPercentage: '14',
-                pricesIncludeTax: true,
-                aiEnabled: true,
-                aiTone: 'Marketing',
-                aiLanguage: 'ar',
+                ...defaultSettings,
                 ...refreshed,
             });
         } catch (error) {
             console.error('Error fetching settings:', error);
-            res.json({ storeNameAr: 'Al3amer Store', aiEnabled: true });
+            res.json({ aiEnabled: true });
         }
     }
 
@@ -98,19 +128,7 @@ export class SettingsController {
             const merged = await getMergedSettings();
 
             if (Object.keys(merged).length === 0) {
-                return res.json({
-                    storeNameAr: 'مركز العامر لأنظمة الكاشير',
-                    storeNameEn: 'Al3amer POS Systems',
-                    supportPhone: '+20 101 234 5678',
-                    supportEmail: 'support@al3amer.com',
-                    address: 'القاهرة، مدينة نصر، شارع عباس العقاد',
-                    shippingFlatRate: '50',
-                    freeShippingThreshold: '2000',
-                    vatEnabled: true,
-                    taxPercentage: '14',
-                    pricesIncludeTax: true,
-                    codEnabled: true,
-                });
+                return res.json(defaultSettingsPublic);
             }
 
             const publicSettings = {
@@ -144,7 +162,7 @@ export class SettingsController {
             res.json(publicSettings);
         } catch (error) {
             console.error('Error fetching public settings:', error);
-            res.json({ storeNameAr: 'مركز العامر', storeNameEn: 'Al3amer', codEnabled: true, vatEnabled: false });
+            res.json({ codEnabled: true, vatEnabled: false });
         }
     }
 

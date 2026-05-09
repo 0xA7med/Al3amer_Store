@@ -97,15 +97,15 @@ export function Footer() {
                         <ul className="flex flex-col gap-4 text-sm text-gray-400">
                             <li className="flex items-start gap-3">
                                 <span className="material-symbols-outlined text-primary mt-1">location_on</span>
-                                <span>{settings.address || 'القاهرة، مدينة نصر، شارع عباس العقاد'}</span>
+                                <span>{settings.address || '—'}</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-primary">phone_in_talk</span>
-                                <span className="dir-ltr text-right">{settings.supportPhone || '010-XXXX-XXXX'}</span>
+                                <span className="dir-ltr text-right">{settings.supportPhone || '—'}</span>
                             </li>
                             <li className="flex items-center gap-3">
                                 <span className="material-symbols-outlined text-primary">mail</span>
-                                <span>{settings.supportEmail || 'sales@al3amer.com.eg'}</span>
+                                <span>{settings.supportEmail || '—'}</span>
                             </li>
                         </ul>
                     </div>

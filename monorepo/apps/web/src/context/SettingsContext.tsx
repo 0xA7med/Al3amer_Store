@@ -49,13 +49,13 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// Default fallback settings
+// Default fallback settings — يتم استبدالها من قاعدة البيانات
 const DEFAULT_SETTINGS: Settings = {
-    storeNameAr: 'مركز العامر لأنظمة الكاشير',
-    storeNameEn: 'Al3amer POS Systems',
-    supportPhone: '+20 101 234 5678',
-    supportEmail: 'support@al3amer.com',
-    address: 'القاهرة، مدينة نصر، شارع عباس العقاد',
+    storeNameAr: '',
+    storeNameEn: '',
+    supportPhone: '',
+    supportEmail: '',
+    address: '',
     shippingFlatRate: '50',
     freeShippingThreshold: '2000',
     vatEnabled: true,
