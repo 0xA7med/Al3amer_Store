@@ -7,9 +7,13 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 
 import { useCategories, useNewArrivals, useOffers, useBestSellers, useFeaturedProducts } from '../hooks/useProducts';
+import { useSettings } from '../context/SettingsContext';
+import SEOHead from '../components/SEO/SEOHead';
+import { organizationSchema, websiteSchema } from '../components/SEO/OrganizationSchema';
 
 
 export function HomePage() {
+    const { settings } = useSettings();
     const { data: bestSellers, isLoading: isBestSellersLoading } = useBestSellers(10);
     const { data: featuredProducts, isLoading: isFeaturedLoading } = useFeaturedProducts(10);
     const { data: newArrivals, isLoading: isNewLoading } = useNewArrivals(10);
@@ -51,6 +55,12 @@ export function HomePage() {
 
     return (
         <>
+            <SEOHead
+              title={settings.metaTitle || 'الرئيسية'}
+              description={settings.metaDescription || 'أجهزة كاشير وأنظمة محاسبة متكاملة - مركز العامر'}
+              canonical="/"
+              jsonLd={[organizationSchema, websiteSchema]}
+            />
             {/* Hero Section */}
             <section className="relative min-h-[450px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0 bg-[#0d121c]">

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /payment/
+Disallow: /order-success/
+Disallow: /track-order/
+Disallow: /api/
+
+Sitemap: https://al3amer.store/sitemap.xml

@@ -7,6 +7,7 @@ import { useProducts } from '../hooks/useProducts';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import SEOHead from '../components/SEO/SEOHead';
 
 interface BundleProduct {
     productId: string;
@@ -146,6 +147,7 @@ export function AIBundleBuilderPage() {
     if (settings && settings.aiEnabled === false) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <SEOHead title="منشئ الحزم الذكي" description="منشئ الحزم الذكي - مركز العامر" noindex />
                 <div className="size-24 bg-white/5 rounded-full flex items-center justify-center mb-6">
                     <Wand2 className="size-10 text-gray-500" />
                 </div>
@@ -162,6 +164,7 @@ export function AIBundleBuilderPage() {
 
     return (
         <div className="relative overflow-hidden flex flex-col flex-1 pb-12">
+            <SEOHead title="منشئ الحزم الذكي" description="صمم حزمة أجهزة الكاشير المناسبة لمتجرك بمساعدة الذكاء الاصطناعي" canonical="/ai-builder" />
             <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 pointer-events-none"></div>
             <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#8b5cf6]/10 rounded-full blur-[80px] translate-y-1/3 pointer-events-none"></div>
 

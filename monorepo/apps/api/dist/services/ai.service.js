@@ -5,7 +5,6 @@ export class AIService {
     availableModels = [];
     // Fallback models if discovery fails
     static FALLBACK_MODELS = [
-        "gemini-2.5-flash",
         "gemini-2.0-flash",
         "gemini-1.5-flash",
         "gemini-1.5-pro"
@@ -14,7 +13,7 @@ export class AIService {
         this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
-            apiVersion: 'v1beta',
+            apiVersion: 'v1',
         });
     }
     /**
@@ -25,8 +24,8 @@ export class AIService {
             return;
         }
         try {
-            const { ModelDiscoveryService } = await import('./model-discovery.service');
-            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1beta');
+            const { ModelDiscoveryService } = await import('./model-discovery.service.js');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
             console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
         }
         catch (error) {

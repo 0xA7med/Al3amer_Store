@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { products, productImages, categories, brands, reviews, orderItems, settings } from '../db/schema.js';
-import { eq, like, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
-import { uploadToCloudinary } from '../lib/cloudinary.js';
+import { products, productImages, categories, brands, reviews, wishlist, orderItems } from '../db/schema.js';
+import { eq, and, or, like, sql, inArray, desc, asc, count, gte, lte, ne, not, isNull, ilike } from 'drizzle-orm';
+import path from 'path';
 import { AIService } from '../services/ai.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
+import { uploadToCloudinary } from '../lib/cloudinary.js';
 
 // In-memory tracker for popular/trending searches globally
 const searchHistoryTracker: Record<string, number> = {};
@@ -32,7 +34,7 @@ export class ProductsController {
             }
 
             // Get Settings
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
 
             // Prefer the dedicated AI key, fall back to google key, then env var
             const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
@@ -143,6 +145,10 @@ export class ProductsController {
 
             const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+            const totalResult = await db.select({ count: count() }).from(products).where(where);
+            const total = Number(totalResult[0]?.count ?? 0);
+            const totalPages = Math.ceil(total / limitNum);
+
             let productsList: any[] = [];
             if (sort === 'bestselling') {
                 const totalSalesExpr = sql<number>`COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`;
@@ -214,6 +220,8 @@ export class ProductsController {
                 pagination: {
                     page: pageNum,
                     limit: limitNum,
+                    total,
+                    totalPages,
                 },
             });
         } catch (error) {
@@ -858,11 +866,13 @@ export class ProductsController {
     // POST /api/products/validate-cart - Validate cart items still exist and return fresh data
     static async validateCart(req: Request, res: Response) {
         try {
-            const { productIds } = req.body;
+            const { items } = req.body;
 
-            if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-                return res.status(400).json({ error: 'productIds must be a non-empty array' });
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({ error: 'items must be a non-empty array' });
             }
+
+            const productIds = items.map((i: any) => i.id);
 
             // Fetch all matching products in a single DB query
             const foundProducts = await db.query.products.findMany({
@@ -883,33 +893,42 @@ export class ProductsController {
                 },
             });
 
-            // Build a Set of found IDs for fast lookup
-            const foundIdSet = new Set(foundProducts.map(p => p.id));
+            // Build lookup map
+            const productMap = new Map(foundProducts.map(p => [p.id, p]));
 
-            // Determine which requested IDs are missing or inactive
-            const invalidIds = productIds.filter(id => !foundIdSet.has(id));
+            const invalidIds: string[] = [];
+            const validProducts: any[] = [];
+            const capped: { id: string; requested: number; max: number }[] = [];
 
-            // Map to a clean response shape
-            const validProducts = foundProducts
-                .filter(p => p.status === 'active')
-                .map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    price: p.price,
-                    discountPrice: p.discountPrice,
-                    stock: p.stock,
-                    image: p.images[0]?.url || null,
-                }));
+            for (const item of items) {
+                const dbProduct = productMap.get(item.id);
+                if (!dbProduct || dbProduct.status !== 'active') {
+                    invalidIds.push(item.id);
+                    continue;
+                }
 
-            // Products that exist but are inactive (draft/hidden) are also "invalid" from cart perspective
-            const inactiveIds = foundProducts
-                .filter(p => p.status !== 'active')
-                .map(p => p.id);
+                const stock = dbProduct.stock ?? 0;
+                const multiplier = Number(item.multiplier) || 1;
+                const maxQuantity = stock > 0 ? Math.floor(stock / multiplier) : 0;
+                const requested = Math.max(1, item.quantity || 1);
+                const finalQuantity = Math.min(requested, maxQuantity);
 
-            return res.json({
-                validProducts,
-                invalidIds: [...invalidIds, ...inactiveIds],
-            });
+                validProducts.push({
+                    id: dbProduct.id,
+                    name: dbProduct.name,
+                    price: dbProduct.price,
+                    discountPrice: dbProduct.discountPrice,
+                    stock: dbProduct.stock,
+                    maxQuantity,
+                    image: dbProduct.images[0]?.url || null,
+                });
+
+                if (finalQuantity < requested) {
+                    capped.push({ id: dbProduct.id, requested, max: finalQuantity });
+                }
+            }
+
+            return res.json({ validProducts, invalidIds, capped });
         } catch (error) {
             console.error('Error validating cart:', error);
             res.status(500).json({ error: 'Failed to validate cart' });

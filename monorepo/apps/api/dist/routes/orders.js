@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { OrdersController } from '../controllers/orders.controller.js';
 import rateLimit from 'express-rate-limit';
+import { validate } from '../lib/validate.js';
+import { createOrderSchema, updatePendingOrderSchema, updateOrderStatusSchema, bulkDeleteOrdersSchema, bulkUpdateOrdersStatusSchema, listOrdersQuery, retryPaymentSchema, } from '../schemas/index.js';
 const router = Router();
 // Rate Limiter: Max 10 orders per minute per IP
 const orderCreationLimiter = rateLimit({
@@ -9,19 +11,16 @@ const orderCreationLimiter = rateLimit({
     message: { error: 'تم تجاوز الحد المسموح من الطلبات. الرجاء المحاولة بعد دقيقة.' },
     standardHeaders: true,
     legacyHeaders: false,
-    // Use the IP set by Express's trust proxy
-    keyGenerator: (req) => req.ip || req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || '',
-    validate: { xForwardedForHeader: false },
 });
-router.delete('/', OrdersController.bulkDelete);
-router.patch('/status', OrdersController.bulkUpdateStatus);
-router.post('/', orderCreationLimiter, OrdersController.create);
-router.get('/', OrdersController.list);
+router.delete('/', validate({ body: bulkDeleteOrdersSchema }), OrdersController.bulkDelete);
+router.patch('/status', validate({ body: bulkUpdateOrdersStatusSchema }), OrdersController.bulkUpdateStatus);
+router.post('/', orderCreationLimiter, validate({ body: createOrderSchema }), OrdersController.create);
+router.get('/', validate({ query: listOrdersQuery }), OrdersController.list);
 router.get('/user/by-phone/:phone', OrdersController.getByPhone);
 router.get('/:id', OrdersController.getOne);
-router.put('/:id', OrdersController.updatePendingOrder);
-router.put('/:id/status', OrdersController.updateStatus);
+router.put('/:id', validate({ body: updatePendingOrderSchema }), OrdersController.updatePendingOrder);
+router.put('/:id/status', validate({ body: updateOrderStatusSchema }), OrdersController.updateStatus);
 router.post('/:id/verify-payment', orderCreationLimiter, OrdersController.verifyPayment);
-router.post('/:id/retry-payment', orderCreationLimiter, OrdersController.retryPayment);
+router.post('/:id/retry-payment', orderCreationLimiter, validate({ body: retryPaymentSchema }), OrdersController.retryPayment);
 export default router;
 //# sourceMappingURL=orders.js.map

@@ -1,15 +1,20 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../db/index.js';
-import { settings } from '../db/schema.js';
+import { verifyToken } from '../lib/auth.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 
 const router: Router = Router();
+
+// Block debug routes in production
+if (process.env.NODE_ENV === 'production') {
+    router.use((_req, res) => res.status(404).json({ error: 'Not found' }));
+}
 
 // Use raw fetch to bypass SDK versioning constraints and test v1beta
 export const listAvailableModels = async (req: Request, res: Response) => {
     try {
         // 1. Get Key from DB
-        const setting = await db.select().from(settings).limit(1);
-        const apiKey = setting[0]?.googleApiKey || process.env.GOOGLE_API_KEY;
+        const appSettings = await getMergedSettings();
+        const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
 
         if (!apiKey) {
             return res.status(500).json({
@@ -36,6 +41,6 @@ export const listAvailableModels = async (req: Request, res: Response) => {
     }
 };
 
-router.get('/models', listAvailableModels);
+router.get('/models', verifyToken, listAvailableModels);
 
 export default router;

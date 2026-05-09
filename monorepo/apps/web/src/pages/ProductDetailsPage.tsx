@@ -2,18 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
     Star, ShoppingCart, Heart, Share2, ChevronLeft, Minus, Plus,
-    Check, PlayCircle, Info, ShieldCheck, Truck,
-    CreditCard, ZoomIn, ShoppingBag, LayoutList, Verified, Cpu
+    Check, Info, ShieldCheck, Truck,
+    CreditCard, ShoppingBag, Verified, MessageCircle
 } from 'lucide-react';
 import { useProduct, useProducts, type Product } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../hooks/useWishlist';
-import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { getEmbedUrl } from '../utils/videoParser';
 import { useSettings } from '../context/SettingsContext';
-import { MessageCircle } from 'lucide-react';
+import { ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart } from '../components/products';
+import SEOHead from '../components/SEO/SEOHead';
+import { buildProductSchema, buildBreadcrumbSchema } from '../components/SEO/ProductSchema';
 
 export const ProductDetailsPage = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -51,7 +51,8 @@ export const ProductDetailsPage = () => {
                 price: pDiscountPrice || pPrice,
                 image: p.images.find(img => img.isPrimary)?.url || p.images?.[0]?.url || 'https://via.placeholder.com/64',
                 quantity: 1,
-                sku: p.sku
+                sku: p.sku,
+                stock: p.stock,
             });
         });
         toast.success(`تم إضافة ${topTwo.length + 1} منتجات إلى السلة بنجاح`);
@@ -65,6 +66,35 @@ export const ProductDetailsPage = () => {
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Auto-select logic
+    const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+    const [selectedTierIndex, setSelectedTierIndex] = useState<number>(0);
+
+    useEffect(() => {
+        if (!product) return;
+        
+        let initialVariant = null;
+        if (product.parent) {
+            initialVariant = product as Product;
+        } else if (product.variants && product.variants.length > 0) {
+            initialVariant = product.variants[0];
+        }
+
+        setSelectedVariant(initialVariant);
+        setSelectedTierIndex(0); // Reset tier when product/variant changes
+
+        if (initialVariant?.variantOptions) {
+            const defaults: Record<string, string> = {};
+            initialVariant.variantOptions.forEach((opt: any) => {
+                defaults[opt.attributeName] = opt.value;
+            });
+            setSelectedOptions(defaults);
+        } else {
+            setSelectedOptions({});
+        }
+    }, [product?.id]);
 
     const isInCart = items.some(item => item.id === product?.id);
 
@@ -99,36 +129,6 @@ export const ProductDetailsPage = () => {
     // Variant State Logic
     const hasVariants = product.variants && product.variants.length > 0;
     const allVariants = hasVariants ? product.variants! : (product.parent ? [product] : []);
-    
-    // Auto-select logic
-    const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
-    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-    const [selectedTierIndex, setSelectedTierIndex] = useState<number>(0);
-
-    useEffect(() => {
-        if (!product) return;
-        
-        let initialVariant = null;
-        if (product.parent) {
-            initialVariant = product as Product;
-        } else if (hasVariants) {
-            initialVariant = product.variants![0];
-        }
-
-        setSelectedVariant(initialVariant);
-        setSelectedTierIndex(0); // Reset tier when product/variant changes
-
-        if (initialVariant?.variantOptions) {
-            const defaults: Record<string, string> = {};
-            initialVariant.variantOptions.forEach((opt: any) => {
-                defaults[opt.attributeName] = opt.value;
-            });
-            setSelectedOptions(defaults);
-        } else {
-            setSelectedOptions({});
-        }
-    }, [product?.id]);
-
     // Derived available attributes
     const availableAttributes = (() => {
         if (allVariants.length === 0) return {};
@@ -235,11 +235,32 @@ export const ProductDetailsPage = () => {
     }
     const discountPrice = currentTier ? null : baseDiscount; // Tiers represent bulk pricing
     
-    const hasDiscount = discountPrice && discountPrice < price;
+    const hasDiscount = !!(discountPrice && discountPrice < price);
     const discountPercent = hasDiscount ? Math.round((1 - (discountPrice! / price)) * 100) : 0;
+
+    // Stock-aware max quantity
+    const tierMultiplier = currentTier?.quantity || 1;
+    const maxQuantity = Math.floor((displayProduct.stock || 0) / tierMultiplier);
+
+    const breadcrumbItems = [
+        { name: 'الرئيسية', url: '/' },
+        ...(product?.category ? [{ name: product.category.name, url: `/shop?category=${product.category.slug}` }] : []),
+        { name: product?.name || 'المنتج', url: `/product/${slug}` },
+    ];
+
+    const productJsonLd = product ? buildProductSchema(product) : undefined;
+    const breadcrumbJsonLd = buildBreadcrumbSchema(breadcrumbItems);
 
     return (
         <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+            <SEOHead
+              title={product?.metaTitle || product?.name || 'المنتج'}
+              description={product?.metaDescription || product?.description?.slice(0, 160) || 'تفاصيل المنتج'}
+              canonical={`/product/${slug}`}
+              ogImage={product?.images?.[0]?.url}
+              ogType="product"
+              jsonLd={[productJsonLd, breadcrumbJsonLd].filter(Boolean)}
+            />
             {/* Breadcrumb Navigation */}
             <nav className="flex mb-8 overflow-x-auto no-scrollbar pb-1">
                 <ol className="inline-flex items-center space-x-reverse space-x-1 md:space-x-2 rtl:space-x-reverse whitespace-nowrap">
@@ -304,94 +325,22 @@ export const ProductDetailsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-16">
-                {/* Visual Gallery Section */}
-                <div className="lg:col-span-7 flex flex-col gap-4">
-                    <div className="w-full aspect-[4/3] rounded-2xl glass-panel relative overflow-hidden group">
-                        {/* Badges — always on top */}
-                        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-                            {hasDiscount && (
-                                <span className="px-3 py-1.5 bg-brand-red/90 backdrop-blur text-white text-xs font-bold rounded-lg shadow-lg shadow-red-900/20 border border-red-500/30">
-                                    خصم {discountPercent}%
-                                </span>
-                            )}
-                        </div>
-                        {/* Wishlist + Share overlay — top-left of image */}
-                        <div className="absolute top-3 left-3 z-30 flex gap-2">
-                            <button
-                                onClick={() => {
-                                    if (!isAuthenticated) {
-                                        toast.error('يرجى تسجيل الدخول لإضافة المنتج للمفضلة');
-                                        return;
-                                    }
-                                    if (product?.id) toggleWishlist(product.id);
-                                }}
-                                className={`size-9 rounded-xl flex items-center justify-center backdrop-blur-md border shadow-lg transition-all ${
-                                    isWishlisted
-                                        ? 'bg-red-500/90 border-red-400/50 text-white'
-                                        : 'bg-surface-dark/80 border-white/10 text-slate-300 hover:bg-red-500/80 hover:text-white hover:border-red-400/30'
-                                }`}
-                            >
-                                <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    const shareUrl = window.location.href;
-                                    if (navigator.share) {
-                                        try { await navigator.share({ title: product.name, url: shareUrl }); }
-                                        catch (err) { if ((err as any).name !== 'AbortError') toast.error('فشلت عملية المشاركة'); }
-                                    } else {
-                                        navigator.clipboard.writeText(shareUrl);
-                                        toast.success('تم نسخ الرابط');
-                                    }
-                                }}
-                                className="size-9 rounded-xl flex items-center justify-center backdrop-blur-md border bg-surface-dark/80 border-white/10 text-slate-300 hover:bg-primary/80 hover:text-white hover:border-primary/30 shadow-lg transition-all"
-                            >
-                                <Share2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div
-                            className="w-full h-full bg-surface-dark/50 flex items-center justify-center p-4 sm:p-8 transition-transform duration-500 cursor-zoom-in relative"
-                            onClick={() => setIsZoomOpen(true)}
-                        >
-                            <img
-                                src={images[activeImageIndex] || images[0]}
-                                alt={product.name}
-                                className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
-                            />
-                        </div>
-                        <button
-                            onClick={() => setIsZoomOpen(true)}
-                            className="absolute bottom-4 left-4 p-2.5 rounded-xl bg-surface-dark/80 text-white hover:bg-primary transition-all backdrop-blur-md border border-white/10 hover:border-primary shadow-lg"
-                        >
-                            <ZoomIn className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                        {images.map((img, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setUserSelectedImage(idx)}
-                                className={`relative size-16 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
-                                    }`}
-                            >
-                                <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
-                            </button>
-                        ))}
-                        {product.videos && product.videos.length > 0 && (
-                            <button
-                                onClick={() => {
-                                    setActiveTab('video');
-                                    window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
-                                }}
-                                className="relative size-16 md:size-24 rounded-xl border-2 border-transparent hover:border-primary overflow-hidden flex-shrink-0 bg-surface-dark transition-all opacity-70 hover:opacity-100 flex items-center justify-center group"
-                            >
-                                <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors"></div>
-                                <PlayCircle className="w-8 h-8 text-white relative z-10 transform group-hover:scale-110 transition-transform" />
-                            </button>
-                        )}
-                    </div>
-                </div>
+                <ProductGallery
+                    images={images}
+                    product={product}
+                    activeImageIndex={activeImageIndex}
+                    hasDiscount={hasDiscount}
+                    discountPercent={discountPercent}
+                    isWishlisted={isWishlisted}
+                    isAuthenticated={isAuthenticated}
+                    onWishlistToggle={toggleWishlist}
+                    onImageSelect={(idx) => setUserSelectedImage(idx)}
+                    onZoomOpen={() => setIsZoomOpen(true)}
+                    onVideoTab={() => {
+                        setActiveTab('video');
+                        window.scrollTo({ top: document.getElementById('tabs-section')?.offsetTop || 500, behavior: 'smooth' });
+                    }}
+                />
 
                 {/* Product Purchase & Info Section */}
                 <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
@@ -609,15 +558,17 @@ export const ProductDetailsPage = () => {
                             <div className="grid grid-cols-12 gap-3 md:gap-4">
                                 <div className="col-span-5 md:col-span-4 flex items-center justify-between bg-surface-dark rounded-xl border border-white/10 h-12 md:h-12 px-1 focus-within:border-primary/50 transition-colors">
                                     <button
-                                        onClick={() => setQuantity(q => q + 1)}
-                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                        onClick={() => setQuantity(q => Math.min(q + 1, maxQuantity))}
+                                        disabled={quantity >= maxQuantity}
+                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors"
                                     >
                                         <Plus className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
                                     <span className="text-white font-bold text-base md:text-lg">{quantity}</span>
                                     <button
                                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                        disabled={quantity <= 1}
+                                        className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors"
                                     >
                                         <Minus className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
@@ -632,11 +583,12 @@ export const ProductDetailsPage = () => {
                                             quantity,
                                             sku: displayProduct.sku,
                                             selectedTierId: currentTier?.id,
-                                            multiplier: currentTier?.quantity || 1
+                                            multiplier: currentTier?.quantity || 1,
+                                            stock: displayProduct.stock,
                                         });
                                         toast.success('تم إضافة المنتج للسلة بنجاح');
                                     }}
-                                    disabled={displayProduct.stock === 0}
+                                    disabled={displayProduct.stock === 0 || quantity > maxQuantity}
                                     className="col-span-7 md:col-span-8 bg-primary hover:bg-blue-600 disabled:bg-slate-700 text-white font-bold rounded-xl h-12 flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all active:scale-[0.98] group/btn"
                                 >
                                     <ShoppingCart className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:animate-bounce" />
@@ -654,11 +606,12 @@ export const ProductDetailsPage = () => {
                                         quantity,
                                         sku: displayProduct.sku,
                                         selectedTierId: currentTier?.id,
-                                        multiplier: currentTier?.quantity || 1
+                                        multiplier: currentTier?.quantity || 1,
+                                        stock: displayProduct.stock,
                                     });
                                     navigate('/checkout');
                                 }}
-                                disabled={displayProduct.stock === 0}
+                                disabled={displayProduct.stock === 0 || quantity > maxQuantity}
                                 className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 text-white font-bold rounded-xl h-14 flex items-center justify-center gap-3 shadow-lg shadow-emerald-900/20 hover:shadow-emerald-900/40 transition-all active:scale-[0.98] group/btn"
                             >
                                 <ShoppingBag className="w-6 h-6 group-hover/btn:animate-bounce" />
@@ -696,568 +649,52 @@ export const ProductDetailsPage = () => {
                 </div>
             </div>
 
-            {/* Detailed Content Section (Tabs) */}
-            <div id="tabs-section" className="flex flex-col gap-8">
-                <div className="border-b border-white/10 sticky top-20 bg-background-dark/95 backdrop-blur z-30">
-                    <nav className="flex gap-8 overflow-x-auto no-scrollbar">
-                        <button
-                            onClick={() => setActiveTab('specs')}
-                            className={`border-b-2 px-4 py-4 text-base whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'specs' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600 font-medium'
-                                }`}
-                        >
-                            <LayoutList className="w-5 h-5" />
-                            المواصفات التقنية
-                        </button>
-                        {product.videos && product.videos.length > 0 && (
-                            <button
-                                onClick={() => setActiveTab('video')}
-                                className={`border-b-2 px-4 py-4 text-base whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'video' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600 font-medium'
-                                    }`}
-                            >
-                                <PlayCircle className="w-5 h-5" />
-                                فيديو توضيحي
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setActiveTab('reviews')}
-                            className={`border-b-2 px-4 py-4 text-base whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'reviews' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600 font-medium'
-                                }`}
-                        >
-                            <Star className="w-5 h-5" />
-                            التقييمات ({product.reviewCount || 0})
-                        </button>
-                    </nav>
-                </div>
+                <ProductTabs
+                    product={product}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    specifications={specifications}
+                    showAllSpecs={showAllSpecs}
+                    onShowAllSpecsToggle={() => setShowAllSpecs(s => !s)}
+                    displayLabelMap={displayLabelMap}
+                    relatedProducts={relatedProducts}
+                    addToCart={addToCart}
+                    handleAddAllToCart={handleAddAllToCart}
+                    onVideoTab={() => {
+                        setActiveTab('video');
+                        setTimeout(() => {
+                            const el = document.getElementById('tabs-section');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
+                    }}
+                />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 flex flex-col gap-8">
-                        {activeTab === 'specs' && (
-                            <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500 p-4 md:p-6">
-                                <div className="flex items-center gap-2 mb-4 md:mb-6 border-b border-white/10 pb-3 md:pb-4">
-                                    <Cpu className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                                    <h3 className="text-lg md:text-xl font-bold text-white">المواصفات الفنية</h3>
-                                </div>
-                                
-                                {(() => {
-                                    // Merge dynamicAttributes and legacy specifications
-                                    const dynamicSpecs = Object.entries(product.dynamicAttributes || {}).map(([k, v]) => ({
-                                        key: k,
-                                        value: Array.isArray(v) ? v.join(' ، ') : String(v)
-                                    }));
-                                    
-                                    const merged = [...dynamicSpecs];
-                                    specifications.forEach(spec => {
-                                        if (!merged.some(m => m.key.toLowerCase() === spec.key.toLowerCase())) {
-                                            merged.push(spec);
-                                        }
-                                    });
+                <RelatedProducts
+                    relatedProducts={relatedProducts}
+                    addToCart={addToCart}
+                    items={items}
+                />
 
-                                    if (merged.length === 0) {
-                                        return <div className="p-8 text-center text-slate-500 italic">لا توجد مواصفات فنية لهذا المنتج حالياً.</div>;
-                                    }
+                <ProductLightbox
+                    images={images}
+                    activeImageIndex={activeImageIndex}
+                    isZoomOpen={isZoomOpen}
+                    productName={product.name}
+                    onImageSelect={(idx) => setUserSelectedImage(idx)}
+                    onClose={() => setIsZoomOpen(false)}
+                />
 
-                                    return (
-                                        <>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {(showAllSpecs ? merged : merged.slice(0, 4)).map((spec, idx) => (
-                                                    <div 
-                                                        key={idx} 
-                                                        className="p-3 bg-[#101622]/80 backdrop-blur rounded-xl border border-white/5 hover:border-primary/40 transition-all flex flex-row items-start justify-between gap-2 group"
-                                                    >
-                                                        <span className="text-slate-400 font-medium text-sm flex items-start gap-2 flex-1 pt-0.5">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-primary transition-colors mt-1.5 flex-shrink-0"></span>
-                                                            {displayLabelMap[spec.key.toLowerCase()] || spec.key}
-                                                        </span>
-                                                        <span className="text-white font-bold text-sm text-left break-words max-w-[55%]">
-                                                            {spec.value}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            {merged.length > 4 && (
-                                                <button
-                                                    onClick={() => setShowAllSpecs(s => !s)}
-                                                    className="mt-4 w-full py-2.5 rounded-xl border border-white/10 text-slate-300 hover:text-primary hover:border-primary/40 text-sm font-bold flex items-center justify-center gap-2 transition-colors bg-white/2 hover:bg-primary/5"
-                                                >
-                                                    {showAllSpecs ? (
-                                                        <><Minus className="w-4 h-4" />إخفاء المواصفات</>
-                                                    ) : (
-                                                        <><Plus className="w-4 h-4" />عرض كل المواصفات ({merged.length - 4} إضافية)</>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </>
-                                    );
-                                })()}
-                            </div>
-                        )}
-
-                        {activeTab === 'video' && product.videos && product.videos.length > 0 && (
-                            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {product.videos.map((video, idx) => {
-                                    const embedUrl = getEmbedUrl(video.url);
-                                    if (!embedUrl) return null;
-                                    const isFB = video.url.includes('facebook') || video.url.includes('fb.watch');
-                                    return (
-                                        <div key={idx} className="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-xl">
-                                            {/* Card Header */}
-                                            <div className="flex items-center gap-3 px-5 py-3 bg-white/5 border-b border-white/10">
-                                                <span className="size-7 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-black flex items-center justify-center">{idx + 1}</span>
-                                                <h3 className="text-white font-bold text-base flex-1">{video.title || `فيديو رقم ${idx + 1}`}</h3>
-                                                {video.is_featured && (
-                                                    <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold">مميز</span>
-                                                )}
-                                                {isFB && (
-                                                    <span className="text-[10px] bg-blue-700 text-white px-2 py-0.5 rounded font-bold">Facebook</span>
-                                                )}
-                                            </div>
-                                            {isFB ? (
-                                                /* Facebook: open externally instead of broken iframe */
-                                                <div className="aspect-video w-full bg-gradient-to-br from-[#1877f2]/10 to-black/60 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                                                    <div className="size-16 rounded-full bg-[#1877f2]/20 border border-[#1877f2]/30 flex items-center justify-center">
-                                                        <PlayCircle className="w-10 h-10 text-[#1877f2]" />
-                                                    </div>
-                                                    <p className="text-slate-300 text-sm">فيديو Facebook — اضغط للمشاهدة في صفحة جديدة</p>
-                                                    <a
-                                                        href={video.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="px-5 py-2 bg-[#1877f2] hover:bg-[#1565d8] text-white rounded-xl font-bold text-sm transition-colors flex items-center gap-2"
-                                                    >
-                                                        <PlayCircle className="w-4 h-4" />
-                                                        مشاهدة على Facebook
-                                                    </a>
-                                                </div>
-                                            ) : (
-                                                <div className="aspect-video w-full bg-black/50">
-                                                    <iframe
-                                                        className="w-full h-full"
-                                                        src={embedUrl}
-                                                        title={video.title || `فيديو رقم ${idx + 1}`}
-                                                        frameBorder="0"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
-                                                    ></iframe>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {activeTab === 'reviews' && (
-                            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-wrap gap-4 sm:gap-8 items-center bg-gradient-to-br from-surface-dark to-transparent">
-                                    <div className="flex flex-col items-center justify-center gap-1 min-w-[120px] sm:min-w-[140px] border-l border-white/5 pl-4 sm:pl-8">
-                                        <span className="text-6xl font-extrabold text-white tracking-tighter">{product.averageRating || 0}</span>
-                                        <div className="flex text-yellow-400 gap-0.5 my-1">
-                                            {Array.from({ length: 5 }).map((_, i) => (
-                                                <Star key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 0) ? 'fill-current' : ''}`} />
-                                            ))}
-                                        </div>
-                                        <span className="text-slate-400 text-sm font-medium">بناءً على {product.reviewCount || 0} تقييم</span>
-                                    </div>
-                                    <div className="flex-1 min-w-[200px] flex flex-col gap-3">
-                                        {[5, 4, 3, 2, 1].map((star) => {
-                                            const count = product.reviews?.filter(r => r.rating === star).length || 0;
-                                            const percent = product.reviewCount ? Math.round((count / product.reviewCount) * 100) : 0;
-                                            return (
-                                                <div key={star} className="flex items-center gap-3">
-                                                    <span className="text-slate-400 text-xs w-6 font-bold">{star} نجوم</span>
-                                                    <div className="flex-1 h-2.5 bg-black/40 rounded-full overflow-hidden">
-                                                        <div style={{ width: `${percent}%` }} className="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full shadow-[0_0_10px_rgba(19,91,236,0.3)]"></div>
-                                                    </div>
-                                                    <span className="text-slate-400 text-xs w-8 text-left font-bold">{percent}%</span>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {product.reviews && product.reviews.length > 0 ? product.reviews.map((review) => (
-                                        <div key={review.id} className="glass-panel p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm ring-2 ring-slate-600">
-                                                        {(review.customerName || review.user?.name || 'ز').charAt(0)}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-white font-bold text-sm">{review.customerName || review.user?.name || 'مشتري'}</span>
-                                                        <span className="text-slate-500 text-xs flex items-center gap-1">
-                                                            <Verified className="w-3 h-3 text-emerald-500" />
-                                                            شراء مؤكد • {new Date(review.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex text-yellow-400">
-                                                    {Array.from({ length: 5 }).map((_, i) => (
-                                                        <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-current' : ''}`} />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-slate-300 text-sm leading-relaxed border-r-2 border-primary/30 pr-3">{review.text}</p>
-                                        </div>
-                                    )) : (
-                                        <div className="p-12 text-center text-slate-500 border border-dashed border-white/10 rounded-2xl">
-                                            لا توجد تقييمات لهذا المنتج بعد. كن أول من يقيم!
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* Frequently Bought Together (Upsell) */}
-                        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-                            <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">add_link</span>
-                                اشتروه معاً عادة
-                            </h4>
-                            <div className="flex flex-col gap-4">
-                                {relatedProducts.slice(0, 2).map((rp: Product) => (
-                                    <div key={rp.id} className="flex gap-3 items-center group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors">
-                                        <Link to={`/product/${rp.slug || rp.id}`} className="size-16 rounded-lg bg-surface-dark border border-white/5 overflow-hidden flex-shrink-0 relative">
-                                            <img src={rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url || 'https://via.placeholder.com/64'} alt={rp.name} className="w-full h-full object-contain" />
-                                        </Link>
-                                        <div className="flex flex-col flex-1">
-                                            <Link to={`/product/${rp.slug || rp.id}`}>
-                                                <h5 className="text-slate-200 text-xs font-medium group-hover:text-primary transition-colors line-clamp-1">{rp.name}</h5>
-                                            </Link>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-brand-red font-bold text-sm">
-                                                    {(rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price)).toLocaleString()} ج.م
-                                                </span>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const effectivePrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
-                                                        addToCart({
-                                                            id: rp.id,
-                                                            name: rp.name,
-                                                            price: effectivePrice,
-                                                            image: rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url,
-                                                            quantity: 1
-                                                        });
-                                                    }}
-                                                    className="size-7 rounded-full bg-white/10 hover:bg-primary text-slate-300 hover:text-white flex items-center justify-center transition-colors"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {relatedProducts.length === 0 && (
-                                    <p className="text-xs text-slate-500 italic text-center p-4">لا توجد منتجات مقترحة حالياً.</p>
-                                )}
-                            </div>
-                            {relatedProducts.length > 0 && (
-                                <button
-                                    onClick={handleAddAllToCart}
-                                    className="w-full mt-6 py-2.5 rounded-xl border border-primary/30 text-primary bg-primary/5 hover:bg-primary hover:text-white text-sm font-bold transition-all shadow-sm"
-                                >
-                                    إضافة الكل للسلة
-                                </button>
-                            )}
-                        </div>
-
-                        {product.videos && product.videos.length > 0 && product.videos.some(v => v.is_featured) && (() => {
-                            const featured = product.videos.find(v => v.is_featured);
-                            if (!featured) return null;
-                            const embedUrl = getEmbedUrl(featured.url);
-                            if (!embedUrl) return null;
-
-                            return (
-                                <div className="glass-panel p-6 rounded-2xl overflow-hidden relative border border-white/10">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -z-10"></div>
-                                    <h4 className="text-white font-bold mb-4 flex items-center justify-between">
-                                        {featured.title || 'فيديو المنتج'}
-                                        <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded uppercase font-bold text-center">شاهد الآن</span>
-                                    </h4>
-                                    <div
-                                        onClick={() => {
-                                            setActiveTab('video');
-                                            setTimeout(() => {
-                                                const el = document.getElementById('tabs-section');
-                                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                            }, 50);
-                                        }}
-                                        className="aspect-video w-full rounded-xl bg-black/50 overflow-hidden relative group cursor-pointer border border-white/10 shadow-lg"
-                                    >
-                                        <div className="absolute inset-0 z-20 transition-transform group-hover:bg-black/20 bg-transparent flex items-center justify-center">
-                                            <div className="size-12 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <PlayCircle className="w-8 h-8 text-white" />
-                                            </div>
-                                        </div>
-                                        {/* Background iframe as thumbnail, pointer disabled */}
-                                        <iframe
-                                            className="w-full h-full absolute inset-0 z-10 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity"
-                                            src={embedUrl}
-                                            title={featured.title || "Video Preview"}
-                                            frameBorder="0"
-                                            allow="autoplay; encrypted-media"
-                                        ></iframe>
-                                    </div>
-                                    <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">اضغط لمشاهدة الفيديو كاملاً في قسم الفيديو أعلاه.</p>
-                                </div>
-                            );
-                        })()}
-                    </div>
-                </div>
-            </div>
-
-            {/* Related Products Section */}
-            {relatedProducts.length > 0 && (
-                <div className="mt-20 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                                <span className="w-1.5 h-6 bg-brand-red rounded-full block"></span>
-                                منتجات قد تعجبك
-                            </h2>
-                            <p className="text-slate-400 text-sm mt-1 pr-4">تم اختيارها بناءً على اهتماماتك</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
-                                <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
-                            </button>
-                            <button className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                        {relatedProducts.map((rp: Product) => {
-                            const rpPrice = rp.discountPrice ? parseFloat(rp.discountPrice) : parseFloat(rp.price);
-                            const rpIsInCart = items.some(item => item.id === rp.id);
-                            return (
-                            <Link key={rp.id} to={`/product/${rp.slug || rp.id}`} className="group">
-                                <div className="glass-panel rounded-2xl p-4 hover:border-primary/50 transition-all duration-300 flex flex-col h-full relative overflow-hidden">
-                                    <div className="relative w-full aspect-square rounded-xl bg-surface-dark overflow-hidden mb-4 border border-white/5">
-                                        <img
-                                            src={rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url || 'https://via.placeholder.com/400'}
-                                            alt={rp.name}
-                                            className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
-                                        />
-                                        <button className="absolute top-2 left-2 size-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-brand-red transition-colors backdrop-blur-sm z-20 opacity-0 group-hover:opacity-100 transform translate-y-[-10px] group-hover:translate-y-0 duration-300">
-                                            <Heart className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-col flex-1 relative z-20">
-                                        <span className="text-[10px] text-primary font-bold mb-1 uppercase tracking-wider">{rp.brand?.name || 'ماركة'}</span>
-                                        <h3 className="text-white font-bold text-sm mb-4 line-clamp-2 group-hover:text-primary transition-colors">{rp.name}</h3>
-                                        <div className="mt-auto flex items-center justify-between">
-                                            <div className="flex flex-col">
-                                                {rp.discountPrice && (
-                                                    <span className="text-[10px] text-slate-500 line-through">
-                                                        {parseFloat(rp.price).toLocaleString()} ج.م
-                                                    </span>
-                                                )}
-                                                <span className="text-lg font-bold text-brand-red">
-                                                    {rpPrice.toLocaleString()} ج.م
-                                                </span>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    addToCart({
-                                                        id: rp.id,
-                                                        name: rp.name,
-                                                        price: rpPrice,
-                                                        image: rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url,
-                                                        quantity: 1
-                                                    });
-                                                    if (!rpIsInCart) toast.success('تم إضافة المنتج للسلة');
-                                                }}
-                                                className={`size-10 rounded-xl text-white flex items-center justify-center transition-all border ${
-                                                    rpIsInCart
-                                                        ? 'bg-emerald-500 border-emerald-500/30 shadow-lg shadow-emerald-900/25'
-                                                        : 'bg-white/5 hover:bg-primary border-white/10 group-hover:border-primary'
-                                                }`}
-                                            >
-                                                {rpIsInCart
-                                                    ? <Check className="w-5 h-5" />
-                                                    : <ShoppingCart className="w-5 h-5" />
-                                                }
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* Lightbox / Zoom Overlay */}
-            <AnimatePresence>
-                {isZoomOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4"
-                        onClick={() => setIsZoomOpen(false)}
-                    >
-                        {/* Close Button */}
-                        <button
-                            className="absolute top-6 right-6 size-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors border border-white/10"
-                            onClick={() => setIsZoomOpen(false)}
-                        >
-                            <Plus className="w-6 h-6 rotate-45" />
-                        </button>
-
-                        {/* Image Counter */}
-                        <div className="absolute top-6 left-6 text-slate-400 text-sm font-medium">
-                            {activeImageIndex + 1} / {images.length}
-                        </div>
-
-                        {/* Navigation Arrows */}
-                        <div className="absolute inset-x-4 md:inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setUserSelectedImage(prev => (prev === null ? primaryIndex : prev + 1) % images.length);
-                                }}
-                                className="size-14 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors border border-white/10 pointer-events-auto backdrop-blur-md"
-                            >
-                                <ChevronLeft className="w-8 h-8" />
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setUserSelectedImage(prev => (prev === null ? primaryIndex : (prev - 1 + images.length) % images.length));
-                                }}
-                                className="size-14 rounded-full bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-colors border border-white/10 pointer-events-auto backdrop-blur-md"
-                            >
-                                <ChevronLeft className="w-8 h-8 rotate-180" />
-                            </button>
-                        </div>
-
-                        {/* Main Image */}
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="max-w-5xl w-full h-full flex items-center justify-center"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <img
-                                src={images[activeImageIndex]}
-                                alt={product.name}
-                                className="max-w-full max-h-full object-contain drop-shadow-[0_0_50px_rgba(19,91,236,0.2)]"
-                            />
-                        </motion.div>
-
-                        {/* Thumbnails Strip */}
-                        <div className="absolute bottom-8 flex gap-2 overflow-x-auto max-w-[90vw] p-2 no-scrollbar" onClick={(e: any) => e.stopPropagation()}>
-                            {images.map((img, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setUserSelectedImage(idx)}
-                                    className={`size-16 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${activeImageIndex === idx ? 'border-primary ring-4 ring-primary/20' : 'border-white/10 opacity-50 hover:opacity-100'}`}
-                                >
-                                    <img src={img} alt="" className="w-full h-full object-cover" />
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ===== Premium Sticky Mobile Add To Cart Bar ===== */}
-            <AnimatePresence>
-                {showStickyCart && (
-                    <motion.div
-                        initial={{ y: 120, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 120, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
-                    >
-                        {/* Gradient fade above the bar */}
-                        <div className="h-6 bg-gradient-to-t from-background-dark/80 to-transparent pointer-events-none" />
-
-                        <div className="bg-[#0f172a]/98 backdrop-blur-2xl border-t border-white/8 px-4 pt-3 pb-6 shadow-[0_-4px_30px_rgba(0,0,0,0.6)]">
-                            {/* Top accent line */}
-                            <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full" />
-
-                            {/* Product info row */}
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-xl bg-surface-dark border border-white/10 overflow-hidden flex-shrink-0">
-                                    <img src={images[0]} alt={product.name} className="w-full h-full object-contain p-1" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-bold text-sm truncate">{displayProduct.name}</p>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-brand-red font-extrabold text-lg leading-none">
-                                            {(hasDiscount ? discountPrice : price)?.toLocaleString('ar-EG', { useGrouping: false })}
-                                        </span>
-                                        <span className="text-slate-400 text-xs font-medium">ج.م</span>
-                                        {hasDiscount && (
-                                            <span className="text-slate-500 text-[11px] line-through">{price.toLocaleString('ar-EG', { useGrouping: false })}</span>
-                                        )}
-                                    </div>
-                                </div>
-                                {hasDiscount && (
-                                    <span className="flex-shrink-0 text-[10px] font-black text-white bg-brand-red px-2 py-0.5 rounded-md">
-                                        -{discountPercent}%
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Action buttons row */}
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => {
-                                        addToCart({
-                                            id: displayProduct.id,
-                                            name: displayProduct.name,
-                                            price: hasDiscount ? discountPrice! : price,
-                                            image: images[0],
-                                            quantity: 1,
-                                            sku: displayProduct.sku
-                                        });
-                                        if (!isInCart) toast.success('تم إضافة المنتج للسلة');
-                                    }}
-                                    disabled={displayProduct.stock === 0}
-                                    className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] border ${
-                                        isInCart
-                                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-                                            : 'bg-white/8 border-white/12 text-white hover:bg-white/12'
-                                    }`}
-                                >
-                                    {isInCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-                                    {isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        addToCart({
-                                            id: displayProduct.id,
-                                            name: displayProduct.name,
-                                            price: hasDiscount ? discountPrice! : price,
-                                            image: images[0],
-                                            quantity: 1,
-                                            sku: displayProduct.sku
-                                        });
-                                        navigate('/checkout');
-                                    }}
-                                    disabled={displayProduct.stock === 0}
-                                    className="flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-primary hover:bg-blue-500 disabled:bg-slate-700 text-white shadow-lg shadow-primary/25 transition-all active:scale-[0.97]"
-                                >
-                                    <ShoppingBag className="w-4 h-4" />
-                                    شراء الآن
-                                </button>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                <StickyMobileCart
+                    displayProduct={displayProduct}
+                    images={images}
+                    hasDiscount={hasDiscount}
+                    discountPrice={discountPrice}
+                    price={price}
+                    discountPercent={discountPercent}
+                    isInCart={isInCart}
+                    showStickyCart={showStickyCart}
+                    addToCart={addToCart}
+                />
         </div>
     );
 };

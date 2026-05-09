@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, numeric, integer, boolean, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, numeric, integer, boolean, timestamp, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ============= USERS TABLE =============
@@ -57,7 +57,9 @@ export const addresses = pgTable('addresses', {
     isDefault: boolean('is_default').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index('idx_addresses_user_id').on(table.userId),
+}));
 
 export const addressesRelations = relations(addresses, ({ one }) => ({
     user: one(users, {
@@ -101,7 +103,9 @@ export const categories = pgTable('categories', {
     isActive: boolean('is_active').default(true),
     isFeatured: boolean('is_featured').default(false),
     attributesSchema: jsonb('attributes_schema').$type<Array<{ name: string; type: 'single-select' | 'multi-select'; options: string[] }>>().default([]),
-});
+}, (table) => ({
+    parentIdIdx: index('idx_categories_parent_id').on(table.parentId),
+}));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
     parent: one(categories, {
@@ -160,7 +164,11 @@ export const products = pgTable('products', {
 
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+    categoryIdIdx: index('idx_products_category_id').on(table.categoryId),
+    brandIdIdx: index('idx_products_brand_id').on(table.brandId),
+    parentIdIdx: index('idx_products_parent_id').on(table.parentId),
+}));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
     category: one(categories, {
@@ -184,7 +192,9 @@ export const productImages = pgTable('product_images', {
     isPrimary: boolean('is_primary').default(false),
     sortOrder: integer('sort_order').default(0),
     createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+    productIdIdx: index('idx_product_images_product_id').on(table.productId),
+}));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
     product: one(products, {
@@ -225,7 +235,10 @@ export const orders = pgTable('orders', {
 
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index('idx_orders_user_id').on(table.userId),
+    traderIdIdx: index('idx_orders_trader_id').on(table.traderId),
+}));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
     user: one(users, {
@@ -250,7 +263,10 @@ export const orderItems = pgTable('order_items', {
     quantity: integer('quantity').notNull(),
     selectedTierId: text('selected_tier_id'),
     multiplier: integer('multiplier').default(1),
-});
+}, (table) => ({
+    orderIdIdx: index('idx_order_items_order_id').on(table.orderId),
+    productIdIdx: index('idx_order_items_product_id').on(table.productId),
+}));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     order: one(orders, {
@@ -273,7 +289,9 @@ export const aiBundleLogs = pgTable('ai_bundle_logs', {
     resultBundle: jsonb('result_bundle'),
     matchScore: integer('match_score'),
     createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index('idx_ai_bundle_logs_user_id').on(table.userId),
+}));
 
 export const aiBundleLogsRelations = relations(aiBundleLogs, ({ one }) => ({
     user: one(users, {
@@ -282,7 +300,7 @@ export const aiBundleLogsRelations = relations(aiBundleLogs, ({ one }) => ({
     }),
 }));
 
-// ============= SETTINGS TABLE =============
+// ============= SETTINGS TABLE (core general settings) =============
 export const settings = pgTable('settings', {
     id: uuid('id').defaultRandom().primaryKey(),
     // General
@@ -298,25 +316,6 @@ export const settings = pgTable('settings', {
     instagram: text('instagram'),
     whatsapp: text('whatsapp'),
     twitterX: text('twitter_x'),
-    // Payment
-    paymobEnabled: boolean('paymob_enabled').default(false),
-    paymobApiKey: text('paymob_api_key'),
-    paymobIntegrationCard: text('paymob_integration_card'),
-    paymobIntegrationWallet: text('paymob_integration_wallet'),
-    paymobIframeId: text('paymob_iframe_id'),
-    codEnabled: boolean('cod_enabled').default(true),
-    codExtraFee: numeric('cod_extra_fee', { precision: 10, scale: 2 }).default('0'),
-    // COD Advanced Shipment Settings
-    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('100'),
-    codReturnShippingBaseFee: numeric('cod_return_shipping_base_fee', { precision: 10, scale: 2 }).default('30'),
-    codReturnShippingBaseAmount: numeric('cod_return_shipping_base_amount', { precision: 10, scale: 2 }).default('1000'),
-    codReturnShippingExtraFee: numeric('cod_return_shipping_extra_fee', { precision: 10, scale: 2 }).default('5'),
-    codReturnShippingExtraAmount: numeric('cod_return_shipping_extra_amount', { precision: 10, scale: 2 }).default('1000'),
-    // Shipping
-    shippingFlatRate: numeric('shipping_flat_rate', { precision: 10, scale: 2 }).default('50'),
-    freeShippingThreshold: numeric('free_shipping_threshold', { precision: 10, scale: 2 }).default('2000'),
-    customCityRatesEnabled: boolean('custom_city_rates_enabled').default(false),
-    cityShippingRates: jsonb('city_shipping_rates').$type<{ city: string; rate: number }[]>().default([]),
     // Taxes
     vatEnabled: boolean('vat_enabled').default(true),
     taxPercentage: numeric('tax_percentage', { precision: 5, scale: 2 }).default('14'),
@@ -331,8 +330,102 @@ export const settings = pgTable('settings', {
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
     metaKeywords: text('meta_keywords'),
+    // Interactive Bill Settings
+    billLayoutConfig: jsonb('bill_layout_config').$type<{
+        logo?: {
+            x: number;
+            y: number;
+            height: number;
+            width?: number;
+            marginRight?: number;
+            marginTop?: number;
+            marginBottom?: number;
+            marginLeft?: number;
+        };
+        title?: {
+            x: number;
+            y: number;
+            fontSize: number;
+            text?: string;
+            color?: string;
+            xOffset?: number;
+            yOffset?: number;
+        };
+    }>(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+});
 
-    // AI Settings
+export const settingsRelations = relations(settings, ({ one }) => ({
+    payment: one(paymentSettings),
+    notification: one(notificationSettings),
+    ai: one(aiSettings),
+    shipping: one(shippingSettings),
+}));
+
+// ============= PAYMENT SETTINGS TABLE =============
+export const paymentSettings = pgTable('payment_settings', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    settingsId: uuid('settings_id').notNull().references(() => settings.id, { onDelete: 'cascade' }),
+    paymobEnabled: boolean('paymob_enabled').default(false),
+    paymobApiKey: text('paymob_api_key'),
+    paymobIntegrationCard: text('paymob_integration_card'),
+    paymobIntegrationWallet: text('paymob_integration_wallet'),
+    paymobIframeId: text('paymob_iframe_id'),
+    codEnabled: boolean('cod_enabled').default(true),
+    codExtraFee: numeric('cod_extra_fee', { precision: 10, scale: 2 }).default('0'),
+    codAdvancePayment: numeric('cod_advance_payment', { precision: 10, scale: 2 }).default('100'),
+    codReturnShippingBaseFee: numeric('cod_return_shipping_base_fee', { precision: 10, scale: 2 }).default('30'),
+    codReturnShippingBaseAmount: numeric('cod_return_shipping_base_amount', { precision: 10, scale: 2 }).default('1000'),
+    codReturnShippingExtraFee: numeric('cod_return_shipping_extra_fee', { precision: 10, scale: 2 }).default('5'),
+    codReturnShippingExtraAmount: numeric('cod_return_shipping_extra_amount', { precision: 10, scale: 2 }).default('1000'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+    settingsIdIdx: index('idx_payment_settings_settings_id').on(table.settingsId),
+}));
+
+export const paymentSettingsRelations = relations(paymentSettings, ({ one }) => ({
+    settings: one(settings, {
+        fields: [paymentSettings.settingsId],
+        references: [settings.id],
+    }),
+}));
+
+// ============= NOTIFICATION SETTINGS TABLE =============
+export const notificationSettings = pgTable('notification_settings', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    settingsId: uuid('settings_id').notNull().references(() => settings.id, { onDelete: 'cascade' }),
+    telegramEnabled: boolean('telegram_enabled').default(false),
+    telegramBotToken: text('telegram_bot_token'),
+    telegramChatId: text('telegram_chat_id'),
+    whatsappEnabled: boolean('whatsapp_enabled').default(false),
+    whatsappApiKey: text('whatsapp_api_key'),
+    whatsappRecipientPhone: text('whatsapp_recipient_phone'),
+    emailEnabled: boolean('email_enabled').default(false),
+    smtpHost: text('smtp_host'),
+    smtpPort: integer('smtp_port').default(587),
+    smtpUser: text('smtp_user'),
+    smtpPass: text('smtp_pass'),
+    emailFrom: text('email_from'),
+    emailReceiver: text('email_receiver'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+    settingsIdIdx: index('idx_notification_settings_settings_id').on(table.settingsId),
+}));
+
+export const notificationSettingsRelations = relations(notificationSettings, ({ one }) => ({
+    settings: one(settings, {
+        fields: [notificationSettings.settingsId],
+        references: [settings.id],
+    }),
+}));
+
+// ============= AI SETTINGS TABLE =============
+export const aiSettings = pgTable('ai_settings', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    settingsId: uuid('settings_id').notNull().references(() => settings.id, { onDelete: 'cascade' }),
     aiEnabled: boolean('ai_enabled').default(true),
     googleApiKey: text('google_api_key'),
     aiApiKey: text('ai_api_key'),
@@ -346,49 +439,39 @@ export const settings = pgTable('settings', {
         specs: boolean;
         price: boolean;
     }>(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+    settingsIdIdx: index('idx_ai_settings_settings_id').on(table.settingsId),
+}));
 
-    // Telegram Notifications
-    telegramEnabled: boolean('telegram_enabled').default(false),
-    telegramBotToken: text('telegram_bot_token'),
-    telegramChatId: text('telegram_chat_id'),
+export const aiSettingsRelations = relations(aiSettings, ({ one }) => ({
+    settings: one(settings, {
+        fields: [aiSettings.settingsId],
+        references: [settings.id],
+    }),
+}));
 
-    // WhatsApp Notifications (CallMeBot)
-    whatsappEnabled: boolean('whatsapp_enabled').default(false),
-    whatsappApiKey: text('whatsapp_api_key'),
-    whatsappRecipientPhone: text('whatsapp_recipient_phone'),
+// ============= SHIPPING SETTINGS TABLE =============
+export const shippingSettings = pgTable('shipping_settings', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    settingsId: uuid('settings_id').notNull().references(() => settings.id, { onDelete: 'cascade' }),
+    shippingFlatRate: numeric('shipping_flat_rate', { precision: 10, scale: 2 }).default('50'),
+    freeShippingThreshold: numeric('free_shipping_threshold', { precision: 10, scale: 2 }).default('2000'),
+    customCityRatesEnabled: boolean('custom_city_rates_enabled').default(false),
+    cityShippingRates: jsonb('city_shipping_rates').$type<{ city: string; rate: number }[]>().default([]),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+    settingsIdIdx: index('idx_shipping_settings_settings_id').on(table.settingsId),
+}));
 
-    // Email Notifications (Simple SMTP)
-    emailEnabled: boolean('email_enabled').default(false),
-    smtpHost: text('smtp_host'),
-    smtpPort: integer('smtp_port').default(587),
-    smtpUser: text('smtp_user'),
-    smtpPass: text('smtp_pass'),
-    emailFrom: text('email_from'),
-    emailReceiver: text('email_receiver'),
-    
-    // Interactive Bill Settings
-    billLayoutConfig: jsonb('bill_layout_config').$type<{
-        logo?: { 
-            x: number; 
-            y: number; 
-            height: number; 
-            width?: number; 
-            marginRight?: number; 
-            marginTop?: number; 
-            marginBottom?: number; 
-            marginLeft?: number 
-        };
-        title?: { 
-            x: number; 
-            y: number; 
-            fontSize: number; 
-            text?: string; 
-            color?: string; 
-            xOffset?: number; 
-            yOffset?: number 
-        };
-    }>(),
-});
+export const shippingSettingsRelations = relations(shippingSettings, ({ one }) => ({
+    settings: one(settings, {
+        fields: [shippingSettings.settingsId],
+        references: [settings.id],
+    }),
+}));
 
 // ============= BANNERS TABLE =============
 export const banners = pgTable('banners', {
@@ -429,7 +512,10 @@ export const reviews = pgTable('reviews', {
     isApproved: boolean('is_approved').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+    productIdIdx: index('idx_reviews_product_id').on(table.productId),
+    userIdIdx: index('idx_reviews_user_id').on(table.userId),
+}));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
     product: one(products, {

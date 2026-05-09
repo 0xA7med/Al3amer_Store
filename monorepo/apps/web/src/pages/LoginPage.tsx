@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { auth, googleProvider } from '../lib/firebase';
 import { signInWithPopup, signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
 import api from '../lib/api';
+import SEOHead from '../components/SEO/SEOHead';
 
 declare global {
     interface Window {
@@ -171,6 +172,7 @@ export function LoginPage() {
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 relative">
+            <SEOHead title="تسجيل الدخول" description="تسجيل الدخول إلى حسابك في مركز العامر" noindex />
             {/* Background Effects */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px]"></div>

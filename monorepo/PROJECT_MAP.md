@@ -35,6 +35,7 @@
 | xlsx | ^0.18.5 | معالجة Excel |
 | nodemailer | ^8.0.5 | إرسال الإيميلات |
 | zod | ^3.22.4 | التحقق من الصحة |
+| helmet | ^8.1.0 | رؤوس الأمان (HTTP Security Headers) |
 | express-rate-limit | ^8.3.2 | تحديد المعدل |
 | postgres | ^3.4.3 | PostgreSQL driver |
 | dotenv | ^16.3.1 | البيئة المتغيرة |
@@ -164,14 +165,15 @@ monorepo/
 ├── apps/
 │   ├── api/          # Express.js API server
 │   │   ├── src/
-│   │   │   ├── index.ts                 # Entry point — 19 routers
+│   │   │   ├── index.ts                 # Entry point — 19 routers + helmet + error handler
 │   │   │   ├── controllers/             # 17 controllers
 │   │   │   ├── routes/                  # 19 route files
 │   │   │   ├── db/                      # Schema + DB connection
 │   │   │   │   ├── schema.ts            # 12 tables + relations
 │   │   │   │   └── index.ts             # postgres + drizzle instance
 │   │   │   ├── services/               # 4 services (AI, Paymob, Notification, Model)
-│   │   │   ├── lib/                    # 3 utilities (Auth, Cloudinary, Crypto)
+│   │   │           ├── lib/                    # 4 utilities (Auth, Cloudinary, Crypto, Validate)
+│           ├── schemas/                # Zod validation schemas (index.ts — all domains)
 │   │   │   └── scripts/                # 16 utility scripts (seed, patch, debug...)
 │   │   ├── drizzle/                    # Migration files (2 migrations)
 │   │   └── scripts/                    # 2 top-level scripts
@@ -186,7 +188,7 @@ monorepo/
 │           ├── components/
 │           │   ├── layout/             # Header, Footer
 │           │   ├── admin/              # AdminLayout, Sidebar, Tables, Modals
-│           │   ├── products/           # ProductCard
+│           │           ├── products/           # ProductCard, ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart, index
 │           │   ├── checkout/           # CheckoutProgressBar
 │           │   ├── auth/               # ProtectedRoute
 │           │   ├── account/            # AddressForm
@@ -274,6 +276,19 @@ monorepo/
 |--------|---------|
 | `apps/api/testsprite_tests/` | ملفات اختبارات آلية من TestSprite (Python + JSON) |
 
+### ✅ المنجز حديثاً
+
+| المهمة | الحالة |
+|--------|--------|
+| إضافة Zod validation middleware لجميع API routes | ✅ مكتمل |
+| إنشاء `src/lib/validate.ts` (middleware عام) | ✅ |
+| إنشاء `src/schemas/index.ts` (15 دومين schema) | ✅ |
+| تطبيق `validate()` على 17 ملف route (POST/PUT/PATCH) | ✅ |
+| كل الاختبارات 62/62 ناجحة بدون regressions | ✅ |
+| إضافة Helmet middleware (رؤوس أمان HTTP) | ✅ |
+| إخفاء تفاصيل الـ stack trace في الـ error handler بـ production | ✅ |
+| استخدام `err.status` في middleware الخطأ للحفاظ على أكواد الحالة المخصصة | ✅ |
+
 ### 🔲 مهام معلقة (Pending)
 
 | الأولوية | المهمة | الملاحظات |
@@ -288,23 +303,41 @@ monorepo/
 | 🟢 منخفضة | إضافة PWA (Service Worker) | غير مطبقة حاليًا |
 | 🟢 منخفضة | إضافة i18n للغة الإنجليزية | حاليًا عربي فقط |
 
+### 🧪 أنظمة الاختبارات (Testing)
+
+| الأداة | القيمة |
+|--------|--------|
+| الإطار | Vitest v4 |
+| الموقع | `apps/api/src/__tests__/` |
+| اختبارات المصادقة (Auth) | 16 ✅ |
+| اختبارات المنتجات (Products) | 17 ✅ |
+| اختبارات الطلبات (Orders) | 14 ✅ |
+| اختبارات الدفع (Checkout) | 8 ✅ |
+| اختبارات Middleware | 6 ✅ |
+| الإجمالي | **62 اختبار ✅** |
+| التغطية المستهدفة | 80% عبارات, 75% Branches |
+| نمط التسمية | `[TDD-RED]` للمسارات الفاشلة, `[TDD-GREEN]` للمسارات الناجحة |
+
 ### 📋 إحصائيات المشروع
 
 | المقياس | القيمة |
 |---------|--------|
-| إجمالي ملفات TypeScript (API) | 46 |
+| إجمالي ملفات TypeScript (API) | 48 |
 | إجمالي ملفات TypeScript/TSX (Web) | 48 |
 | نقاط API | 70+ |
 | جداول قاعدة البيانات | 12 |
 | المتحكمات (Controllers) | 17 |
 | صفحات المستخدم | 13 |
 | صفحات الإدارة | 14 |
-| المكونات | 16 |
+| المكونات | 21 |
 | السياقات (Contexts) | 3 |
 | الهوكس (Hooks) | 10 |
+| Schemas التحقق | 15 domain schemas |
+| Middleware مخصصة | 3 (Auth JWT + Zod Validation + Helmet Security Headers) |
 | الخدمات (Services) | 4 |
 | السكربتات (Scripts) | 18 |
 | هجرات Drizzle | 2 |
+| اختبارات وحدة | 62 |
 
 ---
 

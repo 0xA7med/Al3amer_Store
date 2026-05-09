@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { settings } from '../db/schema.js';
 import { PaymobService } from '../services/paymob.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 
 /**
  * Checkout Controller
@@ -36,7 +36,7 @@ export class CheckoutController {
             }
 
             // Get app settings for Paymob config
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'الدفع الإلكتروني غير مُفعّل حالياً' });
@@ -140,7 +140,7 @@ export class CheckoutController {
                 return res.status(400).json({ error: 'paymobOrderId is required' });
             }
 
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             
             if (!paymobApiKeyRaw) {

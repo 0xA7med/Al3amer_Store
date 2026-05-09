@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Header } from '../layout/Header';
 import { Sidebar } from './Sidebar';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function AdminLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -39,7 +40,9 @@ export function AdminLayout() {
                     </div>
 
                     <div className="flex-1 p-3 md:p-6 lg:p-8 overflow-y-auto w-full max-w-[1600px] mx-auto scroll-smooth">
-                        <Outlet />
+                        <ErrorBoundary>
+                            <Outlet />
+                        </ErrorBoundary>
                     </div>
                 </main>
             </div>

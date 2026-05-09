@@ -1,14 +1,15 @@
 import { db } from '../db/index.js';
-import { orders, orderItems, products, productImages, coupons } from '../db/schema.js';
-import { eq, and, inArray } from 'drizzle-orm';
+import { orders, orderItems, products, coupons, productImages } from '../db/schema.js';
+import { eq, and, inArray, sql, gte } from 'drizzle-orm';
+import { NotificationService } from '../services/notification.service.js';
 import { PaymobService } from '../services/paymob.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
-import { NotificationService } from '../services/notification.service.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 export class OrdersController {
     // POST /api/orders - Create new order
     static async create(req, res) {
         try {
-            const { userId, fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
+            const { userId, fullName, phone, phone2, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
             traderId, finalCodAmount, } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
             // Validation
@@ -44,13 +45,26 @@ export class OrdersController {
                     console.error(`Product ID ${item.productId} not found or inactive`);
                     return res.status(400).json({ error: `المنتج ذو الرقم ${item.productId} غير متوفر أو غير نشط حالياً` });
                 }
-                const effectivePrice = dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price);
+                const itemPrice = parseFloat(item.price);
+                const effectivePrice = isNaN(itemPrice) ? (dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price)) : itemPrice;
                 const quantity = Number(item.quantity) || 1;
+                const multiplier = Number(item.multiplier) || 1;
+                const totalDeduction = quantity * multiplier;
+                // Atomic stock check + deduction: only succeeds if stock >= totalDeduction
+                const [updatedProduct] = await db.update(products)
+                    .set({ stock: sql `${products.stock} - ${totalDeduction}` })
+                    .where(and(eq(products.id, dbProduct.id), gte(products.stock, totalDeduction)))
+                    .returning({ id: products.id });
+                if (!updatedProduct) {
+                    return res.status(400).json({ error: `المنتج ${dbProduct.name} غير متوفر بالكمية المطلوبة` });
+                }
                 subtotal += effectivePrice * quantity;
                 finalOrderItems.push({
                     ...item,
                     price: effectivePrice,
                     name: dbProduct.name,
+                    multiplier: multiplier,
+                    selectedTierId: item.selectedTierId
                 });
             }
             // Calculate discount if coupon provided
@@ -100,6 +114,7 @@ export class OrdersController {
                 userId: userId ? String(userId) : null,
                 fullName,
                 phone: safePhone,
+                phone2,
                 email,
                 governorate,
                 city,
@@ -127,6 +142,8 @@ export class OrdersController {
                 name: item.name,
                 price: item.price.toString(),
                 quantity: item.quantity,
+                multiplier: item.multiplier || 1,
+                selectedTierId: item.selectedTierId || null,
             }));
             await db.insert(orderItems).values(orderItemsData);
             console.log(`✅ [Orders] Order #${orderNumber} created — Status: ${orderStatus}, Method: ${paymentMethod}`);
@@ -135,6 +152,8 @@ export class OrdersController {
                 where: eq(orders.id, order.id),
                 with: {
                     items: true,
+                    user: true,
+                    trader: true,
                 },
             });
             // 📦 [NOTIFICATION] TRIGGER
@@ -258,6 +277,8 @@ export class OrdersController {
                 name: item.name,
                 price: item.price.toString(),
                 quantity: item.quantity,
+                multiplier: item.multiplier || 1,
+                selectedTierId: item.selectedTierId || null,
             }));
             await db.insert(orderItems).values(orderItemsData);
             console.log(`✅ [Orders] Draft Order updated: ID=${orderId}`);
@@ -477,7 +498,7 @@ export class OrdersController {
                 return res.json({ status: order.status, message: 'Order is already paid' });
             }
             // 2. Get Settings
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob API Key not configured' });
@@ -563,7 +584,7 @@ export class OrdersController {
                 return res.status(400).json({ error: 'هذا الطلب ليس دفع إلكتروني' });
             }
             // 2. Get Settings for Paymob keys
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob is not configured' });

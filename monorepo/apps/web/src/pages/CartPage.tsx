@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../hooks/useWishlist';
 import { CheckoutProgressBar } from '../components/checkout';
+import SEOHead from '../components/SEO/SEOHead';
 
 export function CartPage() {
     const { items: cartItems, updateQuantity, removeFromCart, totalPrice: subtotal, addToCart } = useCart();
@@ -24,6 +25,7 @@ export function CartPage() {
 
     return (
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <SEOHead title="سلة التسوق" description="سلة التسوق الخاصة بك في مركز العامر" noindex />
             {/* Progress Steps */}
             <CheckoutProgressBar currentStep={1} />
 
@@ -80,11 +82,11 @@ export function CartPage() {
                                     <div className="flex flex-wrap items-center justify-between gap-y-2 mt-auto">
                                         {/* Quantity */}
                                         <div className="flex items-center gap-1 bg-[#181a20] rounded-lg border border-white/10 h-10 px-1">
-                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
+                                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} disabled={item.stock !== undefined && item.quantity >= Math.floor(item.stock / (item.multiplier || 1))} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
                                                 <span className="material-symbols-outlined text-lg">add</span>
                                             </button>
                                             <span className="w-8 text-center text-white font-bold">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors">
+                                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} disabled={item.quantity <= 1} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors">
                                                 <span className="material-symbols-outlined text-lg">remove</span>
                                             </button>
                                         </div>

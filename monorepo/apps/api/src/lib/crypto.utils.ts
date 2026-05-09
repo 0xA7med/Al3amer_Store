@@ -1,7 +1,10 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'); // Must be 32 bytes
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY) {
+    throw new Error('CRITICAL: ENCRYPTION_KEY environment variable is not set. All encrypted data (API keys, payment credentials) will be inaccessible without it.');
+}
 const IV_LENGTH = 16; // For AES, this is always 16
 
 /**
@@ -10,10 +13,11 @@ const IV_LENGTH = 16; // For AES, this is always 16
 export function encryptText(text: string | null | undefined): string | undefined {
     if (!text) return undefined;
     
+    const keyStr = ENCRYPTION_KEY!;
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(
         ALGORITHM, 
-        Buffer.from(ENCRYPTION_KEY, 'hex').length === 32 ? Buffer.from(ENCRYPTION_KEY, 'hex') : Buffer.alloc(32, ENCRYPTION_KEY), 
+        Buffer.from(keyStr, 'hex').length === 32 ? Buffer.from(keyStr, 'hex') : Buffer.alloc(32, keyStr), 
         iv
     );
     
@@ -39,9 +43,10 @@ export function decryptText(text: string | null | undefined): string | undefined
         const iv = Buffer.from(textParts.shift()!, 'hex');
         const encryptedText = Buffer.from(textParts.join(':'), 'hex');
         
+        const keyStr = ENCRYPTION_KEY!;
         const decipher = crypto.createDecipheriv(
             ALGORITHM, 
-            Buffer.from(ENCRYPTION_KEY, 'hex').length === 32 ? Buffer.from(ENCRYPTION_KEY, 'hex') : Buffer.alloc(32, ENCRYPTION_KEY), 
+            Buffer.from(keyStr, 'hex').length === 32 ? Buffer.from(keyStr, 'hex') : Buffer.alloc(32, keyStr), 
             iv
         );
         

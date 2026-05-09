@@ -1,0 +1,24 @@
+/*
+  X-Robots-Tag: index, follow
+  X-Frame-Options: DENY
+
+/admin/*
+  X-Robots-Tag: noindex
+
+/account/*
+  X-Robots-Tag: noindex
+
+/checkout/*
+  X-Robots-Tag: noindex
+
+/cart
+  X-Robots-Tag: noindex
+
+/payment/*
+  X-Robots-Tag: noindex
+
+/order-success/*
+  X-Robots-Tag: noindex
+
+/track-order/*
+  X-Robots-Tag: noindex

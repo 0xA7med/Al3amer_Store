@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useAddresses } from '../hooks/useAddresses';
 import { CheckoutProgressBar } from '../components/checkout';
 import api from '../lib/api';
+import SEOHead from '../components/SEO/SEOHead';
 
 const GOVERNORATES = [
     'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
@@ -447,6 +448,7 @@ export function CheckoutPage() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <SEOHead title="إتمام الطلب" description="إتمام طلبك في مركز العامر - أجهزة كاشير وأنظمة محاسبة" noindex />
             <CheckoutProgressBar currentStep={(step + 1) as 1 | 2 | 3 | 4} />
 
             <div className="grid lg:grid-cols-3 gap-8 mt-8">

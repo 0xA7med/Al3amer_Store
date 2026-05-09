@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import { useCart } from '../context/CartContext';
+import SEOHead from '../components/SEO/SEOHead';
 
 export function PaymentCallbackPage() {
     const [searchParams] = useSearchParams();
@@ -70,6 +71,7 @@ export function PaymentCallbackPage() {
 
     return (
         <div className="min-h-screen bg-[#0f1115] flex items-center justify-center p-4" dir="rtl">
+            <SEOHead title="الدفع" description="تأكيد الدفع - مركز العامر" noindex />
             <div className="glass-panel p-8 rounded-2xl max-w-md w-full text-center border border-white/10 bg-[#181a20]">
                 {status === 'loading' && (
                     <div className="flex flex-col items-center">

@@ -7,7 +7,7 @@ export declare class ProductsController {
     static popularSearches(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static getOne(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static create(req: Request, res: Response): Promise<void>;
-    static update(req: Request, res: Response): Promise<void>;
+    static update(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static updateShortName(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static bulkUpdate(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
     static bulkAction(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;

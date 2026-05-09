@@ -1,7 +1,7 @@
 import axios from 'axios';
 import nodemailer from 'nodemailer';
-import { db } from '../db/index.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 
 export class NotificationService {
     /**
@@ -12,8 +12,8 @@ export class NotificationService {
             console.log(`📤 [NotificationService] Starting notification dispatch for Order #${order?.orderNumber}...`);
             console.log(`📤 [NotificationService] Order paymentMethod: ${order?.paymentMethod}, items: ${order?.items?.length || 0}`);
 
-            const appSettings = await db.query.settings.findFirst();
-            if (!appSettings) {
+            const appSettings = await getMergedSettings();
+            if (!appSettings || Object.keys(appSettings).length === 0) {
                 console.error('❌ [NotificationService] No settings found in DB — aborting notifications.');
                 return;
             }

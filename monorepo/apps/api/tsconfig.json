@@ -22,6 +22,10 @@
     ],
     "exclude": [
         "node_modules",
-        "src/scripts"
+        "dist",
+        "src/scripts",
+        "src/**/*.test.ts",
+        "src/__tests__/**/*",
+        "src/test-utils/**/*"
     ]
 }

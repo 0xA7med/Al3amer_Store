@@ -1,0 +1,53 @@
+export type Tab = 'general' | 'contact' | 'social' | 'shipping' | 'tax' | 'payment' | 'notifications';
+
+export interface SettingsFormData {
+    storeNameAr: string;
+    storeNameEn: string;
+    logoUrl: string;
+    faviconUrl: string;
+    metaTitle: string;
+    metaDescription: string;
+    metaKeywords: string;
+    supportPhone: string;
+    supportEmail: string;
+    address: string;
+    facebook: string;
+    instagram: string;
+    whatsapp: string;
+    twitterX: string;
+    shippingFlatRate: string;
+    freeShippingThreshold: string;
+    customCityRatesEnabled: boolean;
+    vatEnabled: boolean;
+    taxPercentage: string;
+    taxRegistrationNumber: string;
+    pricesIncludeTax: boolean;
+    codEnabled: boolean;
+    codExtraFee: string;
+    codAdvancePayment: string;
+    codReturnShippingBaseFee: string;
+    codReturnShippingBaseAmount: string;
+    codReturnShippingExtraFee: string;
+    codReturnShippingExtraAmount: string;
+    paymobEnabled: boolean;
+    paymobApiKey: string;
+    paymobIntegrationCard: string;
+    paymobIntegrationWallet: string;
+    paymobIframeId: string;
+    telegramEnabled: boolean;
+    telegramBotToken: string;
+    telegramChatId: string;
+    whatsappEnabled: boolean;
+    whatsappApiKey: string;
+    whatsappRecipientPhone: string;
+    emailEnabled: boolean;
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPass: string;
+    emailFrom: string;
+    emailReceiver: string;
+    cityShippingRates: { city: string; rate: number }[];
+}
+
+export type TestingState = { whatsapp: boolean; telegram: boolean; email: boolean };

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ProductCard } from '../components/products';
 import { useProducts } from '../hooks/useProducts';
 import api from '../lib/api';
+import SEOHead from '../components/SEO/SEOHead';
 
 // =========================================================
 // Collapsible Filter Section Component
@@ -613,8 +614,21 @@ export function ShopPage() {
 
     const hasActiveFilters = activeFilters.length > 0 || priceRange[0] > computedPriceRange.min || priceRange[1] < computedPriceRange.max;
 
+    const currentCategory = selectedCategories.length === 1
+        ? activeCategories.find((c: any) => c.slug === selectedCategories[0])
+        : null;
+    const shopTitle = currentCategory?.name || 'تسوق';
+    const shopDesc = currentCategory?.name
+        ? `أفضل ${currentCategory.name} - أجهزة كاشير وأنظمة محاسبة`
+        : 'تسوق أحدث أجهزة الكاشير وأنظمة المحاسبة';
+
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <SEOHead
+              title={shopTitle}
+              description={shopDesc}
+              canonical={currentCategory?.slug ? `/shop?category=${currentCategory.slug}` : '/shop'}
+            />
             {/* Breadcrumb */}
             <nav className="flex mb-6 text-sm font-medium text-gray-400">
                 <ol className="flex items-center gap-2">

@@ -2,6 +2,10 @@
     "version": 2,
     "rewrites": [
         {
+            "source": "/sitemap.xml",
+            "destination": "/src/index.ts"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/src/index.ts"
         }

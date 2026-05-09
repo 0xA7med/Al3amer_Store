@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ProductCard } from '../components/products/ProductCard';
 import { useProducts } from '../hooks/useProducts';
+import SEOHead from '../components/SEO/SEOHead';
 
 const OffersPage = () => {
     const { data: response, isLoading } = useProducts();
@@ -37,6 +38,7 @@ const OffersPage = () => {
 
     return (
         <div className="bg-background-dark min-h-screen text-slate-200 font-body">
+            <SEOHead title="العروض" description="أفضل العروض والتخفيضات على أجهزة الكاشير وأنظمة المحاسبة" canonical="/offers" />
             {/* Hero Banner */}
             <div className="relative h-[300px] overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-900 to-blue-900 opacity-50" />

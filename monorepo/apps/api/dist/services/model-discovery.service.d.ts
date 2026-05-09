@@ -11,7 +11,7 @@ export declare class ModelDiscoveryService {
     /**
      * Discovers available models for the given API key
      * @param apiKey Google API key
-     * @param apiVersion API version (default: 'v1beta')
+     * @param apiVersion API version (default: 'v1')
      * @returns Array of model names that support generateContent
      */
     static discoverModels(apiKey: string, apiVersion?: string): Promise<string[]>;

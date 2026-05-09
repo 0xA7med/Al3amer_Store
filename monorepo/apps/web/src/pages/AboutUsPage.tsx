@@ -1,9 +1,11 @@
 
 import { Award, ShieldCheck, Truck, Users } from 'lucide-react';
+import SEOHead from '../components/SEO/SEOHead';
 
 const AboutUsPage = () => {
     return (
         <div className="bg-background-dark min-h-screen text-slate-200 font-body">
+            <SEOHead title="عن المركز" description="تعرف على مركز العامر - أكبر متخصص في أجهزة الكاشير وأنظمة المحاسبة في مصر" canonical="/about" />
             {/* Hero */}
             <div className="py-20 px-4 text-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full bg-primary/5 blur-3xl rounded-full scale-150 pointer-events-none -translate-y-1/2" />

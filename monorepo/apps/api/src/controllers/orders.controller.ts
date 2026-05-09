@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { orders, orderItems, products, productImages, settings, coupons } from '../db/schema.js';
-import { eq, and, inArray } from 'drizzle-orm';
+import { orders, orderItems, products, users, coupons, productImages } from '../db/schema.js';
+import { eq, and, inArray, sql, gte } from 'drizzle-orm';
+import { NotificationService } from '../services/notification.service.js';
 import { PaymobService } from '../services/paymob.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
-import { NotificationService } from '../services/notification.service.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 
 export class OrdersController {
     // POST /api/orders - Create new order
@@ -74,16 +75,24 @@ export class OrdersController {
                     return res.status(400).json({ error: `المنتج ذو الرقم ${item.productId} غير متوفر أو غير نشط حالياً` });
                 }
 
-                const itemPrice = parseFloat(item.price); // Use client-provided price (tier price)
+                const itemPrice = parseFloat(item.price);
                 const effectivePrice = isNaN(itemPrice) ? (dbProduct.discountPrice ? Number(dbProduct.discountPrice) : Number(dbProduct.price)) : itemPrice;
                 
                 const quantity = Number(item.quantity) || 1;
                 const multiplier = Number(item.multiplier) || 1;
                 const totalDeduction = quantity * multiplier;
 
-                // Check Stock
-                if ((dbProduct.stock ?? 0) < totalDeduction) {
-                    return res.status(400).json({ error: `كمية المنتج ${dbProduct.name} المطلوبة غير متوفرة في المخزن. المتاح: ${dbProduct.stock}` });
+                // Atomic stock check + deduction: only succeeds if stock >= totalDeduction
+                const [updatedProduct] = await db.update(products)
+                    .set({ stock: sql`${products.stock} - ${totalDeduction}` })
+                    .where(and(
+                        eq(products.id, dbProduct.id),
+                        gte(products.stock, totalDeduction)
+                    ))
+                    .returning({ id: products.id });
+
+                if (!updatedProduct) {
+                    return res.status(400).json({ error: `المنتج ${dbProduct.name} غير متوفر بالكمية المطلوبة` });
                 }
 
                 subtotal += effectivePrice * quantity;
@@ -95,11 +104,6 @@ export class OrdersController {
                    multiplier: multiplier,
                    selectedTierId: item.selectedTierId
                 });
-
-                // Deduct Stock immediately
-                await db.update(products)
-                    .set({ stock: (dbProduct.stock ?? 0) - totalDeduction })
-                    .where(eq(products.id, dbProduct.id));
             }
 
             // Calculate discount if coupon provided
@@ -615,7 +619,7 @@ export class OrdersController {
             }
 
             // 2. Get Settings
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             if (!paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob API Key not configured' });
@@ -714,7 +718,7 @@ export class OrdersController {
             }
 
             // 2. Get Settings for Paymob keys
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const paymobApiKeyRaw = appSettings?.paymobApiKey ? decryptText(appSettings.paymobApiKey) : null;
             if (!appSettings?.paymobEnabled || !paymobApiKeyRaw) {
                 return res.status(500).json({ error: 'Paymob is not configured' });

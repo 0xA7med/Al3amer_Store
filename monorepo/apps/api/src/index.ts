@@ -1,6 +1,7 @@
 import express from 'express';
 import type { Express } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import productsRouter from './routes/products.js';
 import aiBundleRouter from './routes/ai-bundle.js';
@@ -20,6 +21,7 @@ import debugRouter from './routes/debug.js';
 import metadataRouter from './routes/metadata.js';
 import checkoutRouter from './routes/checkout.js';
 import socialPreviewRouter from './routes/social-preview.js';
+import sitemapRouter from './routes/sitemap.js';
 
 dotenv.config();
 
@@ -29,10 +31,14 @@ const PORT = process.env.PORT || 3001;
 // Trust proxy for Vercel deployment
 app.set('trust proxy', 1);
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Security Middleware
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : ['http://localhost:5173', 'https://al3amer-store-wf1t.vercel.app', 'https://al3amer.store'];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(helmet());
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Routes
 
@@ -54,6 +60,7 @@ app.use('/api/debug', debugRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/checkout', checkoutRouter);
 app.use('/api/social-preview', socialPreviewRouter);
+app.use(sitemapRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
@@ -63,7 +70,10 @@ app.get('/health', (_req, res) => {
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
+    res.status(err.status || 500).json({
+        error: 'Something went wrong!',
+        ...(process.env.NODE_ENV !== 'production' && { details: err.message }),
+    });
 });
 
 // الكود القديم (امسحه أو خليه في تعليق)

@@ -1,9 +1,10 @@
 import { db } from '../db/index.js';
 import { products, productImages, categories, brands, reviews, orderItems } from '../db/schema.js';
-import { eq, and, gte, ilike, or, inArray, sql, desc } from 'drizzle-orm';
-import { uploadToCloudinary } from '../lib/cloudinary.js';
+import { eq, and, or, sql, inArray, desc, count, gte, ilike } from 'drizzle-orm';
 import { AIService } from '../services/ai.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
+import { uploadToCloudinary } from '../lib/cloudinary.js';
 // In-memory tracker for popular/trending searches globally
 const searchHistoryTracker = {};
 export class ProductsController {
@@ -27,12 +28,17 @@ export class ProductsController {
                 return res.status(400).json({ error: 'Product name is required' });
             }
             // Get Settings
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             // Prefer the dedicated AI key, fall back to google key, then env var
             const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
-            const apiKey = rawKey ? (decryptText(rawKey) ?? rawKey) : undefined;
+            // If the key is encrypted (has ':') but decryptText returns the same raw string or undefined, it failed
+            const apiKey = rawKey ? decryptText(rawKey) : undefined;
             if (!apiKey) {
-                return res.status(400).json({ error: 'Google API Key is not configured in settings' });
+                const isProbablyEncrypted = rawKey?.includes(':');
+                const errorMessage = isProbablyEncrypted
+                    ? 'فشل فك تشفير مفتاح API. يرجى إعادة إدخال مفتاح Google API في الإعدادات.'
+                    : 'مفتاح Google API غير مهيأ في الإعدادات';
+                return res.status(400).json({ error: errorMessage });
             }
             const aiService = new AIService(apiKey.trim());
             const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium', section, category, brand);
@@ -94,6 +100,9 @@ export class ProductsController {
                 }
             }
             const where = conditions.length > 0 ? and(...conditions) : undefined;
+            const totalResult = await db.select({ count: count() }).from(products).where(where);
+            const total = Number(totalResult[0]?.count ?? 0);
+            const totalPages = Math.ceil(total / limitNum);
             let productsList = [];
             if (sort === 'bestselling') {
                 const totalSalesExpr = sql `COALESCE(SUM(CAST(${orderItems.quantity} AS INTEGER)), 0)`;
@@ -167,6 +176,8 @@ export class ProductsController {
                 pagination: {
                     page: pageNum,
                     limit: limitNum,
+                    total,
+                    totalPages,
                 },
             });
         }
@@ -281,6 +292,26 @@ export class ProductsController {
             if (!product) {
                 return res.status(404).json({ error: 'Product not found' });
             }
+            // Handle Variants (Multi-Variant Product System)
+            let variants = [];
+            let parentProduct = null;
+            if (product.parentId) {
+                // This is a child variant. Fetch the parent and all siblings.
+                parentProduct = await db.query.products.findFirst({
+                    where: eq(products.id, product.parentId),
+                });
+                variants = await db.query.products.findMany({
+                    where: and(eq(products.parentId, product.parentId), eq(products.status, 'active')),
+                    with: { images: true }
+                });
+            }
+            else {
+                // Check if this is a parent product (has children)
+                variants = await db.query.products.findMany({
+                    where: and(eq(products.parentId, product.id), eq(products.status, 'active')),
+                    with: { images: true }
+                });
+            }
             // Calculate metrics
             const salesCount = product.orderItems.reduce((acc, item) => acc + item.quantity, 0);
             const reviewCount = product.reviews.length;
@@ -291,6 +322,8 @@ export class ProductsController {
             const storeSettings = await db.query.settings.findFirst();
             res.json({
                 ...product,
+                parent: parentProduct,
+                variants,
                 salesCount,
                 reviewCount,
                 averageRating: Number(averageRating.toFixed(1)),
@@ -488,8 +521,26 @@ export class ProductsController {
         }
         catch (error) {
             console.error('Error updating product:', error);
+            // Handle unique constraint violations (Postgres error 23505)
+            if (error?.code === '23505') {
+                let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
+                if (error.detail?.includes('external_id')) {
+                    message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';
+                }
+                else if (error.detail?.includes('sku')) {
+                    message = 'هذا الكود (SKU) مستخدم بالفعل لمنتج آخر';
+                }
+                else if (error.detail?.includes('slug')) {
+                    message = 'هذا الرابط (Slug) مستخدم بالفعل لمنتج آخر، يرجى تغيير اسم المنتج';
+                }
+                return res.status(400).json({
+                    message,
+                    error: 'DUPLICATE_ENTRY',
+                    detail: error.detail
+                });
+            }
             res.status(500).json({
-                message: 'Error updating product',
+                message: 'حدث خطأ أثناء تحديث المنتج',
                 error: error instanceof Error ? error.message : 'Unknown error',
                 details: error
             });
@@ -629,6 +680,37 @@ export class ProductsController {
                     .where(inArray(products.id, ids));
                 affected = ids.length;
             }
+            else if (action === 'group') {
+                if (!payload?.groupName || !payload?.variants) {
+                    return res.status(400).json({ error: 'groupName and variants mapping are required' });
+                }
+                // Get first child to inherit category and brand
+                const firstChild = await db.query.products.findFirst({
+                    where: eq(products.id, payload.variants[0].id)
+                });
+                // Create Parent Product
+                const [parentProduct] = await db.insert(products).values({
+                    name: payload.groupName,
+                    slug: ProductsController.slugify(payload.groupName) + '-' + Math.floor(Math.random() * 10000),
+                    price: '0',
+                    status: 'active',
+                    categoryId: firstChild?.categoryId,
+                    brandId: firstChild?.brandId,
+                    accountingMultiplier: payload.accountingMultiplier ? String(payload.accountingMultiplier) : null,
+                    salesTiers: payload.salesTiers || null,
+                }).returning();
+                // Link children variants and update their multipliers/tiers if needed
+                for (const variant of payload.variants) {
+                    await db.update(products).set({
+                        parentId: parentProduct.id,
+                        variantOptions: variant.options,
+                        accountingMultiplier: payload.accountingMultiplier ? String(payload.accountingMultiplier) : null,
+                        salesTiers: payload.salesTiers || null,
+                        updatedAt: new Date()
+                    }).where(eq(products.id, variant.id));
+                }
+                affected = payload.variants.length;
+            }
             else {
                 return res.status(400).json({ error: `Unknown action: ${action}` });
             }
@@ -642,10 +724,11 @@ export class ProductsController {
     // POST /api/products/validate-cart - Validate cart items still exist and return fresh data
     static async validateCart(req, res) {
         try {
-            const { productIds } = req.body;
-            if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
-                return res.status(400).json({ error: 'productIds must be a non-empty array' });
+            const { items } = req.body;
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({ error: 'items must be a non-empty array' });
             }
+            const productIds = items.map((i) => i.id);
             // Fetch all matching products in a single DB query
             const foundProducts = await db.query.products.findMany({
                 where: inArray(products.id, productIds),
@@ -664,29 +747,36 @@ export class ProductsController {
                     status: true,
                 },
             });
-            // Build a Set of found IDs for fast lookup
-            const foundIdSet = new Set(foundProducts.map(p => p.id));
-            // Determine which requested IDs are missing or inactive
-            const invalidIds = productIds.filter(id => !foundIdSet.has(id));
-            // Map to a clean response shape
-            const validProducts = foundProducts
-                .filter(p => p.status === 'active')
-                .map(p => ({
-                id: p.id,
-                name: p.name,
-                price: p.price,
-                discountPrice: p.discountPrice,
-                stock: p.stock,
-                image: p.images[0]?.url || null,
-            }));
-            // Products that exist but are inactive (draft/hidden) are also "invalid" from cart perspective
-            const inactiveIds = foundProducts
-                .filter(p => p.status !== 'active')
-                .map(p => p.id);
-            return res.json({
-                validProducts,
-                invalidIds: [...invalidIds, ...inactiveIds],
-            });
+            // Build lookup map
+            const productMap = new Map(foundProducts.map(p => [p.id, p]));
+            const invalidIds = [];
+            const validProducts = [];
+            const capped = [];
+            for (const item of items) {
+                const dbProduct = productMap.get(item.id);
+                if (!dbProduct || dbProduct.status !== 'active') {
+                    invalidIds.push(item.id);
+                    continue;
+                }
+                const stock = dbProduct.stock ?? 0;
+                const multiplier = Number(item.multiplier) || 1;
+                const maxQuantity = stock > 0 ? Math.floor(stock / multiplier) : 0;
+                const requested = Math.max(1, item.quantity || 1);
+                const finalQuantity = Math.min(requested, maxQuantity);
+                validProducts.push({
+                    id: dbProduct.id,
+                    name: dbProduct.name,
+                    price: dbProduct.price,
+                    discountPrice: dbProduct.discountPrice,
+                    stock: dbProduct.stock,
+                    maxQuantity,
+                    image: dbProduct.images[0]?.url || null,
+                });
+                if (finalQuantity < requested) {
+                    capped.push({ id: dbProduct.id, requested, max: finalQuantity });
+                }
+            }
+            return res.json({ validProducts, invalidIds, capped });
         }
         catch (error) {
             console.error('Error validating cart:', error);

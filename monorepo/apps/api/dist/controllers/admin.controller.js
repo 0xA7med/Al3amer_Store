@@ -1,6 +1,7 @@
 import { db } from '../db/index.js';
 import { orders, products, users, aiBundleLogs, productImages } from '../db/schema.js';
 import { eq, sql, count, sum, lt, or } from 'drizzle-orm';
+import { getMergedSettings } from '../lib/settings-helper.js';
 export class AdminController {
     // GET /api/admin/stats - Dashboard statistics
     static async getStats(_req, res) {
@@ -375,7 +376,7 @@ export class AdminController {
     // GET /api/admin/debug-models - List actually available models for the configured API key
     static async debugModels(_req, res) {
         try {
-            const appSettings = await db.query.settings.findFirst();
+            const appSettings = await getMergedSettings();
             const apiKey = appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
             if (!apiKey) {
                 return res.status(400).json({ error: 'Google API Key is not configured' });

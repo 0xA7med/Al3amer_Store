@@ -10,6 +10,7 @@ export interface CartItem {
     sku?: string;
     selectedTierId?: string;
     multiplier?: number;
+    stock?: number;
 }
 
 interface CartContextType {
@@ -61,13 +62,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (currentItems.length === 0) return true;
         
         try {
-            const productIds = currentItems.map(item => item.id);
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
             
             const res = await fetch(`${apiUrl}/products/validate-cart`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productIds }),
+                body: JSON.stringify({ 
+                    items: currentItems.map(item => ({ 
+                        id: item.id, 
+                        quantity: item.quantity, 
+                        multiplier: item.multiplier || 1 
+                    }))
+                }),
             });
             
             if (!res.ok) throw new Error('Failed to validate cart');
@@ -130,7 +136,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
                         price: currentPrice,
                         name: validProduct.name,
                         quantity: finalQuantity,
-                        image: validProduct.image || item.image
+                        image: validProduct.image || item.image,
+                        stock: validProduct.stock,
                     };
                 })
                 .filter(Boolean) as CartItem[];
@@ -165,20 +172,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems(currentItems => {
             const existingItem = currentItems.find(item => item.id === newItem.id);
             const quantityToAdd = newItem.quantity || 1;
+            const multiplier = newItem.multiplier || 1;
 
             if (existingItem) {
+                const newQty = existingItem.quantity + quantityToAdd;
+                const stock = newItem.stock ?? existingItem.stock;
+                const maxQty = stock ? Math.floor(stock / multiplier) : newQty;
+                const cappedQty = Math.min(newQty, maxQty);
+                if (cappedQty < newQty && stock) {
+                    toast.error(`الكمية المطلوبة تتجاوز المخزون المتاح. تم تعديلها إلى ${cappedQty}`);
+                }
                 return currentItems.map(item =>
                     item.id === newItem.id
-                        ? { ...item, quantity: item.quantity + quantityToAdd }
+                        ? { ...item, quantity: cappedQty, stock: stock ?? item.stock }
                         : item
                 );
             }
 
-            return [...currentItems, { ...newItem, quantity: quantityToAdd }];
+            const stock = newItem.stock;
+            const maxQty = stock ? Math.floor(stock / multiplier) : quantityToAdd;
+            const cappedQty = Math.min(quantityToAdd, maxQty);
+            if (cappedQty < quantityToAdd && stock) {
+                toast.error(`الكمية المطلوبة تتجاوز المخزون المتاح. تم تعديلها إلى ${cappedQty}`);
+            }
+            return [...currentItems, { ...newItem, quantity: cappedQty, stock }];
         });
-
-        // Optional: Open cart or show toast
-        // setIsCartOpen(true); 
     };
 
     const removeFromCart = (id: string) => {
@@ -192,11 +210,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
 
         setItems(currentItems =>
-            currentItems.map(item =>
-                item.id === id
-                    ? { ...item, quantity }
-                    : item
-            )
+            currentItems.map(item => {
+                if (item.id !== id) return item;
+                const multiplier = item.multiplier || 1;
+                const maxQty = item.stock ? Math.floor(item.stock / multiplier) : quantity;
+                return { ...item, quantity: Math.min(quantity, maxQty) };
+            })
         );
     };
 

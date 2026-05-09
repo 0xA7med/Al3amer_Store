@@ -15,6 +15,13 @@
       "when": 1776470428647,
       "tag": "0001_easy_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778198850000,
+      "tag": "0002_domain_settings",
+      "breakpoints": true
     }
   ]
 }

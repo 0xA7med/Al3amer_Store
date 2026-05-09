@@ -1,37 +1,68 @@
 import { db } from '../db/index.js';
-import { settings } from '../db/schema.js';
+import { settings, paymentSettings, notificationSettings, aiSettings, shippingSettings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { encryptText, decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
+const GENERAL_FIELDS = ['storeNameAr', 'storeNameEn', 'supportPhone', 'supportEmail', 'address', 'logoUrl', 'faviconUrl', 'facebook', 'instagram', 'whatsapp', 'twitterX', 'vatEnabled', 'taxPercentage', 'taxRegistrationNumber', 'pricesIncludeTax', 'facebookPixelId', 'facebookPixelEnabled', 'ga4MeasurementId', 'ga4Enabled', 'metaTitle', 'metaDescription', 'metaKeywords', 'billLayoutConfig'];
+const PAYMENT_FIELDS = ['paymobEnabled', 'paymobApiKey', 'paymobIntegrationCard', 'paymobIntegrationWallet', 'paymobIframeId', 'codEnabled', 'codExtraFee', 'codAdvancePayment', 'codReturnShippingBaseFee', 'codReturnShippingBaseAmount', 'codReturnShippingExtraFee', 'codReturnShippingExtraAmount'];
+const NOTIFICATION_FIELDS = ['telegramEnabled', 'telegramBotToken', 'telegramChatId', 'whatsappEnabled', 'whatsappApiKey', 'whatsappRecipientPhone', 'emailEnabled', 'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'emailFrom', 'emailReceiver'];
+const AI_FIELDS = ['aiEnabled', 'googleApiKey', 'aiApiKey', 'aiTone', 'aiLanguage', 'aiDescriptionLength', 'aiFields'];
+const SHIPPING_FIELDS = ['shippingFlatRate', 'freeShippingThreshold', 'customCityRatesEnabled', 'cityShippingRates'];
+async function getOrCreateSettingsId() {
+    const existing = await db.query.settings.findFirst();
+    if (existing)
+        return existing.id;
+    const [created] = await db.insert(settings).values({}).returning();
+    return created.id;
+}
+async function upsertDomain(table, settingsIdCol, data, settingsId) {
+    const keys = Object.keys(data);
+    if (keys.length === 0)
+        return;
+    const results = await db.select().from(table).where(eq(settingsIdCol, settingsId)).limit(1);
+    if (results.length > 0) {
+        await db.update(table).set(data).where(eq(settingsIdCol, settingsId));
+    }
+    else {
+        await db.insert(table).values({ ...data, settingsId });
+    }
+}
+function pick(obj, keys) {
+    const result = {};
+    for (const key of keys) {
+        if (key in obj)
+            result[key] = obj[key];
+    }
+    return result;
+}
 export class SettingsController {
-    // GET /api/settings - Fetch global settings
+    // GET /api/settings - Fetch all settings (admin)
     static async get(_req, res) {
         try {
-            // Get the first (and only) settings record
-            const settingsRecord = await db.query.settings.findFirst();
-            if (settingsRecord) {
-                // Decrypt API keys before sending to admin frontend
-                if (settingsRecord.paymobApiKey) {
-                    settingsRecord.paymobApiKey = decryptText(settingsRecord.paymobApiKey) || settingsRecord.paymobApiKey;
-                }
-                if (settingsRecord.googleApiKey) {
-                    settingsRecord.googleApiKey = decryptText(settingsRecord.googleApiKey) || settingsRecord.googleApiKey;
-                }
-                if (settingsRecord.aiApiKey) {
-                    settingsRecord.aiApiKey = decryptText(settingsRecord.aiApiKey) || settingsRecord.aiApiKey;
-                }
-                if (settingsRecord.telegramBotToken) {
-                    settingsRecord.telegramBotToken = decryptText(settingsRecord.telegramBotToken) || settingsRecord.telegramBotToken;
-                }
-                if (settingsRecord.whatsappApiKey) {
-                    settingsRecord.whatsappApiKey = decryptText(settingsRecord.whatsappApiKey) || settingsRecord.whatsappApiKey;
-                }
-                if (settingsRecord.smtpPass) {
-                    settingsRecord.smtpPass = decryptText(settingsRecord.smtpPass) || settingsRecord.smtpPass;
-                }
-                return res.json(settingsRecord);
+            const merged = await getMergedSettings();
+            if (Object.keys(merged).length > 0) {
+                if (merged.paymobApiKey)
+                    merged.paymobApiKey = decryptText(merged.paymobApiKey) || merged.paymobApiKey;
+                if (merged.googleApiKey)
+                    merged.googleApiKey = decryptText(merged.googleApiKey) || merged.googleApiKey;
+                if (merged.aiApiKey)
+                    merged.aiApiKey = decryptText(merged.aiApiKey) || merged.aiApiKey;
+                if (merged.telegramBotToken)
+                    merged.telegramBotToken = decryptText(merged.telegramBotToken) || merged.telegramBotToken;
+                if (merged.whatsappApiKey)
+                    merged.whatsappApiKey = decryptText(merged.whatsappApiKey) || merged.whatsappApiKey;
+                if (merged.smtpPass)
+                    merged.smtpPass = decryptText(merged.smtpPass) || merged.smtpPass;
+                return res.json(merged);
             }
-            // Default safe settings object
-            const defaultSettings = {
+            const settingsId = await getOrCreateSettingsId();
+            await db.insert(paymentSettings).values({ settingsId });
+            await db.insert(notificationSettings).values({ settingsId });
+            await db.insert(aiSettings).values({ settingsId });
+            await db.insert(shippingSettings).values({ settingsId });
+            const refreshed = await getMergedSettings();
+            return res.json({
+                id: settingsId,
                 storeNameAr: 'مركز العامر لأنظمة الكاشير',
                 storeNameEn: 'Al3amer POS Systems',
                 supportPhone: '+20 101 234 5678',
@@ -46,33 +77,19 @@ export class SettingsController {
                 aiEnabled: true,
                 aiTone: 'Marketing',
                 aiLanguage: 'ar',
-            };
-            // Try to create default settings if none exist
-            try {
-                const [newSettings] = await db.insert(settings).values(defaultSettings).returning();
-                return res.json(newSettings);
-            }
-            catch (insertError) {
-                console.error('Failed to auto-create settings, returning default:', insertError);
-                // Fallback to in-memory default if DB insert fails
-                return res.json({ id: 'default', ...defaultSettings });
-            }
+                ...refreshed,
+            });
         }
         catch (error) {
             console.error('Error fetching settings:', error);
-            // Never throw 500 for this, return a safe fallback to keep frontend alive
-            res.json({
-                storeNameAr: 'Al3amer Store',
-                aiEnabled: true
-            });
+            res.json({ storeNameAr: 'Al3amer Store', aiEnabled: true });
         }
     }
     // GET /api/settings/public - Fetch public settings (no auth required)
     static async getPublic(_req, res) {
         try {
-            const settingsRecord = await db.query.settings.findFirst();
-            if (!settingsRecord) {
-                // Return safe defaults if no settings exist
+            const merged = await getMergedSettings();
+            if (Object.keys(merged).length === 0) {
                 return res.json({
                     storeNameAr: 'مركز العامر لأنظمة الكاشير',
                     storeNameEn: 'Al3amer POS Systems',
@@ -87,132 +104,98 @@ export class SettingsController {
                     codEnabled: true,
                 });
             }
-            // Filter out sensitive fields
             const publicSettings = {
-                // General
-                storeNameAr: settingsRecord.storeNameAr,
-                storeNameEn: settingsRecord.storeNameEn,
-                supportPhone: settingsRecord.supportPhone,
-                supportEmail: settingsRecord.supportEmail,
-                address: settingsRecord.address,
-                logoUrl: settingsRecord.logoUrl,
-                faviconUrl: settingsRecord.faviconUrl,
-                // Social Media
-                facebook: settingsRecord.facebook,
-                instagram: settingsRecord.instagram,
-                whatsapp: settingsRecord.whatsapp,
-                twitterX: settingsRecord.twitterX,
-                // Shipping
-                shippingFlatRate: settingsRecord.shippingFlatRate,
-                freeShippingThreshold: settingsRecord.freeShippingThreshold,
-                cityShippingRates: settingsRecord.cityShippingRates,
-                // Tax
-                vatEnabled: settingsRecord.vatEnabled,
-                taxPercentage: settingsRecord.taxPercentage,
-                pricesIncludeTax: settingsRecord.pricesIncludeTax,
-                // Payment (public info only)
-                codEnabled: settingsRecord.codEnabled,
-                codExtraFee: settingsRecord.codExtraFee,
-                paymobEnabled: settingsRecord.paymobEnabled,
-                paymobIntegrationCard: settingsRecord.paymobIntegrationCard,
-                paymobIntegrationWallet: settingsRecord.paymobIntegrationWallet,
-                // SEO
-                metaTitle: settingsRecord.metaTitle,
-                metaDescription: settingsRecord.metaDescription,
-                metaKeywords: settingsRecord.metaKeywords,
+                storeNameAr: merged.storeNameAr,
+                storeNameEn: merged.storeNameEn,
+                supportPhone: merged.supportPhone,
+                supportEmail: merged.supportEmail,
+                address: merged.address,
+                logoUrl: merged.logoUrl,
+                faviconUrl: merged.faviconUrl,
+                facebook: merged.facebook,
+                instagram: merged.instagram,
+                whatsapp: merged.whatsapp,
+                twitterX: merged.twitterX,
+                shippingFlatRate: merged.shippingFlatRate,
+                freeShippingThreshold: merged.freeShippingThreshold,
+                cityShippingRates: merged.cityShippingRates,
+                vatEnabled: merged.vatEnabled,
+                taxPercentage: merged.taxPercentage,
+                pricesIncludeTax: merged.pricesIncludeTax,
+                codEnabled: merged.codEnabled,
+                codExtraFee: merged.codExtraFee,
+                paymobEnabled: merged.paymobEnabled,
+                paymobIntegrationCard: merged.paymobIntegrationCard,
+                paymobIntegrationWallet: merged.paymobIntegrationWallet,
+                metaTitle: merged.metaTitle,
+                metaDescription: merged.metaDescription,
+                metaKeywords: merged.metaKeywords,
             };
             res.json(publicSettings);
         }
         catch (error) {
             console.error('Error fetching public settings:', error);
-            // Return safe defaults on error
-            res.json({
-                storeNameAr: 'مركز العامر',
-                storeNameEn: 'Al3amer',
-                codEnabled: true,
-                vatEnabled: false,
-            });
+            res.json({ storeNameAr: 'مركز العامر', storeNameEn: 'Al3amer', codEnabled: true, vatEnabled: false });
         }
     }
+    // PUT /api/settings - Update settings
     static async update(req, res) {
         try {
             const updateData = { ...req.body };
-            // Encrypt sensitive API keys if they are submitted
-            if (updateData.paymobApiKey) {
-                // Check if it's already encrypted (if frontend sends it back as is)
-                // usually frontend sends new value, but just in case
-                if (!updateData.paymobApiKey.includes(':')) {
-                    updateData.paymobApiKey = encryptText(updateData.paymobApiKey);
+            const encryptIfNeeded = (key) => {
+                const val = updateData[key];
+                if (val && !val.includes(':')) {
+                    updateData[key] = encryptText(val);
                 }
+            };
+            encryptIfNeeded('paymobApiKey');
+            encryptIfNeeded('googleApiKey');
+            encryptIfNeeded('aiApiKey');
+            encryptIfNeeded('telegramBotToken');
+            encryptIfNeeded('whatsappApiKey');
+            encryptIfNeeded('smtpPass');
+            const settingsId = await getOrCreateSettingsId();
+            const generalData = pick(updateData, GENERAL_FIELDS);
+            const paymentData = pick(updateData, PAYMENT_FIELDS);
+            const notificationData = pick(updateData, NOTIFICATION_FIELDS);
+            const aiData = pick(updateData, AI_FIELDS);
+            const shippingData = pick(updateData, SHIPPING_FIELDS);
+            if (Object.keys(generalData).length > 0) {
+                await db.update(settings).set(generalData).where(eq(settings.id, settingsId));
             }
-            if (updateData.googleApiKey) {
-                if (!updateData.googleApiKey.includes(':')) {
-                    updateData.googleApiKey = encryptText(updateData.googleApiKey);
-                }
-            }
-            if (updateData.aiApiKey) {
-                if (!updateData.aiApiKey.includes(':')) {
-                    updateData.aiApiKey = encryptText(updateData.aiApiKey);
-                }
-            }
-            if (updateData.telegramBotToken) {
-                if (!updateData.telegramBotToken.includes(':')) {
-                    updateData.telegramBotToken = encryptText(updateData.telegramBotToken);
-                }
-            }
-            if (updateData.whatsappApiKey) {
-                if (!updateData.whatsappApiKey.includes(':')) {
-                    updateData.whatsappApiKey = encryptText(updateData.whatsappApiKey);
-                }
-            }
-            if (updateData.smtpPass) {
-                if (!updateData.smtpPass.includes(':')) {
-                    updateData.smtpPass = encryptText(updateData.smtpPass);
-                }
-            }
-            // Get existing settings
-            const existingSettings = await db.query.settings.findFirst();
-            if (!existingSettings) {
-                // Create new settings if none exist
-                const [newSettings] = await db.insert(settings).values(updateData).returning();
-                return res.json(newSettings);
-            }
-            // Update existing settings
-            const [updatedSettings] = await db.update(settings)
-                .set(updateData)
-                .where(eq(settings.id, existingSettings.id))
-                .returning();
-            res.json(updatedSettings);
+            await Promise.all([
+                upsertDomain(paymentSettings, paymentSettings.settingsId, paymentData, settingsId),
+                upsertDomain(notificationSettings, notificationSettings.settingsId, notificationData, settingsId),
+                upsertDomain(aiSettings, aiSettings.settingsId, aiData, settingsId),
+                upsertDomain(shippingSettings, shippingSettings.settingsId, shippingData, settingsId),
+            ]);
+            const merged = await getMergedSettings();
+            res.json(merged);
         }
         catch (error) {
             console.error('Error updating settings:', error);
             res.status(500).json({ error: 'Failed to update settings' });
         }
     }
-    // POST /api/settings/test-gemini - Test Gemini API connection with Dynamic Discovery
+    // POST /api/settings/test-gemini
     static async testGemini(req, res) {
         try {
             const { apiKey } = req.body;
             if (!apiKey || !apiKey.trim()) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'مفتاح API مطلوب'
-                });
+                return res.status(400).json({ success: false, error: 'مفتاح API مطلوب' });
             }
             const cleanKey = apiKey.trim();
-            console.log("🚀 Starting Dynamic Model Discovery Test...");
-            // Step 1: Discover available models
-            const { ModelDiscoveryService } = await import('../services/model-discovery.service');
-            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1beta');
+            console.log('🚀 Starting Dynamic Model Discovery Test...');
+            const { ModelDiscoveryService } = await import('../services/model-discovery.service.js');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
             if (availableModels.length === 0) {
                 return res.status(500).json({
                     success: false,
                     error: 'لم يتم العثور على نماذج متاحة',
-                    details: ['No models available for this API key']
+                    details: ['No models available for this API key'],
                 });
             }
             console.log(`✅ Found ${availableModels.length} available models:`, availableModels);
-            // Step 2: Test the first available model
             const errorLogs = [];
             for (const modelName of availableModels) {
                 try {
@@ -220,14 +203,10 @@ export class SettingsController {
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
                     const response = await fetch(url, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{
-                                    parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }]
-                                }]
-                        })
+                            contents: [{ parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
+                        }),
                     });
                     const data = await response.json();
                     if (response.ok) {
@@ -239,7 +218,7 @@ export class SettingsController {
                             modelUsed: modelName,
                             totalModelsFound: availableModels.length,
                             allAvailableModels: availableModels,
-                            response: text?.trim() || 'No text content'
+                            response: text?.trim() || 'No text content',
                         });
                     }
                     const errorMsg = data.error?.message || response.statusText;
@@ -252,22 +231,38 @@ export class SettingsController {
                     errorLogs.push(`${modelName}: ${errorMsg}`);
                 }
             }
-            // If we are here, all discovered models failed
-            console.error("❌ All discovered models failed.");
+            console.error('❌ All discovered models failed.');
             return res.status(500).json({
                 success: false,
                 error: 'فشلت جميع النماذج المكتشفة',
                 totalModelsFound: availableModels.length,
                 allAvailableModels: availableModels,
-                details: errorLogs
+                details: errorLogs,
             });
         }
         catch (error) {
             console.error('Critical failure in testGemini controller:', error);
-            res.status(500).json({
+            res.status(500).json({ success: false, error: 'خطأ داخلي أثناء اختبار الاتصال', details: [error.message] });
+        }
+    }
+    // POST /api/settings/test-notification
+    static async testNotification(req, res) {
+        try {
+            const { type, config } = req.body;
+            if (!type || !config) {
+                return res.status(400).json({ success: false, error: 'بيانات الاختبار غير مكتملة' });
+            }
+            console.log(`🧪 Received test notification request for channel: ${type}`);
+            const { NotificationService } = await import('../services/notification.service.js');
+            await NotificationService.sendTestNotification(type, config);
+            return res.json({ success: true, message: `تم إرسال رسالة الاختبار بنجاح عبر ${type}` });
+        }
+        catch (error) {
+            console.error('❌ SettingsController testNotification failure:', error);
+            return res.status(500).json({
                 success: false,
-                error: 'خطأ داخلي أثناء اختبار الاتصال',
-                details: [error.message]
+                error: 'فشل إرسال رسالة الاختبار',
+                message: error.message,
             });
         }
     }

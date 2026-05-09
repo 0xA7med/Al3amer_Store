@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Header, Footer } from './components/layout';
 import { AdminLayout } from './components/admin';
@@ -7,6 +8,7 @@ import { CartProvider } from './context/CartContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 // Scroll to top on every route change
 function ScrollToTop() {
@@ -17,37 +19,48 @@ function ScrollToTop() {
   return null;
 }
 
-// Customer Pages
-import HomePage from './pages/HomePage';
-import ShopPage from './pages/ShopPage';
-import { ProductDetailsPage } from './pages/ProductDetailsPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import AIBundleBuilderPage from './pages/AIBundleBuilderPage';
-import LoginPage from './pages/LoginPage';
-import AccountPage from './pages/AccountPage';
-import OffersPage from './pages/OffersPage';
-import AboutUsPage from './pages/AboutUsPage';
-import { OrderSuccessPage } from './pages/OrderSuccessPage';
-import { OrderTrackingPage } from './pages/OrderTrackingPage';
-import { PaymentCallbackPage } from './pages/PaymentCallbackPage';
+function PageSkeleton() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="size-10 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        <p className="text-slate-400 text-sm font-body">جاري التحميل...</p>
+      </div>
+    </div>
+  );
+}
 
-// Admin Pages
-import DashboardOverview from './pages/admin/DashboardOverview';
-import ProductList from './pages/admin/ProductList';
-import AddProduct from './pages/admin/AddProduct';
-import OrdersManagement from './pages/admin/OrdersManagement';
-import CustomersManagement from './pages/admin/CustomersManagement';
-import CustomerProfile from './pages/admin/CustomerProfile';
-import CategoriesManagement from './pages/admin/CategoriesManagement';
-import CouponsManagement from './pages/admin/CouponsManagement';
-import ReviewsModeration from './pages/admin/ReviewsModeration';
-import AIBundleLogs from './pages/admin/AIBundleLogs';
-import AdminReportsPage from './pages/admin/AdminReportsPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import AdminAISettingsPage from './pages/admin/AdminAISettingsPage';
-import MetadataManagement from './pages/admin/MetadataManagement';
-import { OrderAWB } from './components/admin/OrderAWB';
+// Lazy-loaded Customer Pages
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
+const ProductDetailsPage = lazy(() => import('./pages/ProductDetailsPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const AIBundleBuilderPage = lazy(() => import('./pages/AIBundleBuilderPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const OffersPage = lazy(() => import('./pages/OffersPage'));
+const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
+const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
+const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage'));
+const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'));
+
+// Lazy-loaded Admin Pages
+const DashboardOverview = lazy(() => import('./pages/admin/DashboardOverview'));
+const ProductList = lazy(() => import('./pages/admin/ProductList'));
+const AddProduct = lazy(() => import('./pages/admin/AddProduct'));
+const OrdersManagement = lazy(() => import('./pages/admin/OrdersManagement'));
+const CustomersManagement = lazy(() => import('./pages/admin/CustomersManagement'));
+const CustomerProfile = lazy(() => import('./pages/admin/CustomerProfile'));
+const CategoriesManagement = lazy(() => import('./pages/admin/CategoriesManagement'));
+const CouponsManagement = lazy(() => import('./pages/admin/CouponsManagement'));
+const ReviewsModeration = lazy(() => import('./pages/admin/ReviewsModeration'));
+const AIBundleLogs = lazy(() => import('./pages/admin/AIBundleLogs'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const AdminAISettingsPage = lazy(() => import('./pages/admin/AdminAISettingsPage'));
+const MetadataManagement = lazy(() => import('./pages/admin/MetadataManagement'));
+const OrderAWB = lazy(() => import('./components/admin/OrderAWB'));
 
 function App() {
   return (
@@ -75,6 +88,8 @@ function App() {
                   <div className="min-h-screen flex flex-col overflow-x-hidden">
                     <Header />
                     <main className="flex-grow flex flex-col">
+                      <ErrorBoundary>
+                      <Suspense fallback={<PageSkeleton />}>
                       <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/shop" element={<ShopPage />} />
@@ -97,6 +112,8 @@ function App() {
                         <Route path="/offers" element={<OffersPage />} />
                         <Route path="/about" element={<AboutUsPage />} />
                       </Routes>
+                      </Suspense>
+                      </ErrorBoundary>
                     </main>
                     <Footer />
                   </div>
@@ -108,7 +125,11 @@ function App() {
                 path="/admin/orders/:id/print"
                 element={
                   <ProtectedRoute requireAdmin>
-                    <OrderAWB />
+                    <ErrorBoundary>
+                      <Suspense fallback={<PageSkeleton />}>
+                        <OrderAWB />
+                      </Suspense>
+                    </ErrorBoundary>
                   </ProtectedRoute>
                 }
               />

@@ -4,7 +4,10 @@ import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('CRITICAL: JWT_SECRET environment variable is not set. The application cannot start securely without it.');
+}
 
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -24,6 +27,10 @@ export const verifyToken = async (req: Request, res: Response, next: NextFunctio
 
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
+        }
+
+        if (user.status !== 'active') {
+            return res.status(403).json({ error: 'Account is blocked or inactive' });
         }
 
         const { password: _, ...userWithoutPassword } = user;

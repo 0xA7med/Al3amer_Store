@@ -11,10 +11,10 @@ export class ModelDiscoveryService {
     /**
      * Discovers available models for the given API key
      * @param apiKey Google API key
-     * @param apiVersion API version (default: 'v1beta')
+     * @param apiVersion API version (default: 'v1')
      * @returns Array of model names that support generateContent
      */
-    static async discoverModels(apiKey, apiVersion = 'v1beta') {
+    static async discoverModels(apiKey, apiVersion = 'v1') {
         // Check cache first
         const cached = this.cache.get(apiKey);
         if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
@@ -67,7 +67,7 @@ export class ModelDiscoveryService {
      * Priority: flash-1.5 > pro-1.5 > flash > pro > others
      */
     static prioritizeModels(models) {
-        const priority = ['1.5-flash', '1.5-pro', 'flash', 'pro'];
+        const priority = ['2.0-flash', '1.5-flash', '1.5-pro', 'flash', 'pro'];
         return models.sort((a, b) => {
             const aIndex = priority.findIndex(p => a.includes(p));
             const bIndex = priority.findIndex(p => b.includes(p));
@@ -86,7 +86,6 @@ export class ModelDiscoveryService {
     static getFallbackModels() {
         console.log('⚠️ Using fallback model list');
         return [
-            'gemini-2.5-flash',
             'gemini-2.0-flash',
             'gemini-1.5-flash',
             'gemini-1.5-pro'

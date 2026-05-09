@@ -4,17 +4,18 @@ import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+function normalizeEmail(email) {
+    return email.toLowerCase().trim();
+}
 export class AuthController {
     // POST /api/auth/register - Register new user
     static async register(req, res) {
         try {
             const { name, email, phone, password, address } = req.body;
-            if (!name || !email || !phone || !password) {
-                return res.status(400).json({ error: 'Missing required fields' });
-            }
+            const normalizedEmail = normalizeEmail(email);
             // Check if user already exists
             const existingUser = await db.query.users.findFirst({
-                where: eq(users.email, email),
+                where: eq(users.email, normalizedEmail),
             });
             if (existingUser) {
                 return res.status(409).json({ error: 'User already exists' });
@@ -24,7 +25,7 @@ export class AuthController {
             // Create user
             const [newUser] = await db.insert(users).values({
                 name,
-                email,
+                email: normalizedEmail,
                 phone,
                 password: hashedPassword,
                 address,
@@ -49,15 +50,16 @@ export class AuthController {
     static async login(req, res) {
         try {
             const { email, password } = req.body;
-            if (!email || !password) {
-                return res.status(400).json({ error: 'Email and password are required' });
-            }
+            const normalizedEmail = normalizeEmail(email);
             // Find user
             const user = await db.query.users.findFirst({
-                where: eq(users.email, email),
+                where: eq(users.email, normalizedEmail),
             });
             if (!user) {
                 return res.status(401).json({ error: 'Invalid credentials' });
+            }
+            if (user.status !== 'active') {
+                return res.status(403).json({ error: 'Account is blocked or inactive' });
             }
             // Verify password
             const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -80,47 +82,31 @@ export class AuthController {
     }
     // GET /api/auth/me - Get current user
     static async me(req, res) {
-        try {
-            const authHeader = req.headers.authorization;
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-                return res.status(401).json({ error: 'No token provided' });
-            }
-            const token = authHeader.substring(7);
-            const decoded = jwt.verify(token, JWT_SECRET);
-            const user = await db.query.users.findFirst({
-                where: eq(users.id, decoded.userId),
-            });
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            const { password: _, ...userWithoutPassword } = user;
-            res.json(userWithoutPassword);
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ error: 'Not authenticated' });
         }
-        catch (error) {
-            console.error('Error fetching user:', error);
-            res.status(401).json({ error: 'Invalid token' });
-        }
+        res.json(user);
     }
     // POST /api/auth/social - Sync Firebase user with backend
     static async socialLogin(req, res) {
         try {
             const { email, phone, name, uid, providerId } = req.body;
             console.log('Social Login Attempt:', { email, phone, name, providerId, uid });
-            if (!uid) {
-                return res.status(400).json({ error: 'Missing UID' });
-            }
+            const normalizedEmail = email ? normalizeEmail(email) : undefined;
             // 1. Try to find existing user by Email OR Phone
             let user = undefined;
-            if (email) {
-                user = await db.query.users.findFirst({ where: eq(users.email, email) });
+            if (normalizedEmail) {
+                user = await db.query.users.findFirst({ where: eq(users.email, normalizedEmail) });
             }
             if (!user && phone) {
-                // Normalize phone if needed (e.g. remove +20 if stored as 010...) 
-                // For now, exact match.
                 user = await db.query.users.findFirst({ where: eq(users.phone, phone) });
             }
             // 2. If User Exists -> Login
             if (user) {
+                if (user.status !== 'active') {
+                    return res.status(403).json({ error: 'Account is blocked or inactive' });
+                }
                 console.log('User found, logging in:', user.id);
                 const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
                 const { password: _, ...userWithoutPassword } = user;
@@ -128,21 +114,16 @@ export class AuthController {
             }
             // 3. If New User -> Register
             console.log('User not found, registering new user...');
-            // Handle missing email/phone cases
-            // If phone auth gave no email, generate a placeholder
-            const finalEmail = email || `${uid}@social.login`;
-            // Schema `phone` is now nullable.
-            // If phone is provided, use it. If not, it remains null.
+            const finalEmail = normalizedEmail || `${uid}@social.login`;
             const randomPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
             const [newUser] = await db.insert(users).values({
                 name: name || 'New User',
                 email: finalEmail,
-                phone: phone || null, // Allow null phone
+                phone: phone || null,
                 password: hashedPassword,
                 role: 'customer',
                 loyaltyPoints: 0,
-                // store providerId in metadata if column exists? Not requested yet.
             }).returning();
             const token = jwt.sign({ userId: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
             const { password: _, ...userWithoutPassword } = newUser;

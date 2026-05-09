@@ -1,7 +1,7 @@
 import axios from 'axios';
 import nodemailer from 'nodemailer';
-import { db } from '../db/index.js';
 import { decryptText } from '../lib/crypto.utils.js';
+import { getMergedSettings } from '../lib/settings-helper.js';
 export class NotificationService {
     /**
      * Sends a notification for a new order to all enabled channels
@@ -10,8 +10,8 @@ export class NotificationService {
         try {
             console.log(`📤 [NotificationService] Starting notification dispatch for Order #${order?.orderNumber}...`);
             console.log(`📤 [NotificationService] Order paymentMethod: ${order?.paymentMethod}, items: ${order?.items?.length || 0}`);
-            const appSettings = await db.query.settings.findFirst();
-            if (!appSettings) {
+            const appSettings = await getMergedSettings();
+            if (!appSettings || Object.keys(appSettings).length === 0) {
                 console.error('❌ [NotificationService] No settings found in DB — aborting notifications.');
                 return;
             }
@@ -43,55 +43,90 @@ export class NotificationService {
             console.error('❌ [NotificationService] CRITICAL — Failed to send notifications:', error);
         }
     }
+    /**
+     * Sends a test notification to a specific channel
+     */
+    static async sendTestNotification(type, config) {
+        const testMessage = `🔔 رسالة تجريبية من متجر العامر\n\nإذا كنت ترى هذه الرسالة، فهذا يعني أن نظام إشعارات ${type === 'whatsapp' ? 'الوواتساب' : type === 'telegram' ? 'التليجرام' : 'البريد'} يعمل بنجاح! ✅\n\nالتوقيت: ${new Date().toLocaleString('ar-EG')}`;
+        try {
+            if (type === 'whatsapp') {
+                await this.sendWhatsAppCallMeBot(config.apiKey, config.phone, testMessage);
+            }
+            else if (type === 'telegram') {
+                await this.sendTelegram(config.token, config.chatId, testMessage);
+            }
+            else if (type === 'email') {
+                // Mock a minimal order for the email template
+                const mockOrder = {
+                    orderNumber: 'TEST-123',
+                    fullName: 'مستخدم تجريبي',
+                    phone: '+201000000000',
+                    governorate: 'القاهرة',
+                    city: 'اختبار',
+                    address: 'عنوان تجريبي',
+                    paymentMethod: 'cod',
+                    total: '0',
+                    items: [{ name: 'منتج تجريبي', quantity: 1, price: '0' }]
+                };
+                await this.sendEmail(config, config.pass, mockOrder);
+            }
+            return { success: true };
+        }
+        catch (error) {
+            console.error(`❌ [NotificationService] Test failure (${type}):`, error);
+            throw error;
+        }
+    }
     static formatOrderMessage(order) {
         const itemsList = order.items?.map((item) => {
             const price = parseFloat(item.price || '0');
             const qty = item.quantity || 1;
-            const lineTotal = price * qty;
-            return `- ${item.name} (x${qty}) — ${price.toLocaleString('en')} ج.م`;
+            return `• ${item.name} (x${qty}) — ${(price * qty).toLocaleString('en')} ج.م`;
         }).join('\n') || 'لا توجد منتجات';
-        let paymentInfo = `💳 طريقة الدفع: `;
+        const subtotal = parseFloat(order.subtotal || '0');
+        const shipping = parseFloat(order.shippingCost || '0');
+        const total = parseFloat(order.total || '0');
+        const advance = parseFloat(order.codAdvancePayment || '0');
+        const atDelivery = parseFloat(order.totalAtDelivery || '0');
+        let paymentStatus = '';
         if (order.paymentMethod === 'cod') {
-            if (order.codAdvancePayment && parseFloat(order.codAdvancePayment) > 0) {
-                const advance = parseFloat(order.codAdvancePayment);
-                const atDelivery = order.totalAtDelivery ? parseFloat(order.totalAtDelivery) : (parseFloat(order.total) - advance);
-                paymentInfo += `عربون (دفع جزئي)\n💸 المدفوع مقدما: ${advance} ج.م\n💵 المطلوب عند الاستلام: ${atDelivery} ج.م`;
+            if (advance > 0) {
+                paymentStatus = `💳 *حالة الدفع:* تم دفع عربون (${advance.toLocaleString('en')} ج.م)`;
             }
             else {
-                paymentInfo += `دفع عند الاستلام\n💵 المطلوب عند الاستلام: ${order.totalAtDelivery || order.total} ج.م`;
+                paymentStatus = `💳 *حالة الدفع:* الدفع عند الاستلام بالكامل`;
             }
         }
         else if (order.paymentMethod === 'manual_paid') {
-            paymentInfo += `مدفوع بالكامل مقدما\n💵 المطلوب عند الاستلام: 0 ج.م`;
-        }
-        else if (order.paymentMethod === 'paymob_wallet') {
-            paymentInfo += `محفظة الكترونية`;
-        }
-        else if (order.paymentMethod === 'paymob') {
-            paymentInfo += `بطاقة ائتمان (فيزا)`;
+            paymentStatus = `✅ *حالة الدفع:* تم دفع ثمن المنتجات (${subtotal.toLocaleString('en')} ج.م)`;
         }
         else {
-            paymentInfo += `دفع الكتروني`;
+            paymentStatus = `✅ *حالة الدفع:* مدفوع إلكترونياً بالكامل`;
         }
         const locationInfo = order.city && order.city !== 'لا يوجد' ? `${order.governorate} - ${order.city}` : `${order.governorate}`;
-        return [
-            `📦 طلب جديد رقم ${order.orderNumber}`,
+        const lines = [
+            `📦 *طلب جديد رقم ${order.orderNumber}*`,
+            order.trader ? `🏪 *التاجر:* ${order.trader.name || order.trader.traderBranding?.storeName || 'تاجر مسجل'}` : '',
+            `👤 *العميل:* ${order.fullName}`,
+            `📞 *الهاتف:* ${order.phone}`,
+            order.phone2 ? `📞 *هاتف إضافي:* ${order.phone2}` : '',
+            `📍 *العنوان:* ${locationInfo}`,
+            `🏠 *التفاصيل:* ${order.address}`,
+            order.notes ? `📝 *الملاحظات:* ${order.notes}` : '',
             '',
-            `👤 العميل: ${order.fullName}`,
-            `📞 الهاتف: ${order.phone}`,
-            `📍 العنوان: ${locationInfo}`,
-            `🏠 التفاصيل: ${order.address}`,
-            order.notes ? `📝 الملاحظات: ${order.notes}` : '',
-            '',
-            `🛒 المنتجات:`,
+            `🛒 *المنتجات:*`,
             itemsList,
             '',
-            `💰 اجمالي قيمة الطلب: ${order.total} ج.م`,
-            paymentInfo,
+            `💰 *إجمالي قيمة الطلب:* ${subtotal.toLocaleString('en')} ج.م`,
+            `💳 *طريقة الدفع:* ${order.paymentMethod === 'cod' ? 'الدفع عند الاستلام' : order.paymentMethod === 'manual_paid' ? 'مدفوع بالكامل مقدماً' : 'دفع إلكتروني'}`,
+            `💵 *المطلوب عند الاستلام:* ${order.paymentMethod === 'manual_paid'
+                ? `${shipping.toLocaleString('en')} ج.م (مصاريف الشحن)`
+                : `${atDelivery.toLocaleString('en')} ج.م`}`,
             '',
             '---',
-            'نتمنى لك يوما سعيدا! 🚀'
-        ].filter(Boolean).join('\n');
+            'نتمنى لك يوماً سعيداً! 🚀'
+        ];
+        return lines.filter(line => line !== null && line !== undefined && line !== '').join('\n');
     }
     static async sendTelegram(token, chatId, message) {
         try {
@@ -111,24 +146,21 @@ export class NotificationService {
         try {
             // 1. Format the recipient phone correctly (CallMeBot needs country code, no '+')
             const cleanPhone = this.formatWhatsAppPhone(phone);
-            // 2. Strip characters that break URL query params (especially '#' which marks a fragment)
-            // also remove markdown bold markers for cleaner CallMeBot display
-            const cleanMessage = message.replace(/\*/g, '').replace(/#/g, 'No.');
+            // 2. Optimized message for WhatsApp URL limits
+            // CallMeBot sometimes fails with very long URLs or specific symbols
+            let cleanMessage = message.replace(/\*/g, '').replace(/#/g, 'No.');
+            // If message is too long (> 1500 chars), we truncate the items list part to save space
+            if (cleanMessage.length > 1500) {
+                console.warn(`⚠️ [WA] Message too long (${cleanMessage.length} chars), truncating for URL safety...`);
+                cleanMessage = cleanMessage.substring(0, 1500) + '\n\n... (تكملة الطلب في سجلات الإدارة)';
+            }
             const encodedText = encodeURIComponent(cleanMessage);
             const encodedPhone = encodeURIComponent(cleanPhone);
             const url = `https://api.callmebot.com/whatsapp.php?phone=${encodedPhone}&text=${encodedText}&apikey=${apiKey}`;
             console.log(`📤 [WA] Sending to phone: ${cleanPhone} (original: ${phone})`);
             console.log(`📤 [WA] URL length: ${url.length} chars`);
-            // Safety: If URL is excessively long (>7000), truncate message
-            if (url.length > 7500) {
-                console.warn(`⚠️ [WA] URL too long (${url.length}), truncating message...`);
-                const shorter = cleanMessage.substring(0, 1000) + '\n\n... (Message Truncated)';
-                const shortUrl = `https://api.callmebot.com/whatsapp.php?phone=${encodedPhone}&text=${encodeURIComponent(shorter)}&apikey=${apiKey}`;
-                const resp = await axios.get(shortUrl, { timeout: 15000 });
-                console.log(`✅ [WA] WhatsApp sent (truncated). Response: ${resp.status}`);
-                return;
-            }
-            const resp = await axios.get(url, { timeout: 15000 });
+            // Use a longer timeout (30s) as CallMeBot can be slow
+            const resp = await axios.get(url, { timeout: 30000 });
             console.log(`✅ [WA] WhatsApp (CallMeBot) sent. Response status: ${resp.status}`);
         }
         catch (error) {

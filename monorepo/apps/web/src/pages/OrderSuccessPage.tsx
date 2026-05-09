@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CheckCircle, Package, Home, Receipt, MessageCircle } from 'lucide-react';
+import { CheckCircle, Package, Home, MessageCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useSettings } from '../context/SettingsContext';
+import SEOHead from '../components/SEO/SEOHead';
 
 export function OrderSuccessPage() {
     const { id } = useParams();
@@ -110,6 +111,7 @@ ${productsList}
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-transparent to-[#101622]/50">
+            <SEOHead title="تم تأكيد الطلب" description={`طلب رقم ${id} - تم تأكيد طلبك بنجاح في مركز العامر`} noindex />
             <div className="max-w-2xl w-full">
                 <div className="glass-panel p-8 md:p-12 rounded-[2.5rem] text-center border-emerald-500/20 shadow-2xl shadow-emerald-500/10 relative overflow-hidden">
                     {/* Decorative Background Glow */}

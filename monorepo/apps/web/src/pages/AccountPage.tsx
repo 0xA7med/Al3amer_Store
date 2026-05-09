@@ -6,6 +6,7 @@ import { useWishlist } from '../hooks/useWishlist';
 import { AddressForm } from '../components/account/AddressForm';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import SEOHead from '../components/SEO/SEOHead';
 
 type AccountTab = 'overview' | 'orders' | 'wishlist' | 'addresses' | 'profile' | 'branding';
 
@@ -152,6 +153,7 @@ export function AccountPage() {
 
     return (
         <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+            <SEOHead title="حسابي" description="حسابك الشخصي في مركز العامر" noindex />
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>

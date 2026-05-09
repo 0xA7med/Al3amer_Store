@@ -20,7 +20,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, password: string, remember?: boolean) => Promise<void>;
     loginWithToken: (token: string, user: User) => void;
-    register: (data: { name: string; email: string; phone: string; password: string }) => Promise<void>;
+    register: (data: { name: string; email: string; phone: string; password: string }, remember?: boolean) => Promise<void>;
     logout: () => void;
 }
 
@@ -70,17 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
     };
 
-    const register = async (data: { name: string; email: string; phone: string; password: string }) => {
+    const register = async (data: { name: string; email: string; phone: string; password: string }, remember: boolean = true) => {
         const response = await api.post('/auth/register', {
             ...data,
-            address: 'Cairo, Egypt', // Default address
+            address: 'Cairo, Egypt',
         });
 
         const { token, user: userData } = response.data;
 
         if (token) {
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(userData));
+            const storage = remember ? localStorage : sessionStorage;
+            storage.setItem('token', token);
+            storage.setItem('user', JSON.stringify(userData));
             setUser(userData);
         }
     };

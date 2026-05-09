@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { ArrowRight, Package, Truck, CheckCircle, Clock, MapPin, Phone, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useSettings } from '../context/SettingsContext';
+import SEOHead from '../components/SEO/SEOHead';
 
 const STATUS_STEPS = [
     { id: 'pending', label: 'تم الاستلام', icon: Clock, description: 'تم استلام طلبك بنجاح' },
@@ -82,6 +83,7 @@ export function OrderTrackingPage() {
 
     return (
         <div className="container mx-auto px-3 py-4 md:py-12 max-w-5xl w-full max-w-full overflow-hidden">
+            <SEOHead title="تتبع الطلب" description={`تتبع حالة الطلب رقم ${id} في مركز العامر`} noindex />
             {/* Header */}
             <div className="mb-8">
                 <Link to="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors">

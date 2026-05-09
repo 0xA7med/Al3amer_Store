@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { CheckoutController } from '../controllers/checkout.controller.js';
 import rateLimit from 'express-rate-limit';
+import { validate } from '../lib/validate.js';
+import { initiatePaymentSchema, verifyPaymentSchema } from '../schemas/index.js';
 const router = Router();
 // Rate Limiter: Max 5 payment initiations per minute per IP
 const paymentLimiter = rateLimit({
@@ -9,11 +11,8 @@ const paymentLimiter = rateLimit({
     message: { error: 'تم تجاوز الحد المسموح من الطلبات. الرجاء المحاولة بعد دقيقة.' },
     standardHeaders: true,
     legacyHeaders: false,
-    // Use the IP set by Express's trust proxy
-    keyGenerator: (req) => req.ip || req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || '',
-    validate: { xForwardedForHeader: false },
 });
-router.post('/initiate-payment', paymentLimiter, CheckoutController.initiatePayment);
-router.post('/verify', paymentLimiter, CheckoutController.verifyPayment);
+router.post('/initiate-payment', paymentLimiter, validate({ body: initiatePaymentSchema }), CheckoutController.initiatePayment);
+router.post('/verify', paymentLimiter, validate({ body: verifyPaymentSchema }), CheckoutController.verifyPayment);
 export default router;
 //# sourceMappingURL=checkout.js.map
