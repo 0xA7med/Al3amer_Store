@@ -51,7 +51,7 @@ export default function CustomerProfile() {
         setEditForm({
             id: customerId,
             name: customerName,
-            email: customerEmail || '',
+            email: customerEmail,
             phone: latestOrder?.user?.phone || latestOrder?.phone || phone || '',
             phone2: latestOrder?.user?.phone2 || latestOrder?.phone2 || '',
             address: latestOrder?.address || '',
@@ -63,7 +63,11 @@ export default function CustomerProfile() {
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        await updateCustomer(customerId, editForm);
+        const { id: _, ...data } = editForm;
+        const cleaned = Object.fromEntries(
+            Object.entries(data).filter(([_, v]) => v !== '' && v !== undefined)
+        );
+        await updateCustomer(customerId, cleaned);
         setIsEditing(false);
     };
 

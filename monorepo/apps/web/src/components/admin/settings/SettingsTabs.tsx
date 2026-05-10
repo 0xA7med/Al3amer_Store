@@ -34,6 +34,16 @@ export function GeneralTab({ formData, setFormData }: { formData: SettingsFormDa
                 <textarea rows={3} value={formData.metaDescription || ''} onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
                     className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none" placeholder="وجهتك الأولى في مصر لأحدث أنظمة الكاشير والباركود..." />
             </Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field label="العنوان المختصر (Meta Title)">
+                    <input type="text" value={formData.metaTitle || ''} onChange={e => setFormData({ ...formData, metaTitle: e.target.value })}
+                        className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="متجر العامر - أنظمة كاشير وباركود" />
+                </Field>
+                <Field label="الكلمات المفتاحية (Meta Keywords)">
+                    <input type="text" value={formData.metaKeywords || ''} onChange={e => setFormData({ ...formData, metaKeywords: e.target.value })}
+                        className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="كاشير, باركود, أنظمة كاشير, برنامج كاشير, point of sale مصر" />
+                </Field>
+            </div>
         </div>
     );
 }

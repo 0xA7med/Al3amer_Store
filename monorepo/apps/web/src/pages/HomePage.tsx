@@ -58,6 +58,7 @@ export function HomePage() {
             <SEOHead
               title={settings.metaTitle || 'الرئيسية'}
               description={settings.metaDescription || 'أجهزة كاشير وأنظمة محاسبة متكاملة - مركز العامر'}
+              keywords={settings.metaKeywords}
               canonical="/"
               jsonLd={[organizationSchema, websiteSchema]}
             />

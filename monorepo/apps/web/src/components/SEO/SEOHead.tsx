@@ -7,6 +7,7 @@ interface SEOProps {
   ogImage?: string;
   ogType?: 'website' | 'product' | 'article';
   noindex?: boolean;
+  keywords?: string;
   jsonLd?: Record<string, any>;
 }
 
@@ -20,6 +21,7 @@ export default function SEOHead({
   ogImage = DEFAULT_OG_IMAGE,
   ogType = 'website',
   noindex,
+  keywords,
   jsonLd,
 }: SEOProps) {
   const fullTitle = `${title} | مركز العامر`;
@@ -40,6 +42,7 @@ export default function SEOHead({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
       {url && <link rel="canonical" href={url} />}
+      {keywords && <meta name="keywords" content={keywords} />}
       {noindex && <meta name="robots" content="noindex, nofollow" />}
       {jsonLd && (
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
