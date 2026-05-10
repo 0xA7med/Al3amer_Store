@@ -1,5 +1,5 @@
 import type { SettingsFormData, TestingState } from './types';
-import { EGYPT_GOVERNORATES } from './constants';
+import { GovernorateSelect } from '../../shared/GovernorateSelect';
 
 // ================================================================
 // General Tab
@@ -34,16 +34,6 @@ export function GeneralTab({ formData, setFormData }: { formData: SettingsFormDa
                 <textarea rows={3} value={formData.metaDescription || ''} onChange={e => setFormData({ ...formData, metaDescription: e.target.value })}
                     className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none" placeholder="وجهتك الأولى في مصر لأحدث أنظمة الكاشير والباركود..." />
             </Field>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Field label="العنوان المختصر (Meta Title)">
-                    <input type="text" value={formData.metaTitle || ''} onChange={e => setFormData({ ...formData, metaTitle: e.target.value })}
-                        className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="متجر العامر - أنظمة كاشير وباركود" />
-                </Field>
-                <Field label="الكلمات المفتاحية (Meta Keywords)">
-                    <input type="text" value={formData.metaKeywords || ''} onChange={e => setFormData({ ...formData, metaKeywords: e.target.value })}
-                        className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="كاشير, باركود, أنظمة كاشير, برنامج كاشير, point of sale مصر" />
-                </Field>
-            </div>
         </div>
     );
 }
@@ -133,11 +123,11 @@ export function ShippingTab({ formData, setFormData }: { formData: SettingsFormD
                         <div key={index} className="flex gap-4 items-end bg-black/20 p-4 rounded-xl border border-white/5">
                             <div className="flex-1 space-y-2">
                                 <label className="text-gray-400 text-xs">المحافظة / المدينة</label>
-                                <select value={rate.city} onChange={(e) => { const r = [...formData.cityShippingRates]; r[index].city = e.target.value; setFormData({ ...formData, cityShippingRates: r }); }}
-                                    className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 focus:outline-none focus:border-primary transition-all text-sm appearance-none">
-                                    <option value="" disabled>اختر المحافظة...</option>
-                                    {EGYPT_GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov}</option>)}
-                                </select>
+                                <GovernorateSelect
+                                    value={rate.city}
+                                    onChange={(v) => { const r = [...formData.cityShippingRates]; r[index].city = v; setFormData({ ...formData, cityShippingRates: r }); }}
+                                    disabledOptions={formData.cityShippingRates?.filter((_, i) => i !== index).map(r => r.city) || []}
+                                />
                             </div>
                             <div className="w-40 space-y-2">
                                 <label className="text-gray-400 text-xs">التكلفة (ج.م)</label>

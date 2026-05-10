@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Address } from '../../hooks/useAddresses';
-
-const GOVERNORATES = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
-    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
-    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
-];
+import { GovernorateSelect } from '../shared/GovernorateSelect';
 
 interface AddressFormProps {
     initialData?: Address | null;
@@ -20,9 +14,8 @@ export function AddressForm({ initialData, onSubmit, onCancel, isLoading }: Addr
         title: '',
         fullName: '',
         phone: '',
-        phone2: '', // New field
+        phone2: '',
         governorate: '',
-        city: '',
         address: '',
         isDefault: false,
     });
@@ -35,7 +28,6 @@ export function AddressForm({ initialData, onSubmit, onCancel, isLoading }: Addr
                 phone: initialData.phone,
                 phone2: initialData.phone2 || '',
                 governorate: initialData.governorate,
-                city: initialData.city,
                 address: initialData.address,
                 isDefault: initialData.isDefault,
             });
@@ -107,32 +99,10 @@ export function AddressForm({ initialData, onSubmit, onCancel, isLoading }: Addr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">المحافظة</label>
-                        <div className="relative">
-                            <select
-                                required
-                                value={formData.governorate}
-                                onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer hover:bg-white/[0.07]"
-                            >
-                                <option value="" className="bg-[#181a20]">اختر المحافظة...</option>
-                                {GOVERNORATES.map(gov => (
-                                    <option key={gov} value={gov} className="bg-[#181a20]">{gov}</option>
-                                ))}
-                            </select>
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                <span className="material-symbols-outlined text-lg">expand_more</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">المدينة / الحي</label>
-                        <input
-                            type="text"
+                        <GovernorateSelect
+                            value={formData.governorate}
+                            onChange={(v) => setFormData({ ...formData, governorate: v })}
                             required
-                            value={formData.city}
-                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-600 hover:bg-white/[0.07]"
-                            placeholder="المدينة أو المنطقة"
                         />
                     </div>
                 </div>

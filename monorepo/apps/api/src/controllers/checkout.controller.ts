@@ -27,7 +27,6 @@ export class CheckoutController {
                 phone,
                 email,
                 address,
-                city,
                 governorate,
             } = req.body;
 
@@ -73,7 +72,7 @@ export class CheckoutController {
                 building: 'NA',
                 shipping_method: 'PKG',
                 postal_code: 'NA',
-                city: city || 'NA',
+                city: 'NA',
                 country: 'EGY',
                 state: governorate || 'NA',
             };

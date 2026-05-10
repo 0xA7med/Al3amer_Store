@@ -8,7 +8,6 @@ export interface Address {
     phone: string;
     phone2?: string;
     governorate: string;
-    city: string;
     address: string;
     isDefault: boolean;
 }

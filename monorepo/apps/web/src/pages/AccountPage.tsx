@@ -409,7 +409,7 @@ export function AccountPage() {
                                             </div>
 
                                             <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-                                                {address.address}، {address.city}، {address.governorate}
+                                                {address.address}، {address.governorate}
                                             </p>
 
                                             <div className="flex gap-2 pt-4 border-t border-white/5">

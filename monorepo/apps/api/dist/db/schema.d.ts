@@ -455,7 +455,7 @@ export declare const addresses: import("drizzle-orm/pg-core").PgTableWithColumns
             columnType: "PgText";
             data: string;
             driverParam: string;
-            notNull: true;
+            notNull: false;
             hasDefault: false;
             isPrimaryKey: false;
             isAutoincrement: false;
@@ -1662,7 +1662,7 @@ export declare const orders: import("drizzle-orm/pg-core").PgTableWithColumns<{
             columnType: "PgText";
             data: string;
             driverParam: string;
-            notNull: true;
+            notNull: false;
             hasDefault: false;
             isPrimaryKey: false;
             isAutoincrement: false;

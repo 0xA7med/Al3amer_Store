@@ -42,8 +42,10 @@ export class OrdersController {
             if (!fullName) return res.status(400).json({ error: 'حقل الاسم بالكامل مطلوب' });
             if (!items || items.length === 0) return res.status(400).json({ error: 'يجب إضافة منتج واحد على الأقل للطلب' });
             if (!governorate) return res.status(400).json({ error: 'حقل المحافظة مطلوب' });
-            if (!city) return res.status(400).json({ error: 'حقل المدينة مطلوب' });
             if (!address) return res.status(400).json({ error: 'حقل العنوان التفصيلي مطلوب' });
+            if (userId !== undefined && userId !== null && userId !== '' && typeof userId !== 'string') {
+                return res.status(400).json({ error: 'معرف المستخدم غير صالح' });
+            }
 
             const safePhone = phone ? String(phone) : '0000000000';
 
@@ -155,13 +157,13 @@ export class OrdersController {
             // Create order
             const [order] = await db.insert(orders).values({
                 orderNumber,
-                userId: userId ? String(userId) : null,
+                userId: (userId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(userId))) ? String(userId) : null,
                 fullName,
                 phone: safePhone,
                 phone2,
                 email,
                 governorate,
-                city,
+                city: city ?? null,
                 address,
                 notes,
                 paymentMethod,
@@ -218,12 +220,20 @@ export class OrdersController {
 
             res.status(201).json(completeOrder);
         } catch (error: any) {
-            console.error('SERVER ERROR: Create Order Failed:', error);
-            console.error('Stack Trace:', error.stack);
+            console.error('SERVER ERROR: Create Order Failed:', error?.message || error);
+            console.error('PG Code:', error?.code);
+            console.error('PG Detail:', error?.detail);
+            console.error('PG Hint:', error?.hint);
+            console.error('Stack Trace:', error?.stack);
+            // Log the full raw error for debugging
+            try { console.error('Full error keys:', Object.keys(error)); } catch (e) {}
+            try { console.error('Full error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error).reduce((a, k) => { try { a[k] = error[k]; } catch(e) {} return a; }, {} as any))); } catch (e) {}
             res.status(500).json({
                 message: 'Failed to create order',
-                error: error.message || 'Unknown error',
-                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                error: error?.message || 'Unknown error',
+                pgCode: error?.code || undefined,
+                pgDetail: error?.detail || undefined,
+                details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
             });
         }
     }
@@ -237,7 +247,6 @@ export class OrdersController {
                 phone,
                 email,
                 governorate,
-                city,
                 address,
                 notes,
                 paymentMethod,
@@ -252,7 +261,7 @@ export class OrdersController {
 
             console.log(`📦 [PUT /orders/${orderId}] Updating draft order`);
 
-            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
+            if (!fullName || !items || items.length === 0 || !governorate || !address) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
@@ -337,7 +346,6 @@ export class OrdersController {
                 phone: safePhone,
                 email,
                 governorate,
-                city,
                 address,
                 notes,
                 paymentMethod,
@@ -542,7 +550,6 @@ export class OrdersController {
                 phone,
                 email,
                 governorate,
-                city,
                 address,
                 notes
             } = req.body;
@@ -554,7 +561,6 @@ export class OrdersController {
                     phone,
                     email,
                     governorate,
-                    city,
                     address,
                     notes,
                     updatedAt: new Date()
@@ -759,7 +765,7 @@ export class OrdersController {
                     building: 'NA',
                     shipping_method: 'PKG',
                     postal_code: 'NA',
-                    city: order.city,
+                    city: order.city || 'NA',
                     country: 'EGY',
                     state: order.governorate,
                 }

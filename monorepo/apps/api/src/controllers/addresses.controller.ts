@@ -34,9 +34,9 @@ export class AddressesController {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
 
-            const { title, fullName, phone, phone2, governorate, city, address, isDefault } = req.body;
+            const { title, fullName, phone, phone2, governorate, address, isDefault } = req.body;
 
-            if (!title || !fullName || !phone || !governorate || !city || !address) {
+            if (!title || !fullName || !phone || !governorate || !address) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
@@ -53,7 +53,6 @@ export class AddressesController {
                 fullName,
                 phone,
                 governorate,
-                city,
                 address,
                 phone2,
                 isDefault: isDefault || false,
@@ -76,7 +75,7 @@ export class AddressesController {
                 return res.status(401).json({ error: 'Unauthorized' });
             }
 
-            const { title, fullName, phone, phone2, governorate, city, address, isDefault } = req.body;
+            const { title, fullName, phone, phone2, governorate, address, isDefault } = req.body;
 
             // Check if address belongs to user
             const existingAddress = await db.query.addresses.findFirst({
@@ -103,7 +102,6 @@ export class AddressesController {
                     fullName,
                     phone,
                     governorate,
-                    city,
                     address,
                     phone2,
                     isDefault,

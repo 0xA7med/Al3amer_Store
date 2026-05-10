@@ -7,13 +7,7 @@ import { useAddresses } from '../hooks/useAddresses';
 import { CheckoutProgressBar } from '../components/checkout';
 import api from '../lib/api';
 import SEOHead from '../components/SEO/SEOHead';
-
-const GOVERNORATES = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
-    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
-    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
-];
+import { GovernorateSelect } from '../components/shared/GovernorateSelect';
 
 const isValidEgyptianPhone = (phone: string) => {
     // Basic Egyptian phone format: 010/011/012/015 followed by 8 digits
@@ -73,7 +67,6 @@ export function CheckoutPage() {
                     phone: addr.phone,
                     phone_2: addr.phone2 || '',
                     address: addr.address,
-                    city: addr.city,
                     governorate: addr.governorate,
                     // Keep email from user profile or manual input
                     email: user?.email || prev.email
@@ -87,7 +80,6 @@ export function CheckoutPage() {
                 phone: user.phone || '',
                 email: user.email || '',
                 address: '',
-                city: '',
                 governorate: '',
                 phone_2: ''
             }));
@@ -103,7 +95,6 @@ export function CheckoutPage() {
         phone: '',
         phone_2: '',
         address: '',
-        city: '',
         governorate: '',
         notes: '',
         paymentMethod: 'cod', // cash on delivery
@@ -193,7 +184,6 @@ export function CheckoutPage() {
             phone: formData.phone,
             email: formData.email,
             governorate: formData.governorate,
-            city: formData.city,
             address: formData.address,
             notes: finalNotes,
             paymentMethod: formData.paymentMethod,
@@ -230,10 +220,8 @@ export function CheckoutPage() {
         if (totalPrice >= freeShippingThreshold) return 0;
 
         const cityRates = settings.cityShippingRates || [];
-        // Try to find a match in governorate or city (case-insensitive)
         const customRate = cityRates.find(r =>
-            (formData.governorate && r.city.toLowerCase() === formData.governorate.toLowerCase()) ||
-            (formData.city && r.city.toLowerCase() === formData.city.toLowerCase())
+            formData.governorate && r.city.toLowerCase() === formData.governorate.toLowerCase()
         );
 
         return customRate ? customRate.rate : flatShippingRate;
@@ -414,7 +402,6 @@ export function CheckoutPage() {
                     phone: formData.phone,
                     email: formData.email,
                     address: formData.address,
-                    city: formData.city,
                     governorate: formData.governorate,
                 });
 
@@ -487,7 +474,7 @@ export function CheckoutPage() {
                                                             <span className="font-bold text-white">{addr.title}</span>
                                                             {addr.isDefault && <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">الافتراضي</span>}
                                                         </div>
-                                                        <p className="text-sm text-gray-300">{addr.address}، {addr.city}، {addr.governorate}</p>
+                                                        <p className="text-sm text-gray-300">{addr.address}، {addr.governorate}</p>
                                                         <p className="text-xs text-gray-400 mt-1">{addr.fullName} - {addr.phone}</p>
                                                     </div>
                                                 </label>
@@ -562,35 +549,10 @@ export function CheckoutPage() {
                                         <label className="text-white text-sm font-medium flex items-center justify-between">
                                             <span>المحافظة *</span>
                                         </label>
-                                        <div className="relative">
-                                            <select
-                                                required
-                                                value={formData.governorate}
-                                                onChange={(e) => setFormData({ ...formData, governorate: e.target.value })}
-                                                className="w-full bg-[#111318]/50 text-white border border-[#3b4354] rounded-lg py-3 px-4 pl-12 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none"
-                                            >
-                                                <option value="" disabled>اختر المحافظة...</option>
-                                                {GOVERNORATES.map((gov) => (
-                                                    <option key={gov} value={gov}>{gov}</option>
-                                                ))}
-                                            </select>
-                                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                                map
-                                            </span>
-                                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                                expand_more
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="block text-slate-400 text-sm font-medium">المدينة</label>
-                                        <input
+                                        <GovernorateSelect
+                                            value={formData.governorate}
+                                            onChange={(v) => setFormData({ ...formData, governorate: v })}
                                             required
-                                            type="text"
-                                            value={formData.city}
-                                            onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-600 hover:bg-white/[0.07]"
-                                            placeholder="الحي / المنطقة"
                                         />
                                     </div>
                                 </div>
@@ -747,7 +709,7 @@ export function CheckoutPage() {
                                             <h3 className="text-slate-400 text-sm mb-2">عنوان الشحن</h3>
                                             <p className="text-white font-medium">{formData.fullName}</p>
                                             <p className="text-slate-300 text-sm mt-1">
-                                                {formData.address}، {formData.city}، {formData.governorate}
+                                                {formData.address}، {formData.governorate}
                                             </p>
                                             <p className="text-slate-300 text-sm mt-1">{formData.phone}</p>
                                         </div>

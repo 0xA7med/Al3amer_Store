@@ -3,13 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCustomerOrders, useCustomers } from '../../hooks/useCustomers';
 import OrdersTable from '../../components/admin/OrdersTable';
 import OrderDetailsModal from '../../components/admin/OrderDetailsModal';
-
-const GOVERNORATES = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
-    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
-    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
-];
+import { GovernorateSelect } from '../../components/shared/GovernorateSelect';
 
 export default function CustomerProfile() {
     const { phone } = useParams<{ phone: string }>();
@@ -51,23 +45,18 @@ export default function CustomerProfile() {
         setEditForm({
             id: customerId,
             name: customerName,
-            email: customerEmail,
+            email: customerEmail || '',
             phone: latestOrder?.user?.phone || latestOrder?.phone || phone || '',
             phone2: latestOrder?.user?.phone2 || latestOrder?.phone2 || '',
             address: latestOrder?.address || '',
             governorate: latestOrder?.governorate || '',
-            city: latestOrder?.city || '',
         });
         setIsEditing(true);
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        const { id: _, ...data } = editForm;
-        const cleaned = Object.fromEntries(
-            Object.entries(data).filter(([_, v]) => v !== '' && v !== undefined)
-        );
-        await updateCustomer(customerId, cleaned);
+        await updateCustomer(customerId, editForm);
         setIsEditing(false);
     };
 
@@ -296,23 +285,9 @@ export default function CustomerProfile() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1">
                                     <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
-                                    <select
+                                    <GovernorateSelect
                                         value={editForm.governorate}
-                                        onChange={e => setEditForm({ ...editForm, governorate: e.target.value })}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
-                                    >
-                                        <option value="">اختر المحافظة...</option>
-                                        {GOVERNORATES.map(gov => <option key={gov} value={gov}>{gov}</option>)}
-                                    </select>
-                                </div>
-                                <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-xs font-bold text-slate-400 mb-1">المدينة/المركز</label>
-                                    <input
-                                        type="text"
-                                        value={editForm.city}
-                                        onChange={e => setEditForm({ ...editForm, city: e.target.value })}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
-                                        placeholder="مثلاً: اجا، المنصورة..."
+                                        onChange={(v) => setEditForm({ ...editForm, governorate: v })}
                                     />
                                 </div>
                             </div>

@@ -15,7 +15,7 @@ export class CheckoutController {
      */
     static async initiatePayment(req, res) {
         try {
-            const { orderId, amount, paymentMethod, walletNumber, fullName, phone, email, address, city, governorate, } = req.body;
+            const { orderId, amount, paymentMethod, walletNumber, fullName, phone, email, address, governorate, } = req.body;
             if (!orderId || !amount || !paymentMethod || !fullName) {
                 return res.status(400).json({ error: 'Missing required fields including orderId' });
             }
@@ -52,7 +52,7 @@ export class CheckoutController {
                 building: 'NA',
                 shipping_method: 'PKG',
                 postal_code: 'NA',
-                city: city || 'NA',
+                city: 'NA',
                 country: 'EGY',
                 state: governorate || 'NA',
             };

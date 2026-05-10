@@ -9,7 +9,7 @@ export class OrdersController {
     // POST /api/orders - Create new order
     static async create(req, res) {
         try {
-            const { userId, fullName, phone, phone2, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
+            const { userId, fullName, phone, phone2, email, governorate, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
             traderId, finalCodAmount, } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
             // Validation
@@ -19,8 +19,6 @@ export class OrdersController {
                 return res.status(400).json({ error: 'يجب إضافة منتج واحد على الأقل للطلب' });
             if (!governorate)
                 return res.status(400).json({ error: 'حقل المحافظة مطلوب' });
-            if (!city)
-                return res.status(400).json({ error: 'حقل المدينة مطلوب' });
             if (!address)
                 return res.status(400).json({ error: 'حقل العنوان التفصيلي مطلوب' });
             const safePhone = phone ? String(phone) : '0000000000';
@@ -117,7 +115,6 @@ export class OrdersController {
                 phone2,
                 email,
                 governorate,
-                city,
                 address,
                 notes,
                 paymentMethod,
@@ -182,9 +179,9 @@ export class OrdersController {
     static async updatePendingOrder(req, res) {
         try {
             const orderId = req.params.id;
-            const { fullName, phone, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, traderId, finalCodAmount, } = req.body;
+            const { fullName, phone, email, governorate, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, couponCode, traderId, finalCodAmount, } = req.body;
             console.log(`📦 [PUT /orders/${orderId}] Updating draft order`);
-            if (!fullName || !items || items.length === 0 || !governorate || !city || !address) {
+            if (!fullName || !items || items.length === 0 || !governorate || !address) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
             const safePhone = phone ? String(phone) : '0000000000';
@@ -254,7 +251,6 @@ export class OrdersController {
                 phone: safePhone,
                 email,
                 governorate,
-                city,
                 address,
                 notes,
                 paymentMethod,
@@ -434,7 +430,7 @@ export class OrdersController {
     static async updateOrder(req, res) {
         try {
             const { id } = req.params;
-            const { status, fullName, phone, email, governorate, city, address, notes } = req.body;
+            const { status, fullName, phone, email, governorate, address, notes } = req.body;
             const [updatedOrder] = await db.update(orders)
                 .set({
                 status,
@@ -442,7 +438,6 @@ export class OrdersController {
                 phone,
                 email,
                 governorate,
-                city,
                 address,
                 notes,
                 updatedAt: new Date()
@@ -613,7 +608,7 @@ export class OrdersController {
                 building: 'NA',
                 shipping_method: 'PKG',
                 postal_code: 'NA',
-                city: order.city,
+                city: order.city || 'NA',
                 country: 'EGY',
                 state: order.governorate,
             });

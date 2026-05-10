@@ -6,13 +6,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import OrdersTable, { STATUS_CONFIG } from '../../components/admin/OrdersTable';
 import OrderDetailsModal from '../../components/admin/OrderDetailsModal';
-
-const GOVERNORATES = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
-    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
-    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
-];
+import { GovernorateSelect } from '../../components/shared/GovernorateSelect';
 
 export default function OrdersManagement() {
     // Hooks
@@ -326,7 +320,8 @@ export default function OrdersManagement() {
 }
 
 function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, initialPhone?: string }) {
-    const [customer, setCustomer] = useState({ 
+    const [customer, setCustomer] = useState<{ id?: string; name: string; phone: string; phone2: string; address: string; governorate: string; notes: string }>({ 
+        id: '', 
         name: '', 
         phone: initialPhone || '', 
         phone2: '',
@@ -342,7 +337,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
         shippingCost: ''
     });
 
-    const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
+    const [cart, setCart] = useState<{ product: any; quantity: number; customPrice?: string | number }[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const { data: productsData } = useAdminProducts({ search: searchTerm, limit: 10, status: 'active' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -353,6 +348,8 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
 
+    const autoFillAttempted = useRef(false);
+
     useEffect(() => {
         const fetchUserData = async () => {
             if (customer.phone.length >= 3) {
@@ -361,6 +358,26 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                     const { data } = await api.get('/users', { params: { search: customer.phone, limit: 10 } });
                     if (data?.data && data.data.length > 0) {
                         setCustomerSearchResults(data.data);
+                        
+                        // Auto-fill logic when creating order for a specific phone
+                        if (initialPhone && !autoFillAttempted.current && customer.phone === initialPhone) {
+                            autoFillAttempted.current = true;
+                            const match = data.data.find((u: any) => u.phone === initialPhone);
+                            if (match) {
+                                setCustomer(prev => ({
+                                    ...prev,
+                                    id: match.id || '',
+                                    phone: match.phone,
+                                    phone2: match.phone2 || prev.phone2 || '',
+                                    name: match.name || prev.name,
+                                    address: match.address || prev.address || '',
+                                    governorate: match.governorate || prev.governorate || '',
+                                }));
+                                setShowCustomerDropdown(false);
+                                return; // Exit early so dropdown isn't shown
+                            }
+                        }
+
                         setShowCustomerDropdown(true);
                     } else {
                         setCustomerSearchResults([]);
@@ -379,11 +396,12 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
         };
         const timeout = setTimeout(fetchUserData, 500);
         return () => clearTimeout(timeout);
-    }, [customer.phone]);
+    }, [customer.phone, initialPhone]);
 
     const handleSelectCustomer = (selected: any) => {
         setCustomer(prev => ({
             ...prev,
+            id: selected.id || '',
             phone: selected.phone,
             phone2: selected.phone2 || prev.phone2 || '',
             name: selected.name || prev.name,
@@ -393,12 +411,15 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
         setShowCustomerDropdown(false);
     };
 
-    const addToCart = (product: any) => { setCart([...cart, { product, quantity: 1 }]); setSearchTerm(''); };
+    const addToCart = (product: any) => { setCart([...cart, { product, quantity: 1, customPrice: product.price }]); setSearchTerm(''); };
     const removeFromCart = (idx: number) => { setCart(cart.filter((_, i) => i !== idx)); };
     const updateQuantity = (idx: number, delta: number) => {
         const nc = [...cart]; nc[idx].quantity = Math.max(1, nc[idx].quantity + delta); setCart(nc);
     };
-    const total = cart.reduce((s, i) => s + Number(i.product.price) * i.quantity, 0);
+    const updateCustomPrice = (idx: number, price: string) => {
+        const nc = [...cart]; nc[idx].customPrice = price; setCart(nc);
+    };
+    const total = cart.reduce((s, i) => s + (Number(i.customPrice !== undefined && i.customPrice !== '' ? i.customPrice : i.product.price) || 0) * i.quantity, 0);
 
     const handleSubmit = async () => {
         setIsSubmitting(true);
@@ -421,18 +442,22 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
             }
 
             await api.post('/orders', {
+                userId: customer.id || null,
                 fullName: customer.name, 
                 phone: customer.phone, 
                 phone2: customer.phone2,
                 address: customer.address,
-                city: 'لا يوجد',
                 governorate: customer.governorate, 
                 notes: finalNotes,
                 paymentMethod: finalMethod,
                 shippingCost: shipping,
                 codAdvancePayment: finalAdvance,
                 totalAtDelivery: totalAtDelivery,
-                items: cart.map(i => ({ productId: i.product.id, quantity: i.quantity }))
+                items: cart.map(i => ({ 
+                    productId: i.product.id, 
+                    quantity: i.quantity,
+                    price: Number(i.customPrice !== undefined && i.customPrice !== '' ? i.customPrice : i.product.price)
+                }))
             });
             toast.success('تم إنشاء الطلب بنجاح');
             queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -453,7 +478,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><span className="material-symbols-outlined text-slate-400">close</span></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col md:flex-row gap-6">
-                    <div className="flex-1 space-y-6">
+                    <div className="flex-1 space-y-6 min-w-0">
                         <div className="space-y-4">
                             <h4 className="text-sm font-bold text-primary uppercase tracking-wider">بيانات العميل</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -514,16 +539,10 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs text-slate-400 mr-2">المحافظة</label>
-                                    <select 
-                                        value={customer.governorate} 
-                                        onChange={e => setCustomer({ ...customer, governorate: e.target.value })} 
-                                        className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none appearance-none"
-                                    >
-                                        <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
-                                        {GOVERNORATES.map(gov => (
-                                            <option key={gov} value={gov} className="bg-[#1e2330]">{gov}</option>
-                                        ))}
-                                    </select>
+                                    <GovernorateSelect
+                                        value={customer.governorate}
+                                        onChange={(v) => setCustomer({ ...customer, governorate: v })}
+                                    />
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
                                     <label className="text-xs text-slate-400 mr-2">العنوان بالتفصيل</label>
@@ -577,7 +596,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                             </div>
                         </div>
                     </div>
-                    <div className="space-y-4">
+                    <div className="w-full md:w-[400px] shrink-0 space-y-4">
                         <div className="flex items-center justify-between">
                             <h4 className="text-sm font-bold text-primary uppercase tracking-wider">المنتجات المضافة ({cart.length})</h4>
                         </div>
@@ -629,7 +648,20 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                                             <span className="text-white w-6 text-center text-sm font-bold">{item.quantity}</span>
                                             <button onClick={() => updateQuantity(idx, 1)} className="size-7 rounded hover:bg-white/5 text-primary active:scale-95 transition-all">+</button>
                                         </div>
-                                        <div className="text-primary font-bold">{(item.quantity * Number(item.product.price)).toLocaleString()} ج.م</div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative">
+                                                <input 
+                                                    type="number"
+                                                    value={item.customPrice !== undefined ? item.customPrice : item.product.price}
+                                                    onChange={(e) => updateCustomPrice(idx, e.target.value)}
+                                                    className="w-24 px-2 py-1 pr-8 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                />
+                                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">ج.م</span>
+                                            </div>
+                                            <div className="text-primary font-bold text-sm bg-primary/10 px-2 py-1 rounded">
+                                                {((Number(item.customPrice !== undefined && item.customPrice !== '' ? item.customPrice : item.product.price) || 0) * item.quantity).toLocaleString()} ج.م
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

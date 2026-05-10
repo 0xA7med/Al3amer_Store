@@ -440,20 +440,32 @@ export class ProductsController {
                 }
             }
 
+            // Ensure unique slug
+            let productSlug = manualSlug || ProductsController.slugify(name);
+            if (!manualSlug) {
+                const existingSlug = await db.query.products.findFirst({
+                    where: eq(products.slug, productSlug),
+                    columns: { id: true },
+                });
+                if (existingSlug) {
+                    productSlug = `${productSlug}-${Date.now()}`;
+                }
+            }
+
             // Insert the product
             const [newProduct] = await db.insert(products).values({
                 name,
                 description,
                 price,
-                discountPrice,
-                cost,
+                discountPrice: discountPrice || null,
+                cost: cost || null,
                 sku,
                 externalId: external_id || null,
                 stock: stock || 0,
                 barcode,
                 categoryId,
                 brandId: resolvedBrandId || null,
-                slug: manualSlug || ProductsController.slugify(name), // Manual slug or auto-generate
+                slug: productSlug,
                 status: status || 'active',
                 videos: videos || [],
                 metaTitle,
@@ -505,8 +517,27 @@ export class ProductsController {
             });
 
             res.status(201).json(createdProduct);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating product:', error);
+
+            // Handle unique constraint violations (Postgres error 23505)
+            const pgCode = error?.code || error?.cause?.code || error?.original?.code;
+            if (pgCode === '23505') {
+                let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
+                if (error.detail?.includes('slug')) {
+                    message = 'هذا الرابط (Slug) مستخدم بالفعل لمنتج آخر، يرجى تغيير اسم المنتج';
+                } else if (error.detail?.includes('external_id')) {
+                    message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';
+                } else if (error.detail?.includes('sku')) {
+                    message = 'هذا الكود (SKU) مستخدم بالفعل لمنتج آخر';
+                }
+                return res.status(400).json({
+                    message,
+                    error: 'DUPLICATE_ENTRY',
+                    detail: error.detail,
+                });
+            }
+
             res.status(500).json({ error: 'Failed to create product' });
         }
     }
@@ -641,7 +672,8 @@ export class ProductsController {
             console.error('Error updating product:', error);
             
             // Handle unique constraint violations (Postgres error 23505)
-            if (error?.code === '23505') {
+            const pgCode = error?.code || error?.cause?.code || error?.original?.code;
+            if (pgCode === '23505') {
                 let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
                 if (error.detail?.includes('external_id')) {
                     message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';

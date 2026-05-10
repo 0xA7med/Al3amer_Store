@@ -37,7 +37,7 @@ export const addresses = pgTable('addresses', {
     phone: text('phone').notNull(),
     phone2: text('phone2'),
     governorate: text('governorate').notNull(),
-    city: text('city').notNull(),
+    city: text('city'),
     address: text('address').notNull(),
     isDefault: boolean('is_default').default(false),
     createdAt: timestamp('created_at').defaultNow(),
@@ -179,7 +179,7 @@ export const orders = pgTable('orders', {
     phone2: text('phone2'),
     email: text('email'),
     governorate: text('governorate').notNull(),
-    city: text('city').notNull(),
+    city: text('city'),
     address: text('address').notNull(),
     notes: text('notes'),
     paymentMethod: text('payment_method').notNull(), // cod | paymob

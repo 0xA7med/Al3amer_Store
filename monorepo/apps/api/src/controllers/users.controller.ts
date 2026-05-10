@@ -59,6 +59,7 @@ export class UsersController {
                     user_id,
                     full_name,
                     phone,
+                    phone2,
                     email,
                     governorate,
                     city,
@@ -109,15 +110,15 @@ export class UsersController {
                             name: regUser.name,
                             email: regUser.email || '',
                             phone,
+                            phone2: regUser.phone2 || '',
                             address: regUser.address || null,
                             orders: 0,
                             totalSpent: 0,
                             status: regUser.status || 'active',
                             joinDate: (regUser.createdAt as any)?.toISOString?.() || String(regUser.createdAt),
                             loyaltyPoints: regUser.loyaltyPoints || 0,
-                            governorate: undefined, // Will be filled from order or user metadata if we had it
-                            city: undefined,
-                            type: 'registered',
+                    governorate: undefined,
+                    type: 'registered',
                         });
                     } else {
                         // Guest — synthesise record from order data
@@ -126,6 +127,7 @@ export class UsersController {
                             name: row.full_name || 'زائر',
                             email: row.email || '',
                             phone,
+                            phone2: row.phone2 || '',
                             address: row.address || null,
                             orders: 0,
                             totalSpent: 0,
@@ -133,7 +135,6 @@ export class UsersController {
                             joinDate: row.created_at?.toISOString?.() || String(row.created_at),
                             loyaltyPoints: 0,
                             governorate: row.governorate,
-                            city: row.city,
                             type: 'guest',
                         });
                     }
@@ -142,7 +143,6 @@ export class UsersController {
                 const entry = phoneMap.get(phone)!;
                 if (!entry.address && row.address) entry.address = row.address;
                 if (!entry.governorate && row.governorate) entry.governorate = row.governorate;
-                if (!entry.city && row.city) entry.city = row.city;
                 
                 // Extract secondary phone from notes if available
                 if (!entry.phone2 && row.notes) {
@@ -166,6 +166,7 @@ export class UsersController {
                         name: u.name,
                         email: u.email || '',
                         phone,
+                        phone2: u.phone2 || '',
                         address: u.address || null,
                         orders: 0,
                         totalSpent: 0,
@@ -173,7 +174,6 @@ export class UsersController {
                         joinDate: (u.createdAt as any)?.toISOString?.() || String(u.createdAt),
                         loyaltyPoints: u.loyaltyPoints || 0,
                         governorate: undefined,
-                        city: undefined,
                         type: 'registered',
                     });
                 }
@@ -343,10 +343,10 @@ export class UsersController {
     static async updateCustomer(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, email, phone, phone2, address, governorate, city } = req.body;
+            const { name, email, phone, phone2, address, governorate } = req.body;
 
-            // Basic Validation
-            if (!name) return res.status(400).json({ error: 'الاسم مطلوب' });
+            // Only require name for non-guest users
+            if (!name && !id.startsWith('guest_')) return res.status(400).json({ error: 'الاسم مطلوب' });
 
             if (id.startsWith('guest_')) {
                 const oldPhone = id.replace('guest_', '');
@@ -354,12 +354,11 @@ export class UsersController {
                 
                 if (existing) {
                     const updateData: any = { 
-                        name, 
+                        ...(name && { name }), 
                         phone, 
                         phone2, 
                         address, 
                         governorate, 
-                        city, 
                         updatedAt: new Date() 
                     };
                     if (email) updateData.email = email;
@@ -372,13 +371,12 @@ export class UsersController {
                 }
 
                 const [newUser] = await db.insert(users).values({
-                    name,
+                    name: name || 'زائر',
                     email: email || `guest_${phone || oldPhone}@al3amer.store`,
                     phone: phone || oldPhone,
                     phone2: phone2 || null,
                     address: address || null,
                     governorate: governorate || null,
-                    city: city || null,
                     role: 'customer',
                     status: 'active',
                     password: '---'
@@ -387,12 +385,11 @@ export class UsersController {
             }
 
             const updateData: any = { 
-                name, 
+                ...(name && { name }), 
                 phone, 
                 phone2, 
                 address, 
                 governorate, 
-                city, 
                 updatedAt: new Date() 
             };
             if (email) updateData.email = email;

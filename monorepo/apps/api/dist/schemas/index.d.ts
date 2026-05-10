@@ -84,7 +84,19 @@ export declare const createProductSchema: z.ZodObject<{
     specifications: z.ZodOptional<z.ZodAny>;
     dynamicAttributes: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-    images: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    images: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodObject<{
+        url: z.ZodString;
+        isPrimary: z.ZodOptional<z.ZodBoolean>;
+        sortOrder: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    }, {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    }>]>, "many">>;
     slug: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     brand: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
@@ -109,7 +121,11 @@ export declare const createProductSchema: z.ZodObject<{
     specifications?: any;
     dynamicAttributes?: Record<string, string | string[]> | undefined;
     tags?: string[] | undefined;
-    images?: string[] | undefined;
+    images?: (string | {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    })[] | undefined;
 }, {
     name: string;
     brand?: string | null | undefined;
@@ -132,7 +148,11 @@ export declare const createProductSchema: z.ZodObject<{
     specifications?: any;
     dynamicAttributes?: Record<string, string | string[]> | undefined;
     tags?: string[] | undefined;
-    images?: string[] | undefined;
+    images?: (string | {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    })[] | undefined;
 }>;
 export declare const updateProductSchema: z.ZodObject<{
     name: z.ZodOptional<z.ZodString>;
@@ -154,7 +174,19 @@ export declare const updateProductSchema: z.ZodObject<{
     specifications: z.ZodOptional<z.ZodOptional<z.ZodAny>>;
     dynamicAttributes: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>>>;
     tags: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-    images: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    images: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodObject<{
+        url: z.ZodString;
+        isPrimary: z.ZodOptional<z.ZodBoolean>;
+        sortOrder: z.ZodOptional<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    }, {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    }>]>, "many">>>;
     slug: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
     brand: z.ZodOptional<z.ZodNullable<z.ZodOptional<z.ZodString>>>;
 }, "strip", z.ZodTypeAny, {
@@ -179,7 +211,11 @@ export declare const updateProductSchema: z.ZodObject<{
     specifications?: any;
     dynamicAttributes?: Record<string, string | string[]> | undefined;
     tags?: string[] | undefined;
-    images?: string[] | undefined;
+    images?: (string | {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    })[] | undefined;
 }, {
     brand?: string | null | undefined;
     name?: string | undefined;
@@ -202,7 +238,11 @@ export declare const updateProductSchema: z.ZodObject<{
     specifications?: any;
     dynamicAttributes?: Record<string, string | string[]> | undefined;
     tags?: string[] | undefined;
-    images?: string[] | undefined;
+    images?: (string | {
+        url: string;
+        isPrimary?: boolean | undefined;
+        sortOrder?: number | undefined;
+    })[] | undefined;
 }>;
 export declare const bulkUpdateSchema: z.ZodObject<{
     updates: z.ZodArray<z.ZodObject<{
@@ -234,7 +274,7 @@ export declare const bulkUpdateSchema: z.ZodObject<{
 export declare const bulkActionSchema: z.ZodObject<{
     ids: z.ZodArray<z.ZodString, "many">;
     action: z.ZodString;
-    payload: z.ZodObject<{
+    payload: z.ZodOptional<z.ZodObject<{
         priceMode: z.ZodOptional<z.ZodString>;
         priceValue: z.ZodOptional<z.ZodNumber>;
         stockMode: z.ZodOptional<z.ZodString>;
@@ -264,11 +304,11 @@ export declare const bulkActionSchema: z.ZodObject<{
         stockValue?: number | undefined;
         groupName?: string | undefined;
         variants?: any;
-    }>;
+    }>>;
 }, "strip", z.ZodTypeAny, {
     ids: string[];
     action: string;
-    payload: {
+    payload?: {
         categoryId?: string | undefined;
         accountingMultiplier?: number | undefined;
         salesTiers?: any;
@@ -278,11 +318,11 @@ export declare const bulkActionSchema: z.ZodObject<{
         stockValue?: number | undefined;
         groupName?: string | undefined;
         variants?: any;
-    };
+    } | undefined;
 }, {
     ids: string[];
     action: string;
-    payload: {
+    payload?: {
         categoryId?: string | undefined;
         accountingMultiplier?: number | undefined;
         salesTiers?: any;
@@ -292,7 +332,7 @@ export declare const bulkActionSchema: z.ZodObject<{
         stockValue?: number | undefined;
         groupName?: string | undefined;
         variants?: any;
-    };
+    } | undefined;
 }>;
 export declare const validateCartSchema: z.ZodObject<{
     items: z.ZodArray<z.ZodObject<{
@@ -387,7 +427,8 @@ export declare const updateShortNameSchema: z.ZodObject<{
     shortNameAwb?: string | undefined;
 }>;
 export declare const orderItemSchema: z.ZodObject<{
-    id: z.ZodString;
+    id: z.ZodOptional<z.ZodString>;
+    productId: z.ZodString;
     name: z.ZodDefault<z.ZodOptional<z.ZodString>>;
     price: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
     quantity: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -396,16 +437,18 @@ export declare const orderItemSchema: z.ZodObject<{
     selectedTierId: z.ZodOptional<z.ZodString>;
     multiplier: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    id: string;
     name: string;
     price: number;
+    productId: string;
     quantity: number;
+    id?: string | undefined;
     sku?: string | undefined;
     image?: string | undefined;
     multiplier?: number | undefined;
     selectedTierId?: string | undefined;
 }, {
-    id: string;
+    productId: string;
+    id?: string | undefined;
     name?: string | undefined;
     price?: number | undefined;
     sku?: string | undefined;
@@ -421,12 +464,12 @@ export declare const createOrderSchema: z.ZodObject<{
     phone2: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
     governorate: z.ZodString;
-    city: z.ZodString;
     address: z.ZodString;
     notes: z.ZodOptional<z.ZodString>;
     paymentMethod: z.ZodOptional<z.ZodString>;
     items: z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
+        id: z.ZodOptional<z.ZodString>;
+        productId: z.ZodString;
         name: z.ZodDefault<z.ZodOptional<z.ZodString>>;
         price: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
         quantity: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -435,16 +478,18 @@ export declare const createOrderSchema: z.ZodObject<{
         selectedTierId: z.ZodOptional<z.ZodString>;
         multiplier: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         name: string;
         price: number;
+        productId: string;
         quantity: number;
+        id?: string | undefined;
         sku?: string | undefined;
         image?: string | undefined;
         multiplier?: number | undefined;
         selectedTierId?: string | undefined;
     }, {
-        id: string;
+        productId: string;
+        id?: string | undefined;
         name?: string | undefined;
         price?: number | undefined;
         sku?: string | undefined;
@@ -467,7 +512,6 @@ export declare const createOrderSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     phone: string;
     address: string;
-    city: string;
     governorate: string;
     fullName: string;
     shippingCost: number;
@@ -477,10 +521,11 @@ export declare const createOrderSchema: z.ZodObject<{
     taxAmount: number;
     extraFee: number;
     items: {
-        id: string;
         name: string;
         price: number;
+        productId: string;
         quantity: number;
+        id?: string | undefined;
         sku?: string | undefined;
         image?: string | undefined;
         multiplier?: number | undefined;
@@ -498,11 +543,11 @@ export declare const createOrderSchema: z.ZodObject<{
     walletNumber?: string | undefined;
 }, {
     address: string;
-    city: string;
     governorate: string;
     fullName: string;
     items: {
-        id: string;
+        productId: string;
+        id?: string | undefined;
         name?: string | undefined;
         price?: number | undefined;
         sku?: string | undefined;
@@ -534,12 +579,12 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
     governorate: z.ZodOptional<z.ZodString>;
-    city: z.ZodOptional<z.ZodString>;
     address: z.ZodOptional<z.ZodString>;
     notes: z.ZodOptional<z.ZodString>;
     paymentMethod: z.ZodOptional<z.ZodString>;
     items: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        id: z.ZodString;
+        id: z.ZodOptional<z.ZodString>;
+        productId: z.ZodString;
         name: z.ZodDefault<z.ZodOptional<z.ZodString>>;
         price: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
         quantity: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -548,16 +593,18 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
         selectedTierId: z.ZodOptional<z.ZodString>;
         multiplier: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
-        id: string;
         name: string;
         price: number;
+        productId: string;
         quantity: number;
+        id?: string | undefined;
         sku?: string | undefined;
         image?: string | undefined;
         multiplier?: number | undefined;
         selectedTierId?: string | undefined;
     }, {
-        id: string;
+        productId: string;
+        id?: string | undefined;
         name?: string | undefined;
         price?: number | undefined;
         sku?: string | undefined;
@@ -576,7 +623,6 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
     email?: string | undefined;
     phone?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     fullName?: string | undefined;
     notes?: string | undefined;
@@ -587,10 +633,11 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
     traderId?: string | undefined;
     finalCodAmount?: number | undefined;
     items?: {
-        id: string;
         name: string;
         price: number;
+        productId: string;
         quantity: number;
+        id?: string | undefined;
         sku?: string | undefined;
         image?: string | undefined;
         multiplier?: number | undefined;
@@ -601,7 +648,6 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
     email?: string | undefined;
     phone?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     fullName?: string | undefined;
     notes?: string | undefined;
@@ -612,7 +658,8 @@ export declare const updatePendingOrderSchema: z.ZodObject<{
     traderId?: string | undefined;
     finalCodAmount?: number | undefined;
     items?: {
-        id: string;
+        productId: string;
+        id?: string | undefined;
         name?: string | undefined;
         price?: number | undefined;
         sku?: string | undefined;
@@ -679,7 +726,6 @@ export declare const initiatePaymentSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     email: z.ZodOptional<z.ZodString>;
     address: z.ZodOptional<z.ZodString>;
-    city: z.ZodOptional<z.ZodString>;
     governorate: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     fullName: string;
@@ -689,7 +735,6 @@ export declare const initiatePaymentSchema: z.ZodObject<{
     email?: string | undefined;
     phone?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     walletNumber?: string | undefined;
 }, {
@@ -700,7 +745,6 @@ export declare const initiatePaymentSchema: z.ZodObject<{
     email?: string | undefined;
     phone?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     walletNumber?: string | undefined;
 }>;
@@ -768,14 +812,12 @@ export declare const updateCustomerSchema: z.ZodObject<{
     phone2: z.ZodOptional<z.ZodString>;
     address: z.ZodOptional<z.ZodString>;
     governorate: z.ZodOptional<z.ZodString>;
-    city: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     name?: string | undefined;
     email?: string | undefined;
     phone?: string | undefined;
     phone2?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
 }, {
     name?: string | undefined;
@@ -783,7 +825,6 @@ export declare const updateCustomerSchema: z.ZodObject<{
     phone?: string | undefined;
     phone2?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
 }>;
 export declare const listUsersQuery: z.ZodObject<{
@@ -805,13 +846,11 @@ export declare const createAddressSchema: z.ZodObject<{
     phone: z.ZodString;
     phone2: z.ZodOptional<z.ZodString>;
     governorate: z.ZodString;
-    city: z.ZodString;
     address: z.ZodString;
     isDefault: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     phone: string;
     address: string;
-    city: string;
     governorate: string;
     fullName: string;
     title: string;
@@ -820,7 +859,6 @@ export declare const createAddressSchema: z.ZodObject<{
 }, {
     phone: string;
     address: string;
-    city: string;
     governorate: string;
     fullName: string;
     title: string;
@@ -833,14 +871,12 @@ export declare const updateAddressSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     phone2: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     governorate: z.ZodOptional<z.ZodString>;
-    city: z.ZodOptional<z.ZodString>;
     address: z.ZodOptional<z.ZodString>;
     isDefault: z.ZodOptional<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     phone?: string | undefined;
     phone2?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     fullName?: string | undefined;
     title?: string | undefined;
@@ -849,7 +885,6 @@ export declare const updateAddressSchema: z.ZodObject<{
     phone?: string | undefined;
     phone2?: string | undefined;
     address?: string | undefined;
-    city?: string | undefined;
     governorate?: string | undefined;
     fullName?: string | undefined;
     title?: string | undefined;

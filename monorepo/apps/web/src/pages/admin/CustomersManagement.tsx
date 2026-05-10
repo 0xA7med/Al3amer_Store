@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomers } from '../../hooks/useCustomers';
-
-const GOVERNORATES = [
-    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم',
-    'الغربية', 'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد',
-    'السويس', 'أسوان', 'أسيوط', 'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء',
-    'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'
-];
+import { GovernorateSelect } from '../../components/shared/GovernorateSelect';
 
 const CustomersManagement = () => {
     const { customers, isLoading, updateStatus, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
@@ -337,14 +331,10 @@ const CustomersManagement = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
-                                    <select
+                                    <GovernorateSelect
                                         value={editingCustomer.governorate || ''}
-                                        onChange={e => setEditingCustomer({ ...editingCustomer, governorate: e.target.value })}
-                                        className="w-full h-11 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:border-primary outline-none transition-all"
-                                    >
-                                        <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
-                                        {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
-                                    </select>
+                                        onChange={(v) => setEditingCustomer({ ...editingCustomer, governorate: v })}
+                                    />
                                 </div>
                             </div>
                             <div>
@@ -437,14 +427,10 @@ function AddCustomerModal({ onClose, onCreate }: { onClose: () => void; onCreate
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-bold text-slate-400 mb-1">المحافظة</label>
-                            <select
+                            <GovernorateSelect
                                 value={formData.governorate}
-                                onChange={e => setFormData({ ...formData, governorate: e.target.value })}
-                                className="w-full px-4 py-2 bg-white/5 rounded-lg text-white border border-white/10 focus:border-primary outline-none transition-all"
-                            >
-                                <option value="" className="bg-[#1e2330]">اختر المحافظة...</option>
-                                {GOVERNORATES.map(g => <option key={g} value={g} className="bg-[#1e2330]">{g}</option>)}
-                            </select>
+                                onChange={(v) => setFormData({ ...formData, governorate: v })}
+                            />
                         </div>
                     </div>
                     <div>

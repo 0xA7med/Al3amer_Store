@@ -45,7 +45,7 @@ export const createProductSchema = z.object({
     specifications: z.any().optional(),
     dynamicAttributes: z.record(z.union([z.string(), z.array(z.string())])).optional(),
     tags: z.array(z.string()).optional(),
-    images: z.array(z.string()).optional(),
+    images: z.array(z.union([z.string(), z.object({ url: z.string(), isPrimary: z.boolean().optional(), sortOrder: z.number().optional() })])).optional(),
     slug: z.string().optional().nullable(),
     brand: z.string().optional().nullable(),
 });
@@ -70,7 +70,7 @@ export const bulkActionSchema = z.object({
         variants: z.any().optional(),
         accountingMultiplier: z.number().optional(),
         salesTiers: z.any().optional(),
-    }),
+    }).optional(),
 });
 export const validateCartSchema = z.object({
     items: z.array(z.object({
@@ -106,7 +106,8 @@ export const updateShortNameSchema = z.object({
 });
 // ── Orders ──
 export const orderItemSchema = z.object({
-    id: z.string().min(1),
+    id: z.string().optional(),
+    productId: z.string().min(1, 'Product ID is required'),
     name: z.string().optional().default(''),
     price: z.number().optional().default(0),
     quantity: z.number().optional().default(1),
@@ -122,7 +123,6 @@ export const createOrderSchema = z.object({
     phone2: z.string().optional(),
     email: z.string().optional(),
     governorate: z.string().min(1, 'Governorate is required'),
-    city: z.string().min(1, 'City is required'),
     address: z.string().min(1, 'Address is required'),
     notes: z.string().optional(),
     paymentMethod: z.string().optional(),
@@ -144,7 +144,6 @@ export const updatePendingOrderSchema = z.object({
     phone: z.string().optional(),
     email: z.string().optional(),
     governorate: z.string().optional(),
-    city: z.string().optional(),
     address: z.string().optional(),
     notes: z.string().optional(),
     paymentMethod: z.string().optional(),
@@ -185,7 +184,6 @@ export const initiatePaymentSchema = z.object({
     phone: z.string().optional(),
     email: z.string().optional(),
     address: z.string().optional(),
-    city: z.string().optional(),
     governorate: z.string().optional(),
 });
 export const verifyPaymentSchema = z.object({
@@ -217,7 +215,6 @@ export const updateCustomerSchema = z.object({
     phone2: z.string().optional(),
     address: z.string().optional(),
     governorate: z.string().optional(),
-    city: z.string().optional(),
 });
 export const listUsersQuery = z.object({
     page: z.string().optional().default('1'),
@@ -231,7 +228,6 @@ export const createAddressSchema = z.object({
     phone: z.string().min(1, 'Phone is required'),
     phone2: z.string().optional(),
     governorate: z.string().min(1, 'Governorate is required'),
-    city: z.string().min(1, 'City is required'),
     address: z.string().min(1, 'Address is required'),
     isDefault: z.boolean().optional(),
 });
