@@ -5,6 +5,10 @@
             "destination": "https://al3amer-store-wf1t.vercel.app/sitemap.xml"
         },
         {
+            "source": "/api/(.*)",
+            "destination": "https://al3amer-store-wf1t.vercel.app/api/$1"
+        },
+        {
             "source": "/(.*)",
             "has": [
                 {

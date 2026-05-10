@@ -62,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (currentItems.length === 0) return true;
         
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            const apiUrl = import.meta.env.VITE_API_URL || '/api';
             
             const res = await fetch(`${apiUrl}/products/validate-cart`, {
                 method: 'POST',
