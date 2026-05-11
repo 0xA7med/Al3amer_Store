@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -20,12 +20,22 @@ export class AuthController {
             const normalizedEmail = normalizeEmail(email);
 
             // Check if user already exists
-            const existingUser = await db.query.users.findFirst({
-                where: eq(users.email, normalizedEmail),
-            });
+            let existingUser;
+            if (phone) {
+                existingUser = await db.query.users.findFirst({
+                    where: or(eq(users.email, normalizedEmail), eq(users.phone, phone)),
+                });
+            } else {
+                existingUser = await db.query.users.findFirst({
+                    where: eq(users.email, normalizedEmail),
+                });
+            }
 
             if (existingUser) {
-                return res.status(409).json({ error: 'User already exists' });
+                if (existingUser.email === normalizedEmail) {
+                    return res.status(409).json({ error: 'Email already registered' });
+                }
+                return res.status(409).json({ error: 'Phone number already registered' });
             }
 
             // Hash password

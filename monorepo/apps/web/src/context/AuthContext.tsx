@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Check for existing token on app load
+    // Check for existing token on app load and sync across tabs
     useEffect(() => {
         const checkAuth = async () => {
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -46,12 +46,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     localStorage.removeItem('user');
                     sessionStorage.removeItem('token');
                     sessionStorage.removeItem('user');
+                    setUser(null);
                 }
             }
             setIsLoading(false);
         };
 
         checkAuth();
+
+        // Sync auth state across tabs
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'token') {
+                if (!e.newValue) {
+                    // Logged out in another tab
+                    setUser(null);
+                    sessionStorage.removeItem('token');
+                    sessionStorage.removeItem('user');
+                } else {
+                    // Logged in from another tab (re-fetch user just in case, or use the stringified user)
+                    const userStr = localStorage.getItem('user');
+                    if (userStr) {
+                        try {
+                            setUser(JSON.parse(userStr));
+                        } catch (err) {
+                            console.error('Error parsing user from localStorage', err);
+                        }
+                    } else {
+                        checkAuth();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     const login = async (email: string, password: string, remember: boolean = true) => {

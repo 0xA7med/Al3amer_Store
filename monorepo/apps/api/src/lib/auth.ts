@@ -9,6 +9,10 @@ if (!JWT_SECRET) {
     throw new Error('CRITICAL: JWT_SECRET environment variable is not set. The application cannot start securely without it.');
 }
 
+export interface AuthenticatedRequest extends Request {
+    user?: any;
+}
+
 export const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
@@ -34,7 +38,7 @@ export const verifyToken = async (req: Request, res: Response, next: NextFunctio
         }
 
         const { password: _, ...userWithoutPassword } = user;
-        (req as any).user = userWithoutPassword;
+        (req as AuthenticatedRequest).user = userWithoutPassword;
         next();
     } catch (error) {
         console.error('Error verifying token:', error);

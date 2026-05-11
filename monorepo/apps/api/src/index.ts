@@ -33,9 +33,25 @@ app.set('trust proxy', 1);
 
 // Security Middleware
 const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',')
-    : ['http://localhost:5173', 'https://al3amer-store-wf1t.vercel.app', 'https://al3amer.store'];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : ['https://al3amer-store-wf1t.vercel.app', 'https://al3amer.store'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+        // Allow any localhost in development
+        if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+            return callback(null, true);
+        }
+        // Allow whitelisted production origins
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
+    credentials: true,
+}));
 app.use(helmet());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
@@ -82,7 +98,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // });
 
 // الكود الجديد (Compatible with Vercel)
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
     const port = process.env.PORT || 3001;
     app.listen(port, () => {
         console.log(`Server running on http://localhost:${port}`);
