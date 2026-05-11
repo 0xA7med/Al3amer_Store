@@ -63,8 +63,24 @@ export class ProductsController {
 
             return res.json(result);
         } catch (error: any) {
-            console.error('AI Generate Error:', error);
-            return res.status(500).json({ error: error?.message || 'Failed to generate content' });
+            console.error('❌ AI Generate Critical Error:', error);
+            
+            // Check for specific error types to provide better user feedback
+            const message = error?.message || '';
+            let userMessage = 'فشل توليد المحتوى. يرجى التأكد من مفتاح API وصلاحيته.';
+            
+            if (message.includes('API_KEY_INVALID') || message.includes('invalid api key')) {
+                userMessage = 'مفتاح Google API غير صالح. يرجى التأكد من المفتاح في الإعدادات.';
+            } else if (message.includes('quota') || message.includes('429')) {
+                userMessage = 'تم تجاوز حصة الاستخدام (Quota) لمفتاح API الخاص بك.';
+            } else if (message.includes('All AI models failed')) {
+                userMessage = `فشل الاتصال بنماذج الذكاء الاصطناعي: ${message}`;
+            }
+
+            return res.status(500).json({ 
+                error: userMessage,
+                details: process.env.NODE_ENV === 'development' ? error?.message : undefined 
+            });
         }
     }
 
@@ -735,6 +751,11 @@ export class ProductsController {
             await db.transaction(async (tx) => {
                 for (const update of updates) {
                     const { id, ...data } = update;
+                    
+                    // Sanitize nullable numeric strings: convert empty string to null
+                    if (data.discountPrice === '') data.discountPrice = null;
+                    if (data.cost === '') data.cost = null;
+
                     await tx.update(products)
                         .set({ ...data, updatedAt: new Date() })
                         .where(eq(products.id, id));

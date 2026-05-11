@@ -31,7 +31,9 @@ export class AIService {
         this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
-            apiVersion: 'v1',
+            // We omit apiVersion to let the SDK use the best default (usually v1beta for newer models)
+            // or we can explicitly set it to v1beta to ensure compatibility with 2.0-flash
+            apiVersion: 'v1beta',
         });
     }
 
@@ -45,10 +47,10 @@ export class AIService {
 
         try {
             const { ModelDiscoveryService } = await import('./model-discovery.service.js');
-            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1beta');
             console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
-        } catch (error) {
-            console.warn('⚠️ Model discovery failed, using fallback models');
+        } catch (error: any) {
+            console.warn(`⚠️ Model discovery failed: ${error.message}, using fallback models`);
             this.availableModels = AIService.FALLBACK_MODELS;
         }
     }
@@ -193,11 +195,12 @@ Structure the description with a professional overview paragraph, then a bullete
         try {
             const response = await this.client.models.generateContent({
                 model: forcedModel,
-                contents: prompt
+                contents: [{ role: 'user', parts: [{ text: prompt }] }]
             });
 
             const text = response.text;
             if (!text) {
+                console.warn(`Empty response from model: ${forcedModel}`, JSON.stringify(response, null, 2));
                 throw new Error(`Empty response from model: ${forcedModel}`);
             }
 
@@ -218,7 +221,7 @@ Structure the description with a professional overview paragraph, then a bullete
 
                     const response = await this.client.models.generateContent({
                         model: modelName,
-                        contents: prompt
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }]
                     });
 
                     if (response.text) {
@@ -228,6 +231,7 @@ Structure the description with a professional overview paragraph, then a bullete
                             throw new Error(`Invalid JSON returned from ${modelName}`);
                         }
                     } else {
+                        console.warn(`Empty response from fallback model: ${modelName}`, JSON.stringify(response, null, 2));
                         throw new Error("Empty response");
                     }
                 } catch (fallbackError: any) {

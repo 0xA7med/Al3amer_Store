@@ -60,7 +60,9 @@ export const updateProductSchema = createProductSchema.partial();
 export const bulkUpdateSchema = z.object({
     updates: z.array(z.object({
         id: z.string().min(1),
-        price: z.string().optional(),
+        price: z.string().min(1, 'السعر مطلوب').optional(),
+        discountPrice: z.string().optional().nullable(),
+        cost: z.string().optional().nullable(),
         stock: z.number().optional(),
     })).min(1, 'Updates must be a non-empty array'),
 });
