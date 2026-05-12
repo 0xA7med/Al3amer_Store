@@ -32,22 +32,38 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 
 // Security Middleware
+const defaultOrigins = [
+    'https://al3amer-store-wf1t.vercel.app',
+    'https://al3amer.store',
+    'https://www.al3amer.store'
+];
+
 const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['https://al3amer-store-wf1t.vercel.app', 'https://al3amer.store'];
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
+    : defaultOrigins;
 
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (e.g. mobile apps, curl, Postman)
         if (!origin) return callback(null, true);
+        
+        const normalizedOrigin = origin.trim().replace(/\/$/, '');
+
         // Allow any localhost in development
-        if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+        if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost(:\d+)?$/.test(normalizedOrigin)) {
             return callback(null, true);
         }
-        // Allow whitelisted production origins
-        if (allowedOrigins.includes(origin)) {
+        
+        // Allow whitelisted production origins or anything ending with .vercel.app for this project
+        if (
+            allowedOrigins.includes(normalizedOrigin) || 
+            normalizedOrigin.endsWith('-al3amer-store.vercel.app') ||
+            normalizedOrigin.endsWith('-wf1t.vercel.app')
+        ) {
             return callback(null, true);
         }
+        
+        console.error(`CORS Blocked: ${origin}`);
         callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
