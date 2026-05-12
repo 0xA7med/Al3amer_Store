@@ -18,6 +18,8 @@ export interface Product {
     videos?: { url: string; title: string; is_featured: boolean }[];
     metaTitle?: string | null;
     metaDescription?: string | null;
+    llmDescription?: string | null;
+    faq?: { question: string; answer: string }[] | null;
     categoryId?: string | null;
     brandId?: string | null;
     cost?: string | null;

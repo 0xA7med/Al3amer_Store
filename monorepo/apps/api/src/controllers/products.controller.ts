@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
-import { products, productImages, categories, brands, reviews, wishlist, orderItems } from '../db/schema.js';
+import { products, productImages, categories, brands, reviews, wishlist, orderItems, productRelationships } from '../db/schema.js';
 import { eq, and, or, like, sql, inArray, desc, asc, count, gte, lte, ne, not, isNull, ilike } from 'drizzle-orm';
 import path from 'path';
 import { AIService } from '../services/ai.service.js';
@@ -360,7 +360,8 @@ export class ProductsController {
                         columns: {
                             quantity: true
                         }
-                    }
+                    },
+                    relationships: true,
                 },
             });
 
@@ -440,6 +441,9 @@ export class ProductsController {
                 images: imageUrls,
                 slug: manualSlug,
                 brand: brandName, // Allow name for auto-resolution
+                llmDescription,
+                faq,
+                relationships,
             } = req.body;
  
             // Resolve brand name to ID if brandName is provided
@@ -490,7 +494,19 @@ export class ProductsController {
                 specifications,
                 dynamicAttributes: dynamicAttributes || null,
                 tags,
+                llmDescription: llmDescription || null,
+                faq: faq || [],
             }).returning();
+
+            // Insert product relationships if provided
+            if (relationships && Array.isArray(relationships) && relationships.length > 0) {
+                const relationsData = relationships.map((rel: any) => ({
+                    productId: newProduct.id,
+                    relatedProductId: rel.relatedProductId,
+                    type: rel.type
+                }));
+                await db.insert(productRelationships).values(relationsData);
+            }
 
             // Insert product images if provided
             if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
@@ -514,7 +530,7 @@ export class ProductsController {
                     return {
                         productId: newProduct.id,
                         url: url,
-                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        isPrimary: index === 0, // Always make the first image primary
                         sortOrder: index,
                     };
                 }));
@@ -585,6 +601,9 @@ export class ProductsController {
                 images,
                 slug: manualSlug,
                 brand: brandName, // Allow name for auto-resolution
+                llmDescription,
+                faq,
+                relationships,
             } = req.body;
  
             // Resolve brand name to ID if brandName is provided
@@ -621,6 +640,8 @@ export class ProductsController {
                 specifications,
                 dynamicAttributes: dynamicAttributes !== undefined ? dynamicAttributes : undefined,
                 tags,
+                llmDescription: llmDescription !== undefined ? llmDescription : undefined,
+                faq: faq !== undefined ? faq : undefined,
                 updatedAt: new Date(),
             };
 
@@ -637,13 +658,27 @@ export class ProductsController {
             await db.update(products)
                 .set(updateData)
                 .where(eq(products.id, id));
+
+            // Handle relationships update if provided
+            if (relationships && Array.isArray(relationships)) {
+                await db.delete(productRelationships).where(eq(productRelationships.productId, id));
+                if (relationships.length > 0) {
+                    const relationsData = relationships.map((rel: any) => ({
+                        productId: id,
+                        relatedProductId: rel.relatedProductId,
+                        type: rel.type
+                    }));
+                    await db.insert(productRelationships).values(relationsData);
+                }
+            }
+
             // Handle images update if provided
             if (req.body.images && Array.isArray(req.body.images)) {
                 // Delete existing images
                 await db.delete(productImages).where(eq(productImages.productId, id));
 
                 // Insert new images
-                const hasExplicitPrimary = req.body.images.some((u: any) => typeof u === 'object' && u.isPrimary);
+                console.log('DEBUG: Updating images with body:', JSON.stringify(req.body.images));
                 const imagesData = await Promise.all(req.body.images.map(async (img: any, index: number) => {
                     let url = typeof img === 'string' ? img : img.url;
 
@@ -663,7 +698,7 @@ export class ProductsController {
                     return {
                         productId: id,
                         url: url,
-                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        isPrimary: index === 0, // Always make the first image primary
                         sortOrder: index,
                     };
                 }));
@@ -1005,6 +1040,67 @@ export class ProductsController {
         } catch (error) {
             console.error('Error deleting product:', error);
             res.status(500).json({ error: 'Failed to delete product' });
+        }
+    }
+
+    // POST /api/products/:id/suggest-related
+    static async suggestRelatedProducts(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            const product = await db.query.products.findFirst({
+                where: eq(products.id, id),
+                with: { category: true, brand: true }
+            });
+
+            if (!product) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+
+            let candidateProducts;
+            if (product.categoryId) {
+                candidateProducts = await db.query.products.findMany({
+                    where: and(eq(products.categoryId, product.categoryId), eq(products.status, 'active'), ne(products.id, id)),
+                    limit: 100,
+                    with: { brand: true }
+                });
+            } else {
+                candidateProducts = await db.query.products.findMany({
+                    where: and(eq(products.status, 'active'), ne(products.id, id)),
+                    limit: 100,
+                    with: { brand: true }
+                });
+            }
+
+            const mappedCandidates = candidateProducts.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                brand: p.brand?.name
+            }));
+
+            if (mappedCandidates.length === 0) {
+                return res.json({ related: [], accessories: [], alternatives: [] });
+            }
+
+            const appSettings = await getMergedSettings();
+            const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+            const apiKey = rawKey ? decryptText(rawKey) : undefined;
+
+            if (!apiKey) {
+                return res.status(400).json({ error: 'مفتاح Google API غير مهيأ في الإعدادات' });
+            }
+
+            const aiService = new AIService(apiKey.trim());
+            const relationships = await aiService.generateRelationships(
+                product.name,
+                product.category?.name || 'Unknown',
+                mappedCandidates
+            );
+
+            res.json(relationships);
+        } catch (error: any) {
+            console.error('Error suggesting related products:', error);
+            res.status(500).json({ error: 'Failed to suggest related products: ' + error.message });
         }
     }
 }

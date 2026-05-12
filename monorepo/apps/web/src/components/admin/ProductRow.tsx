@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Product } from '../../hooks/useAdmin';
 
@@ -10,6 +10,16 @@ const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string
 function getProductStatus(product: Product): string {
     if (product.status === 'archived') return 'draft';
     return product.status || 'active';
+}
+
+function calculateAiScore(product: Product): number {
+    let score = 0;
+    if (product.description && product.description.length > 50) score += 20;
+    if (product.specifications && Object.keys(product.specifications).length > 0) score += 20;
+    if (product.metaTitle && product.metaDescription) score += 20;
+    if (product.llmDescription) score += 20;
+    if (product.faq && product.faq.length > 0) score += 20;
+    return score;
 }
 
 export interface ProductRowProps {
@@ -33,6 +43,7 @@ export const ProductRow = memo(({
     const status = getProductStatus(product);
     const [imageError, setImageError] = useState(false);
     const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url;
+    const aiScore = useMemo(() => calculateAiScore(product), [product]);
 
     return (
         <tr className={`hover:bg-white/5 transition-colors group ${selected ? 'bg-primary/5' : ''}`}>
@@ -61,6 +72,12 @@ export const ProductRow = memo(({
                 <div className="flex flex-col">
                     <span className="text-slate-400">{product.category?.name || 'غير مصنف'}</span>
                     <span className="text-primary/70 text-[10px] font-bold">{product.brand?.name || ''}</span>
+                    <div className="mt-1 flex items-center gap-1.5" title="مؤشر جاهزية الـ AI">
+                        <span className="material-symbols-outlined text-[12px] text-indigo-400">psychology</span>
+                        <div className="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                            <div className={`h-full ${aiScore >= 80 ? 'bg-emerald-500' : aiScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${aiScore}%` }}></div>
+                        </div>
+                    </div>
                 </div>
             </td>
             <td className="px-6 py-2">
@@ -123,6 +140,7 @@ export const MobileProductCard = memo(({
     const status = getProductStatus(product);
     const [imageError, setImageError] = useState(false);
     const imageUrl = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url;
+    const aiScore = useMemo(() => calculateAiScore(product), [product]);
 
     return (
         <div className={`glass-panel rounded-2xl overflow-hidden transition-all relative group/card border ${selected ? 'ring-2 ring-primary border-transparent' : 'border-white/5 shadow-xl'}`}>
@@ -164,6 +182,13 @@ export const MobileProductCard = memo(({
                             <div className="flex items-center gap-1">
                                 <span className="material-symbols-outlined text-[14px] text-slate-500">category</span>
                                 <span className="text-[10px] font-bold text-slate-500">{product.category?.name || 'غير مصنف'}</span>
+                            </div>
+                            <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+                            <div className="flex items-center gap-1" title="مؤشر جاهزية الـ AI">
+                                <span className="material-symbols-outlined text-[14px] text-indigo-400">psychology</span>
+                                <div className="w-12 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                    <div className={`h-full ${aiScore >= 80 ? 'bg-emerald-500' : aiScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${aiScore}%` }}></div>
+                                </div>
                             </div>
                         </div>
                     </div>

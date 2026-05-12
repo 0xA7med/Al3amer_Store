@@ -11,9 +11,9 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../hooks/useWishlist';
 import toast from 'react-hot-toast';
 import { useSettings } from '../context/SettingsContext';
-import { ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart } from '../components/products';
+import { ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart, FAQSection } from '../components/products';
 import SEOHead from '../components/SEO/SEOHead';
-import { buildProductSchema, buildBreadcrumbSchema } from '../components/SEO/ProductSchema';
+import { buildProductSchema, buildBreadcrumbSchema, buildFAQSchema } from '../components/SEO/ProductSchema';
 
 export const ProductDetailsPage = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -250,6 +250,7 @@ export const ProductDetailsPage = () => {
 
     const productJsonLd = product ? buildProductSchema(product) : undefined;
     const breadcrumbJsonLd = buildBreadcrumbSchema(breadcrumbItems);
+    const faqJsonLd = product?.faq ? buildFAQSchema(product.faq) : undefined;
 
     return (
         <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
@@ -259,7 +260,7 @@ export const ProductDetailsPage = () => {
               canonical={`/product/${slug}`}
               ogImage={product?.images?.[0]?.url}
               ogType="product"
-              jsonLd={[productJsonLd, breadcrumbJsonLd].filter(Boolean)}
+              jsonLd={[productJsonLd, breadcrumbJsonLd, faqJsonLd].filter(Boolean)}
             />
             {/* Breadcrumb Navigation */}
             <nav className="flex mb-8 overflow-x-auto no-scrollbar pb-1">
@@ -452,6 +453,16 @@ export const ProductDetailsPage = () => {
                                     )}
                                 </button>
                             </>
+                        )}
+
+                        {product.llmDescription && isDescriptionExpanded && (
+                            <div className="mt-4 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs md:text-sm leading-relaxed font-mono">
+                                <h4 className="font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[16px]">psychology</span>
+                                    خلاصة تقنية (AI Summary)
+                                </h4>
+                                {product.llmDescription}
+                            </div>
                         )}
                     </div>
 
@@ -668,6 +679,8 @@ export const ProductDetailsPage = () => {
                         }, 50);
                     }}
                 />
+
+                <FAQSection faqs={product.faq || []} />
 
                 <RelatedProducts
                     relatedProducts={relatedProducts}

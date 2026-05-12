@@ -53,6 +53,15 @@ export const createProductSchema = z.object({
     images: z.array(z.union([z.string(), z.object({ url: z.string(), isPrimary: z.boolean().optional(), sortOrder: z.number().optional() })])).optional(),
     slug: z.string().optional().nullable(),
     brand: z.string().optional().nullable(),
+    llmDescription: z.string().optional().nullable(),
+    faq: z.array(z.object({
+        question: z.string(),
+        answer: z.string(),
+    })).optional(),
+    relationships: z.array(z.object({
+        relatedProductId: z.string(),
+        type: z.enum(['related', 'accessory', 'alternative']),
+    })).optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

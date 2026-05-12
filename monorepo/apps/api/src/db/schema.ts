@@ -17,6 +17,13 @@ export const users = pgTable('users', {
     loyaltyPoints: integer('loyalty_points').default(0),
     status: text('status').default('active'), // 'active', 'blocked'
     
+    // Trader Fields
+    isTrader: boolean('is_trader').default(false),
+    traderStatus: text('trader_status').default('pending'),
+    storeName: text('store_name'),
+    idCardNumber: text('id_card_number'),
+    idCardImage: text('id_card_image'),
+
     // Trader Configuration
     traderBranding: jsonb('trader_branding').$type<{
         logoUrl?: string;
@@ -97,9 +104,11 @@ export const categories = pgTable('categories', {
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
+    description: text('description'),
     parentId: uuid('parent_id'),
     image: text('image'),
     icon: text('icon'),
+    icon_name: text('icon_name'),
     isActive: boolean('is_active').default(true),
     isFeatured: boolean('is_featured').default(false),
     attributesSchema: jsonb('attributes_schema').$type<Array<{ name: string; type: 'single-select' | 'multi-select'; options: string[] }>>().default([]),
@@ -151,6 +160,10 @@ export const products = pgTable('products', {
     shortNameAwb: text('short_name_awb'), // الاسم المختصر للبوليسة (عالمي)
     tags: text('tags').array(),
 
+    // --- GEO / LLM Fields ---
+    llmDescription: text('llm_description'),
+    faq: jsonb('faq').$type<Array<{ question: string; answer: string }>>().default([]),
+
     // --- Variation & Bulk Pricing Fields ---
     parentId: uuid('parent_id').references((): any => products.id), // Link child variants to a parent product
     variantOptions: jsonb('variant_options').$type<Record<string, string>>(), // e.g. { "Size": "38x50", "Length": "80m" }
@@ -182,6 +195,32 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     images: many(productImages),
     orderItems: many(orderItems),
     reviews: many(reviews),
+    relationships: many(productRelationships, { relationName: 'productToRelationship' }),
+}));
+
+// ============= PRODUCT RELATIONSHIPS TABLE =============
+export const productRelationships = pgTable('product_relationships', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+    relatedProductId: uuid('related_product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(), // 'related', 'accessory', 'alternative'
+    createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+    productIdIdx: index('idx_product_relationships_product_id').on(table.productId),
+    uniqueRelationship: uniqueIndex('idx_product_relationships_unique').on(table.productId, table.relatedProductId, table.type),
+}));
+
+export const productRelationshipsRelations = relations(productRelationships, ({ one }) => ({
+    product: one(products, {
+        fields: [productRelationships.productId],
+        references: [products.id],
+        relationName: 'productToRelationship'
+    }),
+    relatedProduct: one(products, {
+        fields: [productRelationships.relatedProductId],
+        references: [products.id],
+        relationName: 'relatedProductToRelationship'
+    }),
 }));
 
 // ============= PRODUCT IMAGES TABLE =============

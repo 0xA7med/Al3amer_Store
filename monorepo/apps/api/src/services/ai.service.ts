@@ -11,9 +11,11 @@ interface GeniusAIProductDetails {
     seoKeywords?: string[];
     metaTitle?: string;
     metaDescription?: string;
+    llmDescription?: string;
+    faq?: Array<{ question: string; answer: string }>;
 }
 
-export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo';
+export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo' | 'llm' | 'faq';
 
 export class AIService {
     private client: GoogleGenAI;
@@ -132,6 +134,32 @@ Generate ONLY SEO metadata for this product:
 }
 \`\`\``;
 
+            case 'llm':
+                return `${baseContext}
+
+Generate ONLY a highly technical LLM-optimized summary of the product.
+This description will be read by AI crawlers and bots (like ChatGPT, Gemini). It should clearly outline the product's category, technical specifications, use-cases, and compatibility in a structured format. NO marketing fluff. Provide it in ${langInst}.
+
+\`\`\`json
+{
+  "llmDescription": "Technical summary formatted for LLMs without marketing fluff."
+}
+\`\`\``;
+
+            case 'faq':
+                return `${baseContext}
+
+Generate 5-10 Frequently Asked Questions (FAQ) for this product, highly relevant to B2B electronics/POS buyers. Provide it in ${langInst}.
+
+\`\`\`json
+{
+  "faq": [
+    {"question": "سؤال متكرر 1", "answer": "إجابة دقيقة وتقنية 1"},
+    {"question": "سؤال متكرر 2", "answer": "إجابة دقيقة وتقنية 2"}
+  ]
+}
+\`\`\``;
+
             case 'all':
             default:
                 return `${baseContext}
@@ -147,8 +175,12 @@ Structure the description with a professional overview paragraph, then a bullete
   "slug": "english-seo-friendly-slug",
   "metaTitle": "عنوان ميتا احترافي",
   "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
+  "llmDescription": "Technical summary formatted for LLMs without marketing fluff.",
   "specs": [
     {"key": "اسم المواصفة", "value": "القيمة"}
+  ],
+  "faq": [
+    {"question": "سؤال", "answer": "إجابة"}
   ],
   "tags": ["وسم1", "وسم2", "وسم3"]
 }
@@ -242,5 +274,62 @@ Structure the description with a professional overview paragraph, then a bullete
             }
             throw new Error(`All AI models failed. Errors: ${errors.join(' | ')}`);
         }
+    }
+
+    async generateRelationships(
+        productName: string,
+        category: string,
+        availableProducts: { id: string; name: string; brand?: string }[]
+    ): Promise<{ related: string[]; accessories: string[]; alternatives: string[] }> {
+        await this.ensureModelsDiscovered();
+        const modelsToTry = this.availableModels.length > 0 ? this.availableModels : AIService.FALLBACK_MODELS;
+
+        const prompt = `You are an expert e-commerce merchandiser for an Egyptian POS and retail electronics store.
+We are configuring relationships for this product: "${productName}" (Category: ${category || 'Unknown'}).
+
+Below is a JSON list of available products in our store:
+${JSON.stringify(availableProducts.slice(0, 80))}
+
+Your task is to select the BEST product IDs from the list above for the following relationships:
+1. related: Products that are frequently bought together or highly relevant.
+2. accessories: Products that complement or are accessories for the main product.
+3. alternatives: Products that are direct substitutes or alternatives (similar specs/price/category).
+
+Rules:
+1. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
+2. Return an array of valid IDs from the list provided for each category (max 5 IDs per category).
+3. Do NOT invent or hallucinate IDs. Only use IDs from the provided list.
+4. If there are no good matches for a category, return an empty array [].
+
+\`\`\`json
+{
+  "related": ["id1", "id2"],
+  "accessories": ["id3"],
+  "alternatives": ["id4", "id5"]
+}
+\`\`\``;
+
+        const sanitizeJsonText = (rawText: string) => {
+            return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        };
+
+        let errors: string[] = [];
+
+        for (const modelName of modelsToTry) {
+            try {
+                const response = await this.client.models.generateContent({
+                    model: modelName,
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                });
+                const text = response.text;
+                if (!text) throw new Error(`Empty response`);
+                return JSON.parse(sanitizeJsonText(text));
+            } catch (error: any) {
+                console.warn(`⚠️ Model ${modelName} failed relationship generation: ${error.message}`);
+                errors.push(`${modelName}: ${error.message}`);
+            }
+        }
+
+        throw new Error(`AI Relationship Generation Failed. Errors: ${errors.join(' | ')}`);
     }
 }

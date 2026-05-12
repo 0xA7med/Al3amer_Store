@@ -25,7 +25,9 @@ export default function AdminAISettingsPage() {
         description: true,
         seo: true,
         specs: false,
-        price: false
+        price: false,
+        llmDescription: true,
+        faq: true,
     });
 
     // Fetch settings
@@ -49,7 +51,7 @@ export default function AdminAISettingsPage() {
             setLanguage(settings.aiLanguage || 'ar');
             setTone(settings.aiTone || 'Marketing');
             if (settings.aiFields) {
-                setFields(settings.aiFields);
+                setFields(prev => ({ ...prev, ...settings.aiFields }));
             }
         }
     }, [settings, keyModified]);
@@ -317,25 +319,38 @@ export default function AdminAISettingsPage() {
                         <p className="text-[#9da6b9] text-sm mb-4">اختر الحقول التي يُسمح للذكاء الاصطناعي بتعديلها أو تعبئتها.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {[
-                                { id: 'name', label: 'اسم المنتج' },
-                                { id: 'description', label: 'الوصف التفصيلي' },
-                                { id: 'seo', label: 'كلمات الـ SEO' },
-                                { id: 'specs', label: 'المواصفات الفنية' },
-                                { id: 'price', label: 'اقتراح سعر البيع' }
+                                { id: 'name', label: 'اسم المنتج', icon: 'badge', desc: 'العنوان الرئيسي للمنتج' },
+                                { id: 'description', label: 'الوصف التفصيلي', icon: 'description', desc: 'وصف المنتج الكامل' },
+                                { id: 'seo', label: 'بيانات SEO', icon: 'search', desc: 'الميتا والسلاق والكلمات المفتاحية' },
+                                { id: 'specs', label: 'المواصفات الفنية', icon: 'memory', desc: 'مواصفات المعالج والذاكرة وغيرها' },
+                                { id: 'price', label: 'اقتراح سعر البيع', icon: 'payments', desc: 'سعر مقترح بناءً على الفئة والسوق' },
+                                { id: 'llmDescription', label: 'خلاصة LLM التقنية', icon: 'psychology', desc: 'ملخص تقني لنماذج الذكاء الاصطناعي (GEO)' },
+                                { id: 'faq', label: 'أسئلة FAQ التقنية', icon: 'quiz', desc: 'أسئلة وأجوبة شائعة لتحسين الظهور في البحث' },
                             ].map((field) => (
-                                <label key={field.id} className="flex items-center gap-3 p-3 rounded-lg border border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/50 cursor-pointer transition-all group">
-                                    <div className={`relative flex items-center justify-center size-5 rounded border bg-[#282e39] transition-colors ${fields[field.id as keyof typeof fields] ? 'border-primary' : 'border-[#555] group-hover:border-primary'}`}>
-                                        <input
-                                            type="checkbox"
-                                            className="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10"
-                                            checked={fields[field.id as keyof typeof fields]}
-                                            onChange={() => toggleField(field.id as keyof typeof fields)}
-                                        />
-                                        {fields[field.id as keyof typeof fields] && (
-                                            <span className="material-symbols-outlined text-white text-[16px] pointer-events-none">check</span>
-                                        )}
+                                <label key={field.id} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all group ${fields[field.id as keyof typeof fields] ? 'border-primary/50 bg-primary/5' : 'border-[#3b4354] bg-[#111318]/30 hover:bg-[#111318]/60 hover:border-primary/30'}`}>
+                                    <div className="flex items-start gap-3 w-full">
+                                        <div className={`relative flex items-center justify-center size-5 rounded border bg-[#282e39] mt-0.5 flex-shrink-0 transition-colors ${fields[field.id as keyof typeof fields] ? 'border-primary bg-primary/20' : 'border-[#555] group-hover:border-primary'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="peer appearance-none absolute inset-0 w-full h-full cursor-pointer z-10"
+                                                checked={fields[field.id as keyof typeof fields]}
+                                                onChange={() => toggleField(field.id as keyof typeof fields)}
+                                            />
+                                            {fields[field.id as keyof typeof fields] && (
+                                                <span className="material-symbols-outlined text-primary text-[14px] pointer-events-none">check</span>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`material-symbols-outlined text-[16px] ${fields[field.id as keyof typeof fields] ? 'text-primary' : 'text-slate-500'}`}>{field.icon}</span>
+                                                <span className="text-white text-sm font-bold">{field.label}</span>
+                                                {(field.id === 'llmDescription' || field.id === 'faq') && (
+                                                    <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded font-bold">GEO</span>
+                                                )}
+                                            </div>
+                                            <span className="text-[11px] text-slate-500">{field.desc}</span>
+                                        </div>
                                     </div>
-                                    <span className="text-white text-sm font-medium">{field.label}</span>
                                 </label>
                             ))}
                         </div>

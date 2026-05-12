@@ -16,6 +16,12 @@ export interface Product {
     slug?: string;
     isFeatured: boolean;
     videos?: { url: string; title: string; is_featured: boolean }[];
+    description?: string;
+    specifications?: any;
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    llmDescription?: string | null;
+    faq?: { question: string; answer: string }[] | null;
     category: { id: string; name: string } | null;
     brand: { id: string; name: string } | null;
     images: { url: string; isPrimary: boolean }[];
@@ -281,6 +287,18 @@ export function useCreateProduct() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-products'] });
         },
+    });
+}
+
+export function useSuggestRelatedProducts() {
+    return useMutation({
+        mutationFn: async (productId: string) => {
+            const response = await api.post(`/products/${productId}/suggest-related`);
+            return response.data as { related: string[]; accessories: string[]; alternatives: string[] };
+        },
+        onError: (error: any) => {
+            toast.error(error?.response?.data?.error || 'حدث خطأ أثناء اقتراح المنتجات ذات الصلة');
+        }
     });
 }
 
