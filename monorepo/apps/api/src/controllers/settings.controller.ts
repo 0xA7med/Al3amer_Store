@@ -170,11 +170,15 @@ export class SettingsController {
     static async update(req: Request, res: Response) {
         try {
             const updateData = { ...req.body };
+            console.log('📝 Updating settings with keys:', Object.keys(updateData));
 
             const encryptIfNeeded = (key: string) => {
                 const val = updateData[key];
-                if (val && !val.includes(':')) {
-                    updateData[key] = encryptText(val);
+                if (val && typeof val === 'string' && !val.includes(':')) {
+                    const encrypted = encryptText(val);
+                    if (encrypted) {
+                        updateData[key] = encrypted;
+                    }
                 }
             };
 
@@ -205,9 +209,12 @@ export class SettingsController {
 
             const merged = await getMergedSettings();
             res.json(merged);
-        } catch (error) {
-            console.error('Error updating settings:', error);
-            res.status(500).json({ error: 'Failed to update settings' });
+        } catch (error: any) {
+            console.error('❌ Error updating settings:', error);
+            res.status(500).json({ 
+                error: 'Failed to update settings',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     }
 
@@ -224,13 +231,13 @@ export class SettingsController {
             console.log('🚀 Starting Dynamic Model Discovery Test...');
 
             const { ModelDiscoveryService } = await import('../services/model-discovery.service.js');
-            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1');
+            const availableModels = await ModelDiscoveryService.discoverModels(cleanKey, 'v1beta');
 
             if (availableModels.length === 0) {
-                return res.status(500).json({
+                return res.status(400).json({
                     success: false,
-                    error: 'لم يتم العثور على نماذج متاحة',
-                    details: ['No models available for this API key'],
+                    error: 'لم يتم العثور على نماذج متاحة لهذا المفتاح',
+                    details: ['No models available for this API key. Please check if the key is valid and has Gemini API access enabled.'],
                 });
             }
 
@@ -245,7 +252,7 @@ export class SettingsController {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
+                            contents: [{ role: 'user', parts: [{ text: 'قل مرحبا بالعربية في كلمة واحدة فقط.' }] }],
                         }),
                     });
                     const data: any = await response.json();
