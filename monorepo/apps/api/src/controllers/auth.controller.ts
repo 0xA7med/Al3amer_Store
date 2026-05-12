@@ -23,11 +23,11 @@ export class AuthController {
             let existingUser;
             if (phone) {
                 existingUser = await db.query.users.findFirst({
-                    where: or(eq(users.email, normalizedEmail), eq(users.phone, phone)),
+                    where: or(ilike(users.email, normalizedEmail), eq(users.phone, phone)),
                 });
             } else {
                 existingUser = await db.query.users.findFirst({
-                    where: eq(users.email, normalizedEmail),
+                    where: ilike(users.email, normalizedEmail),
                 });
             }
 
@@ -190,9 +190,13 @@ export class AuthController {
             const { password: _, ...userWithoutPassword } = newUser;
             return res.status(201).json({ user: userWithoutPassword, token });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error in social login:', error);
-            res.status(500).json({ error: 'Failed to process social login' });
+            res.status(500).json({ 
+                error: 'Failed to process social login',
+                message: error instanceof Error ? error.message : 'Unknown error',
+                detail: error?.detail || error?.message
+            });
         }
     }
 }
