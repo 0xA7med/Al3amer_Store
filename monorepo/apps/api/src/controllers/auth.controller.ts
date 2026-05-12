@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, ilike } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -81,7 +81,7 @@ export class AuthController {
 
             // Find user
             const user = await db.query.users.findFirst({
-                where: eq(users.email, normalizedEmail),
+                where: ilike(users.email, normalizedEmail),
             });
 
             if (!user) {
@@ -140,7 +140,9 @@ export class AuthController {
             let user = undefined;
 
             if (normalizedEmail) {
-                user = await db.query.users.findFirst({ where: eq(users.email, normalizedEmail) });
+                user = await db.query.users.findFirst({ 
+                    where: ilike(users.email, normalizedEmail) 
+                });
             }
 
             if (!user && phone) {
