@@ -925,7 +925,13 @@ export class ProductsController {
                 return res.status(400).json({ error: 'items must be a non-empty array' });
             }
 
-            const productIds = items.map((i: any) => i.id);
+            const productIds = items
+                .map((i: any) => i.id)
+                .filter((id: any) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+
+            if (productIds.length === 0) {
+                return res.json({ validProducts: [], invalidIds: items.map((i: any) => i.id), capped: [] });
+            }
 
             // Fetch all matching products in a single DB query
             const foundProducts = await db.query.products.findMany({
