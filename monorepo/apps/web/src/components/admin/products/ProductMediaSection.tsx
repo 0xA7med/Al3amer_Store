@@ -22,7 +22,8 @@ export function ProductMediaSection({ images, setImages, videos, setVideos }: {
             const [moved] = next.splice(from, 1);
             next.splice(idx, 0, moved);
             dragIndexRef.current = null;
-            return next;
+            // Always make the first image the primary one
+            return next.map((img, i) => ({ ...img, isPrimary: i === 0 }));
         });
     };
 
@@ -43,11 +44,17 @@ export function ProductMediaSection({ images, setImages, videos, setVideos }: {
         for (const file of Array.from(files)) {
             try {
                 const compressedBase64 = await compressImage(file);
-                setImages(prev => [...prev, { url: compressedBase64, isPrimary: prev.length === 0 }]);
+                setImages(prev => {
+                    const next = [...prev, { url: compressedBase64, isPrimary: false }];
+                    return next.map((img, i) => ({ ...img, isPrimary: i === 0 }));
+                });
             } catch {
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    setImages(prev => [...prev, { url: reader.result as string, isPrimary: prev.length === 0 }]);
+                    setImages(prev => {
+                        const next = [...prev, { url: reader.result as string, isPrimary: false }];
+                        return next.map((img, i) => ({ ...img, isPrimary: i === 0 }));
+                    });
                 };
                 reader.readAsDataURL(file);
             }
@@ -59,9 +66,12 @@ export function ProductMediaSection({ images, setImages, videos, setVideos }: {
             <div className="card-header">
                 <span className="material-symbols-outlined text-blue-400">perm_media</span>
                 <h3>صور وفيديوهات المنتج</h3>
-                <p className="text-[11px] text-slate-500 mr-auto">اسحب الصور لترتيبها</p>
+                <p className="text-[11px] text-slate-500 mr-auto">اسحب الصور لترتيبها (الأولى هي الأساسية)</p>
                 <div className="flex gap-2">
-                    <button onClick={() => { const url = window.prompt('أدخل رابط الصورة:'); if (url) setImages(prev => [...prev, { url, isPrimary: prev.length === 0 }]); }}
+                    <button onClick={() => { const url = window.prompt('أدخل رابط الصورة:'); if (url) setImages(prev => {
+                        const next = [...prev, { url, isPrimary: false }];
+                        return next.map((img, i) => ({ ...img, isPrimary: i === 0 }));
+                    }); }}
                         className="btn-secondary text-xs" type="button">رابط خارجي</button>
                     <button onClick={() => document.getElementById('image-upload')?.click()}
                         className="btn-primary text-xs flex items-center gap-1.5" type="button">
@@ -81,12 +91,20 @@ export function ProductMediaSection({ images, setImages, videos, setVideos }: {
                             className="w-full h-full object-cover pointer-events-none" alt="" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             {!img.isPrimary && (
-                                <button onClick={() => setImages(prev => prev.map((im, idx) => ({ ...im, isPrimary: idx === i })))}
-                                    className="size-8 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors" title="تعيين كصورة أساسية" type="button">
+                                <button onClick={() => setImages(prev => {
+                                    const next = [...prev];
+                                    const [moved] = next.splice(i, 1);
+                                    next.unshift(moved);
+                                    return next.map((im, idx) => ({ ...im, isPrimary: idx === 0 }));
+                                })}
+                                    className="size-8 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors" title="نقل للبداية (أساسية)" type="button">
                                     <span className="material-symbols-outlined text-[16px]">star</span>
                                 </button>
                             )}
-                            <button onClick={() => { setImages(prev => { const next = prev.filter((_, idx) => idx !== i); if (img.isPrimary && next.length > 0) next[0].isPrimary = true; return next; }); }}
+                            <button onClick={() => { setImages(prev => { 
+                                const next = prev.filter((_, idx) => idx !== i); 
+                                return next.map((im, idx) => ({ ...im, isPrimary: idx === 0 })); 
+                            }); }}
                                 className="size-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors" title="حذف" type="button">
                                 <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
