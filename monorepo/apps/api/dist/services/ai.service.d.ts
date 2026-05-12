@@ -14,8 +14,13 @@ interface GeniusAIProductDetails {
     seoKeywords?: string[];
     metaTitle?: string;
     metaDescription?: string;
+    llmDescription?: string;
+    faq?: Array<{
+        question: string;
+        answer: string;
+    }>;
 }
-export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo';
+export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo' | 'llm_geo';
 export declare class AIService {
     private client;
     private apiKey;

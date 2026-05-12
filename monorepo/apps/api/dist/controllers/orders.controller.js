@@ -9,7 +9,7 @@ export class OrdersController {
     // POST /api/orders - Create new order
     static async create(req, res) {
         try {
-            const { userId, fullName, phone, phone2, email, governorate, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
+            const { userId, fullName, phone, phone2, email, governorate, city, address, notes, paymentMethod, items, shippingCost = 0, taxAmount = 0, extraFee = 0, codAdvancePayment = 0, codReturnShipping = 0, totalAtDelivery = 0, couponCode, walletNumber, paymobOrderId, // Provided for pre-paid online orders
             traderId, finalCodAmount, } = req.body;
             console.log('📦 [POST /orders] Raw Body:', req.body);
             // Validation
@@ -21,6 +21,9 @@ export class OrdersController {
                 return res.status(400).json({ error: 'حقل المحافظة مطلوب' });
             if (!address)
                 return res.status(400).json({ error: 'حقل العنوان التفصيلي مطلوب' });
+            if (userId !== undefined && userId !== null && userId !== '' && typeof userId !== 'string') {
+                return res.status(400).json({ error: 'معرف المستخدم غير صالح' });
+            }
             const safePhone = phone ? String(phone) : '0000000000';
             // Fetch fresh product data from DB
             const productIds = items.map((i) => i.productId);
@@ -109,12 +112,13 @@ export class OrdersController {
             // Create order
             const [order] = await db.insert(orders).values({
                 orderNumber,
-                userId: userId ? String(userId) : null,
+                userId: (userId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(String(userId))) ? String(userId) : null,
                 fullName,
                 phone: safePhone,
                 phone2,
                 email,
                 governorate,
+                city: city ?? null,
                 address,
                 notes,
                 paymentMethod,
@@ -166,12 +170,29 @@ export class OrdersController {
             res.status(201).json(completeOrder);
         }
         catch (error) {
-            console.error('SERVER ERROR: Create Order Failed:', error);
-            console.error('Stack Trace:', error.stack);
+            console.error('SERVER ERROR: Create Order Failed:', error?.message || error);
+            console.error('PG Code:', error?.code);
+            console.error('PG Detail:', error?.detail);
+            console.error('PG Hint:', error?.hint);
+            console.error('Stack Trace:', error?.stack);
+            // Log the full raw error for debugging
+            try {
+                console.error('Full error keys:', Object.keys(error));
+            }
+            catch (e) { }
+            try {
+                console.error('Full error JSON:', JSON.stringify(error, Object.getOwnPropertyNames(error).reduce((a, k) => { try {
+                    a[k] = error[k];
+                }
+                catch (e) { } return a; }, {})));
+            }
+            catch (e) { }
             res.status(500).json({
                 message: 'Failed to create order',
-                error: error.message || 'Unknown error',
-                details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                error: error?.message || 'Unknown error',
+                pgCode: error?.code || undefined,
+                pgDetail: error?.detail || undefined,
+                details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
             });
         }
     }

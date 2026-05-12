@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, or, ilike } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -14,11 +14,22 @@ export class AuthController {
             const { name, email, phone, password, address } = req.body;
             const normalizedEmail = normalizeEmail(email);
             // Check if user already exists
-            const existingUser = await db.query.users.findFirst({
-                where: eq(users.email, normalizedEmail),
-            });
+            let existingUser;
+            if (phone) {
+                existingUser = await db.query.users.findFirst({
+                    where: or(ilike(users.email, normalizedEmail), eq(users.phone, phone)),
+                });
+            }
+            else {
+                existingUser = await db.query.users.findFirst({
+                    where: ilike(users.email, normalizedEmail),
+                });
+            }
             if (existingUser) {
-                return res.status(409).json({ error: 'User already exists' });
+                if (existingUser.email === normalizedEmail) {
+                    return res.status(409).json({ error: 'Email already registered' });
+                }
+                return res.status(409).json({ error: 'Phone number already registered' });
             }
             // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -53,7 +64,7 @@ export class AuthController {
             const normalizedEmail = normalizeEmail(email);
             // Find user
             const user = await db.query.users.findFirst({
-                where: eq(users.email, normalizedEmail),
+                where: ilike(users.email, normalizedEmail),
             });
             if (!user) {
                 return res.status(401).json({ error: 'Invalid credentials' });
@@ -97,7 +108,9 @@ export class AuthController {
             // 1. Try to find existing user by Email OR Phone
             let user = undefined;
             if (normalizedEmail) {
-                user = await db.query.users.findFirst({ where: eq(users.email, normalizedEmail) });
+                user = await db.query.users.findFirst({
+                    where: ilike(users.email, normalizedEmail)
+                });
             }
             if (!user && phone) {
                 user = await db.query.users.findFirst({ where: eq(users.phone, phone) });
@@ -131,7 +144,11 @@ export class AuthController {
         }
         catch (error) {
             console.error('Error in social login:', error);
-            res.status(500).json({ error: 'Failed to process social login' });
+            res.status(500).json({
+                error: 'Failed to process social login',
+                message: error instanceof Error ? error.message : 'Unknown error',
+                detail: error?.detail || error?.message
+            });
         }
     }
 }

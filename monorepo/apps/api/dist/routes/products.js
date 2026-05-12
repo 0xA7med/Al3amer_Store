@@ -17,6 +17,7 @@ router.put('/:id', validate({ body: updateProductSchema }), ProductsController.u
 router.patch('/bulk', validate({ body: bulkUpdateSchema }), ProductsController.bulkUpdate);
 router.post('/bulk-action', validate({ body: bulkActionSchema }), ProductsController.bulkAction);
 router.patch('/:id/short-name', validate({ body: updateShortNameSchema }), ProductsController.updateShortName);
+router.post('/:id/relations', ProductsController.updateRelations);
 router.delete('/:id', ProductsController.delete);
 export default router;
 //# sourceMappingURL=products.js.map

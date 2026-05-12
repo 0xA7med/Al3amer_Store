@@ -48,12 +48,19 @@ export const createProductSchema = z.object({
     images: z.array(z.union([z.string(), z.object({ url: z.string(), isPrimary: z.boolean().optional(), sortOrder: z.number().optional() })])).optional(),
     slug: z.string().optional().nullable(),
     brand: z.string().optional().nullable(),
+    llmDescription: z.string().optional().nullable(),
+    faq: z.array(z.object({
+        question: z.string(),
+        answer: z.string()
+    })).optional().default([]),
 });
 export const updateProductSchema = createProductSchema.partial();
 export const bulkUpdateSchema = z.object({
     updates: z.array(z.object({
         id: z.string().min(1),
-        price: z.string().optional(),
+        price: z.string().min(1, 'السعر مطلوب').optional(),
+        discountPrice: z.string().optional().nullable(),
+        cost: z.string().optional().nullable(),
         stock: z.number().optional(),
     })).min(1, 'Updates must be a non-empty array'),
 });
@@ -80,7 +87,7 @@ export const validateCartSchema = z.object({
 });
 export const aiGenerateSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
-    section: z.string().optional().default('all'),
+    section: z.string().optional().default('all'), // 'all' | 'description' | 'seo' | 'specs' | 'llm_geo'
     category: z.string().optional(),
     brand: z.string().optional(),
 });
@@ -117,13 +124,14 @@ export const orderItemSchema = z.object({
     multiplier: z.number().optional(),
 });
 export const createOrderSchema = z.object({
-    userId: z.string().optional().nullable(),
+    userId: z.string().optional().nullable().refine(val => val === undefined || val === null || val.length > 0, { message: 'userId cannot be empty string' }),
     fullName: z.string().min(1, 'Full name is required'),
     phone: z.string().optional().default(''),
     phone2: z.string().optional(),
     email: z.string().optional(),
     governorate: z.string().min(1, 'Governorate is required'),
     address: z.string().min(1, 'Address is required'),
+    city: z.string().optional().transform(val => (!val || val.trim() === '') ? undefined : val),
     notes: z.string().optional(),
     paymentMethod: z.string().optional(),
     items: z.array(orderItemSchema).min(1, 'At least one product is required'),

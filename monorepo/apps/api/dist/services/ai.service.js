@@ -13,7 +13,9 @@ export class AIService {
         this.apiKey = apiKey;
         this.client = new GoogleGenAI({
             apiKey: apiKey,
-            apiVersion: 'v1',
+            // We omit apiVersion to let the SDK use the best default (usually v1beta for newer models)
+            // or we can explicitly set it to v1beta to ensure compatibility with 2.0-flash
+            apiVersion: 'v1beta',
         });
     }
     /**
@@ -25,11 +27,11 @@ export class AIService {
         }
         try {
             const { ModelDiscoveryService } = await import('./model-discovery.service.js');
-            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1');
+            this.availableModels = await ModelDiscoveryService.discoverModels(this.apiKey, 'v1beta');
             console.log(`✅ AI Service using ${this.availableModels.length} discovered models:`, this.availableModels);
         }
         catch (error) {
-            console.warn('⚠️ Model discovery failed, using fallback models');
+            console.warn(`⚠️ Model discovery failed: ${error.message}, using fallback models`);
             this.availableModels = AIService.FALLBACK_MODELS;
         }
     }
@@ -105,25 +107,40 @@ Generate ONLY SEO metadata for this product:
   "tags": ["وسم1", "وسم2", "وسم3"]
 }
 \`\`\``;
+            case 'llm_geo':
+                return `${baseContext}
+
+Generate content optimized for Generative Engine Optimization (GEO):
+1. llmDescription: A rich, technical, and semantic description (150-200 words) in ${langInst}. Focus on explaining "why" this product is the best choice for specific use cases. Use high-value industry terminology.
+2. faq: A list of 5-10 frequently asked questions and their detailed answers in ${langInst}. Focus on common pain points, technical compatibility, and maintenance.
+
+\`\`\`json
+{
+  "llmDescription": "وصف سيمانتك غني للمنتج يركز على حالات الاستخدام والقيمة التقنية...",
+  "faq": [
+    {"question": "سؤال شائع 1؟", "answer": "إجابة تفصيلية 1..."},
+    {"question": "...", "answer": "..."}
+  ]
+}
+\`\`\``;
             case 'all':
             default:
                 return `${baseContext}
 
-Write a complete product listing with ALL fields.
+Write a complete product listing with ALL fields including GEO content.
 Description length: ${lengthGuide}
-Structure the description with a professional overview paragraph, then a bulleted list of key features using dashes (-).
 
 \`\`\`json
 {
-  "title": "عنوان احترافي ودقيق للمنتج",
-  "description": "وصف احترافي يبدأ بنظرة عامة ثم قائمة مميزات.\\n\\n- ميزة 1\\n- ميزة 2\\n- ميزة 3",
-  "slug": "english-seo-friendly-slug",
-  "metaTitle": "عنوان ميتا احترافي",
-  "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
-  "specs": [
-    {"key": "اسم المواصفة", "value": "القيمة"}
+  "title": "عنوان احترافي",
+  "description": "وصف المنتج...",
+  "llmDescription": "وصف GEO محسن للذكاء الاصطناعي...",
+  "faq": [
+    {"question": "سؤال؟", "answer": "إجابة"}
   ],
-  "tags": ["وسم1", "وسم2", "وسم3"]
+  "slug": "slug",
+  "specs": [{"key": "K", "value": "V"}],
+  "tags": ["tag1"]
 }
 \`\`\``;
         }
@@ -153,10 +170,11 @@ Structure the description with a professional overview paragraph, then a bullete
         try {
             const response = await this.client.models.generateContent({
                 model: forcedModel,
-                contents: prompt
+                contents: [{ role: 'user', parts: [{ text: prompt }] }]
             });
             const text = response.text;
             if (!text) {
+                console.warn(`Empty response from model: ${forcedModel}`, JSON.stringify(response, null, 2));
                 throw new Error(`Empty response from model: ${forcedModel}`);
             }
             try {
@@ -176,7 +194,7 @@ Structure the description with a professional overview paragraph, then a bullete
                     console.log(`🤖 AI: Attempting fallback with model: ${modelName}`);
                     const response = await this.client.models.generateContent({
                         model: modelName,
-                        contents: prompt
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }]
                     });
                     if (response.text) {
                         try {
@@ -187,6 +205,7 @@ Structure the description with a professional overview paragraph, then a bullete
                         }
                     }
                     else {
+                        console.warn(`Empty response from fallback model: ${modelName}`, JSON.stringify(response, null, 2));
                         throw new Error("Empty response");
                     }
                 }

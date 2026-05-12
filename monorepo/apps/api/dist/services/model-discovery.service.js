@@ -14,7 +14,7 @@ export class ModelDiscoveryService {
      * @param apiVersion API version (default: 'v1')
      * @returns Array of model names that support generateContent
      */
-    static async discoverModels(apiKey, apiVersion = 'v1') {
+    static async discoverModels(apiKey, apiVersion = 'v1beta') {
         // Check cache first
         const cached = this.cache.get(apiKey);
         if (cached && (Date.now() - cached.timestamp) < this.CACHE_TTL) {
@@ -22,31 +22,39 @@ export class ModelDiscoveryService {
             return cached.models;
         }
         try {
-            console.log('🔍 Discovering available models from Google API...');
+            console.log(`🔍 Discovering available models from Google API (${apiVersion})...`);
             const url = `https://generativelanguage.googleapis.com/${apiVersion}/models?key=${apiKey}`;
             const response = await fetch(url);
             console.log(`📡 ListModels response status: ${response.status}`);
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`❌ ListModels API error: ${response.status}`, errorText);
+                // If v1 failed, try v1beta automatically if we haven't already
+                if (apiVersion === 'v1') {
+                    console.log('🔄 v1 failed, retrying with v1beta...');
+                    return this.discoverModels(apiKey, 'v1beta');
+                }
                 throw new Error(`ListModels failed: ${response.status} ${response.statusText}`);
             }
             const data = (await response.json());
-            console.log(`📦 Raw API response:`, JSON.stringify(data, null, 2));
             const models = data.models || [];
             console.log(`📋 Total models in response: ${models.length}`);
             // Filter for models that support generateContent
             const generateModels = models
                 .filter(model => {
                 const supports = model.supportedGenerationMethods?.includes('generateContent') &&
-                    model.name.includes('gemini');
-                console.log(`  - ${model.name}: supports=${supports}, methods=${model.supportedGenerationMethods?.join(',')}`);
+                    model.name.includes('gemini') &&
+                    !model.name.includes('-tts');
                 return supports;
             })
                 .map(model => model.name.replace('models/', ''));
             console.log(`✅ Filtered to ${generateModels.length} generateContent models`);
             // Prioritize models (flash > pro > others)
             const prioritized = this.prioritizeModels(generateModels);
+            if (prioritized.length === 0 && apiVersion === 'v1') {
+                console.log('⚠️ No gemini models found in v1, trying v1beta...');
+                return this.discoverModels(apiKey, 'v1beta');
+            }
             console.log(`✅ Discovered ${prioritized.length} models:`, prioritized);
             // Cache the results
             this.cache.set(apiKey, {
@@ -57,7 +65,6 @@ export class ModelDiscoveryService {
         }
         catch (error) {
             console.error('❌ Model discovery failed:', error.message);
-            console.error('❌ Full error:', error);
             // Return safe fallback models
             return this.getFallbackModels();
         }

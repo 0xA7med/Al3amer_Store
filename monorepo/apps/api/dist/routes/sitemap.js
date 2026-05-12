@@ -54,5 +54,38 @@ router.get('/sitemap.xml', async (_req, res) => {
         res.status(500).json({ error: 'Failed to generate sitemap' });
     }
 });
+router.get('/sitemap_llm.xml', async (_req, res) => {
+    try {
+        const baseUrl = process.env.SITE_URL || 'https://al3amer.store';
+        const allProducts = await db.query.products.findMany({
+            where: eq(products.status, 'active'),
+            columns: { name: true, slug: true, llmDescription: true, faq: true, updatedAt: true },
+        });
+        const urls = allProducts.map(p => {
+            const faqText = p.faq?.map((f) => `Q: ${f.question}\nA: ${f.answer}`).join('\n') || '';
+            return `
+    <url>
+      <loc>${baseUrl}/product/${p.slug}</loc>
+      <lastmod>${new Date(p.updatedAt ?? new Date()).toISOString()}</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>1.0</priority>
+      <data>
+        <title>${p.name}</title>
+        <description>${p.llmDescription || ''}</description>
+        <faq>${faqText}</faq>
+      </data>
+    </url>`;
+        }).join('');
+        res.header('Content-Type', 'application/xml; charset=utf-8');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:llm="http://www.al3amer.store/schemas/llm/1.0">
+  ${urls}
+</urlset>`);
+    }
+    catch (error) {
+        console.error('Error generating LLM sitemap:', error);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
 export default router;
 //# sourceMappingURL=sitemap.js.map
