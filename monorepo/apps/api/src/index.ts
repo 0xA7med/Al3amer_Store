@@ -38,9 +38,10 @@ const defaultOrigins = [
     'https://www.al3amer.store'
 ];
 
-const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, ''))
-    : defaultOrigins;
+const allowedOrigins = [
+    ...defaultOrigins,
+    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim().replace(/\/$/, '')) : [])
+];
 
 app.use(cors({
     origin: (origin, callback) => {
