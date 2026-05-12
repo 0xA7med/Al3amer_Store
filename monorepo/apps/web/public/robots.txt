@@ -8,5 +8,9 @@ Disallow: /payment/
 Disallow: /order-success/
 Disallow: /track-order/
 Disallow: /api/
+Allow: /sitemap.xml
+Allow: /sitemap_llm.xml
+Allow: /llm-catalog.md
 
 Sitemap: https://al3amer.store/sitemap.xml
+Sitemap: https://al3amer.store/sitemap_llm.xml

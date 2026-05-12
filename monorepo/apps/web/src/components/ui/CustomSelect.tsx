@@ -15,6 +15,7 @@ interface CustomSelectProps {
     icon?: string;
     label?: string;
     required?: boolean;
+    searchable?: boolean;
 }
 
 export function CustomSelect({
@@ -25,9 +26,11 @@ export function CustomSelect({
     className = "",
     icon = "expand_more",
     label,
-    required = false
+    required = false,
+    searchable = false
 }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const buttonRef = useRef<HTMLButtonElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -97,29 +100,47 @@ export function CustomSelect({
             style={dropdownStyle}
             className="bg-[#1a2035] border border-white/10 rounded-xl shadow-2xl py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
         >
-            <div className="max-h-[250px] overflow-y-auto custom-scrollbar" style={{ overscrollBehavior: 'contain' }}>
-                {options.map((option) => (
-                    <button
-                        key={option.value}
-                        type="button"
-                        onMouseDown={(e) => {
-                            // mousedown fires before blur, prevents flicker
-                            e.preventDefault();
-                            onChange(option.value);
-                            closeDropdown();
-                        }}
-                        className={`w-full text-right px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${value === option.value
-                            ? 'bg-primary/20 text-white font-bold'
-                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                            }`}
-                    >
-                        <span className="truncate">{option.label}</span>
-                        {value === option.value && (
-                            <span className="material-symbols-outlined text-[18px] text-primary flex-shrink-0">check</span>
-                        )}
-                    </button>
-                ))}
-            </div>
+                {searchable && (
+                    <div className="p-2 border-b border-white/5">
+                        <input
+                            type="text"
+                            placeholder="بحث..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onMouseDown={(e) => e.stopPropagation()} // Prevent closing
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-all"
+                            autoFocus
+                        />
+                    </div>
+                )}
+                <div className="max-h-[250px] overflow-y-auto custom-scrollbar" style={{ overscrollBehavior: 'contain' }}>
+                    {options.filter(opt => 
+                        !searchable || 
+                        opt.label.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        opt.value.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onMouseDown={(e) => {
+                                // mousedown fires before blur, prevents flicker
+                                e.preventDefault();
+                                onChange(option.value);
+                                closeDropdown();
+                                setSearchTerm('');
+                            }}
+                            className={`w-full text-right px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${value === option.value
+                                ? 'bg-primary/20 text-white font-bold'
+                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                }`}
+                        >
+                            <span className="truncate">{option.label}</span>
+                            {value === option.value && (
+                                <span className="material-symbols-outlined text-[18px] text-primary flex-shrink-0">check</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
         </div>,
         document.body
     ) : null;
