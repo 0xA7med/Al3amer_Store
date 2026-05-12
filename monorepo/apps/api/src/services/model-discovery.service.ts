@@ -65,7 +65,8 @@ export class ModelDiscoveryService {
             const generateModels = models
                 .filter(model => {
                     const supports = model.supportedGenerationMethods?.includes('generateContent') &&
-                        model.name.includes('gemini');
+                        model.name.includes('gemini') &&
+                        !model.name.includes('-tts');
                     return supports;
                 })
                 .map(model => model.name.replace('models/', ''));
