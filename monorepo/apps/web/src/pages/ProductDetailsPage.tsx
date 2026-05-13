@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../hooks/useWishlist';
 import toast from 'react-hot-toast';
 import { useSettings } from '../context/SettingsContext';
-import { ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart, FAQSection } from '../components/products';
+import { ProductGallery, ProductTabs, RelatedProducts, ProductLightbox, StickyMobileCart } from '../components/products';
 import SEOHead from '../components/SEO/SEOHead';
 import { buildProductSchema, buildBreadcrumbSchema, buildFAQSchema } from '../components/SEO/ProductSchema';
 

@@ -175,7 +175,7 @@ Structure the description with a professional overview paragraph, then a bullete
   "slug": "english-seo-friendly-slug",
   "metaTitle": "عنوان ميتا احترافي",
   "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
-  "llmDescription": "Technical summary formatted for LLMs without marketing fluff.",
+  "llmDescription": "Technical summary in ${langInst} formatted for LLMs without marketing fluff.",
   "specs": [
     {"key": "اسم المواصفة", "value": "القيمة"}
   ],
