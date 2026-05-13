@@ -152,19 +152,21 @@ export function ProductCard({
 
                 {/* Product Name */}
                 <Link to={`/product/${slug || id}`}>
-                    <h3 className="text-white font-semibold text-[12px] sm:text-[13px] leading-snug line-clamp-2 group-hover:text-primary/90 transition-colors mb-2 cursor-pointer">
+                    <h3 className="text-white font-semibold text-[12px] sm:text-[13px] leading-snug line-clamp-2 group-hover:text-primary/90 transition-colors mb-2 cursor-pointer min-h-[32px] sm:min-h-[38px]">
                         {name}
                     </h3>
                 </Link>
 
                 {/* Price + Buttons */}
-                <div className="mt-auto flex items-center justify-between gap-1.5 pt-2 border-t border-white/5">
+                <div className="mt-auto flex items-center justify-between gap-1.5 pt-2 border-t border-white/5 min-h-[44px]">
                     {/* Price */}
                     <div className="flex flex-col min-w-0">
-                        {originalPrice && (
-                            <span className="text-gray-400 text-[9px] font-bold line-through decoration-red-500/60 leading-none mb-0.5">
+                        {originalPrice ? (
+                            <span className="text-gray-400 text-[9px] font-bold line-through decoration-red-500/60 leading-none mb-0.5 h-3">
                                 {originalPrice.toLocaleString()}
                             </span>
+                        ) : (
+                            <div className="h-3" /> /* Fixed height placeholder for price row */
                         )}
                         <div className="flex items-baseline gap-0.5">
                             <span className="text-white text-[15px] sm:text-lg font-bold tracking-tight leading-none">

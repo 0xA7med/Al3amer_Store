@@ -16,6 +16,66 @@
   <!-- Preload the store logo (critical LCP resource) -->
   <link rel="preload" as="image" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" fetchpriority="high" />
 
+  <style>
+    :root {
+      --bg: #101622;
+      --primary: #135bec;
+      --surface: #161b26;
+    }
+    body {
+      background-color: var(--bg);
+      margin: 0;
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
+    }
+    .skeleton-header {
+      height: 80px;
+      background: rgba(16, 22, 34, 0.7);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 5%;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .skeleton-hero {
+      min-height: 550px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 40px 5%;
+    }
+    @media (min-width: 1024px) { .skeleton-hero { min-height: 750px; } }
+    .skeleton-content {
+      max-width: 1200px;
+      width: 100%;
+      z-index: 2;
+    }
+    .skeleton-title {
+      height: 60px;
+      width: 80%;
+      background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .skeleton-text {
+      height: 20px;
+      width: 60%;
+      background: #1e293b;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+
   <!-- Fonts — Non-blocking (print media trick) -->
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&family=Manrope:wght@400;500;700;800&display=swap" />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
@@ -31,7 +91,20 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <header class="skeleton-header">
+      <img src="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" alt="Logo" width="140" height="40" style="opacity: 0.5;">
+    </header>
+    <main>
+      <section class="skeleton-hero">
+        <div class="skeleton-content">
+          <div class="skeleton-title"></div>
+          <div class="skeleton-text"></div>
+          <div class="skeleton-text" style="width: 40%;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

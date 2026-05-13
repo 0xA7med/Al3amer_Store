@@ -107,12 +107,11 @@ export function HomePage() {
                         </div>
 
                         <div 
-                            className="relative hidden lg:block"
+                            className="relative hidden lg:flex items-center justify-center min-h-[600px]"
                             onMouseEnter={() => setIsPaused(true)}
                             onMouseLeave={() => setIsPaused(false)}
                         >
-
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px]"></div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
                             
                             {(isBestSellersLoading || isFeaturedLoading || isNewLoading) ? (
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -428,7 +427,13 @@ export function HomePage() {
                                 className="glass-card p-3 md:p-4 rounded-xl flex items-center md:flex-col md:justify-center gap-3 md:text-center group min-w-[160px] snap-center shrink-0 md:min-w-0 md:h-36"
                             >
                                 {cat.image ? (
-                                    <img src={optimizeImage(cat.image, 100)} alt={cat.name} className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" />
+                                    <img 
+                                        src={optimizeImage(cat.image, 100)} 
+                                        alt={cat.name} 
+                                        width="48" 
+                                        height="48" 
+                                        className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" 
+                                    />
                                 ) : (
                                     <span className="material-symbols-outlined text-3xl md:text-4xl text-gray-400 group-hover:text-primary transition-colors shrink-0">
                                         {cat.icon || 'category'}
