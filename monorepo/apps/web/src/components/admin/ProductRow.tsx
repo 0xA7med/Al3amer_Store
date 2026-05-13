@@ -1,6 +1,7 @@
 import { useState, memo, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Product } from '../../hooks/useAdmin';
+import { calculateAiScore } from '../../utils/aiUtils';
 
 const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string; bgColor: string; borderColor: string }> = {
     active: { color: 'text-emerald-500', label: 'نشط', icon: 'check_circle', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/20' },
@@ -10,16 +11,6 @@ const STATUS_CONFIG: Record<string, { color: string; label: string; icon: string
 function getProductStatus(product: Product): string {
     if (product.status === 'archived') return 'draft';
     return product.status || 'active';
-}
-
-function calculateAiScore(product: Product): number {
-    let score = 0;
-    if (product.description && product.description.length > 50) score += 20;
-    if (product.specifications && Object.keys(product.specifications).length > 0) score += 20;
-    if (product.metaTitle && product.metaDescription) score += 20;
-    if (product.llmDescription) score += 20;
-    if (product.faq && product.faq.length > 0) score += 20;
-    return score;
 }
 
 export interface ProductRowProps {
@@ -69,13 +60,13 @@ export const ProductRow = memo(({
                 </div>
             </td>
             <td className="px-6 py-2">
-                <div className="flex flex-col">
-                    <span className="text-slate-400">{product.category?.name || 'غير مصنف'}</span>
-                    <span className="text-primary/70 text-[10px] font-bold">{product.brand?.name || ''}</span>
-                    <div className="mt-1 flex items-center gap-1.5" title="مؤشر جاهزية الـ AI">
-                        <span className="material-symbols-outlined text-[12px] text-indigo-400">psychology</span>
-                        <div className="w-16 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                            <div className={`h-full ${aiScore >= 80 ? 'bg-emerald-500' : aiScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${aiScore}%` }}></div>
+                <div className="flex flex-col gap-0.5">
+                    <span className="text-slate-400 text-sm">{product.category?.name || 'غير مصنف'}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-primary/70 text-[10px] font-bold">{product.brand?.name || ''}</span>
+                        <div className={`flex items-center gap-1 px-1 rounded border text-[8px] font-black transition-all ${aiScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : aiScore >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`} title="مؤشر جاهزية الـ AI">
+                            <span className="material-symbols-outlined text-[10px]">psychology</span>
+                            <span>{aiScore}%</span>
                         </div>
                     </div>
                 </div>
@@ -184,11 +175,9 @@ export const MobileProductCard = memo(({
                                 <span className="text-[10px] font-bold text-slate-500">{product.category?.name || 'غير مصنف'}</span>
                             </div>
                             <div className="w-1 h-1 rounded-full bg-slate-700"></div>
-                            <div className="flex items-center gap-1" title="مؤشر جاهزية الـ AI">
-                                <span className="material-symbols-outlined text-[14px] text-indigo-400">psychology</span>
-                                <div className="w-12 h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                                    <div className={`h-full ${aiScore >= 80 ? 'bg-emerald-500' : aiScore >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${aiScore}%` }}></div>
-                                </div>
+                            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[8px] font-black transition-all ${aiScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : aiScore >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`} title="مؤشر جاهزية الـ AI">
+                                <span className="material-symbols-outlined text-[10px]">psychology</span>
+                                <span>{aiScore}%</span>
                             </div>
                         </div>
                     </div>

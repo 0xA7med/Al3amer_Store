@@ -8,6 +8,7 @@ import { BrandSelect } from '../../components/admin/BrandSelect';
 import { CategoryModal } from './CategoriesManagement';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils/imageUtils';
+import { calculateAiScore } from '../../utils/aiUtils';
 import api from '../../lib/api';
 
 
@@ -203,17 +204,18 @@ export function AddProduct() {
     const dynamicAttributesSchema = selectedCategoryData?.attributesSchema || [];
 
     const aiScore = useMemo(() => {
-        let score = 0;
-        if (formData.name) score += 5;
-        if (formData.description && formData.description.length > 50) score += 10;
-        if (specs.length >= 3) score += 10;
-        if (images.length > 0) score += 10;
-        if (formData.metaTitle && formData.metaDescription) score += 10;
-        if (formData.llmDescription && formData.llmDescription.length > 50) score += 15;
-        if (faqs.length >= 2) score += 15;
-        if (relatedProductIds.length > 0 || accessoryProductIds.length > 0 || alternativeProductIds.length > 0) score += 15;
-        if (videos.some(v => v.url)) score += 10;
-        return score > 100 ? 100 : score;
+        return calculateAiScore({
+            metaTitle: formData.metaTitle,
+            metaDescription: formData.metaDescription,
+            llmDescription: formData.llmDescription,
+            faq: faqs,
+            relatedProducts: relatedProductIds,
+            accessories: accessoryProductIds,
+            alternatives: alternativeProductIds,
+            specifications: specs.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {}),
+            videos: videos,
+            videoUrl: formData.videoUrl as any // AddProduct has a different way of handling videos, usually in a list
+        });
     }, [formData, specs, images, faqs, relatedProductIds, accessoryProductIds, alternativeProductIds, videos]);
 
     // ---- Handlers ----
@@ -1264,50 +1266,56 @@ export function AddProduct() {
                                         style={{ width: `${aiScore}%` }}
                                     />
                                 </div>
-                                <div className="flex justify-between text-[9px] text-slate-600 mb-3">
-                                    <span>0%</span><span>50%</span><span>100%</span>
+                                <div className="flex justify-between text-[9px] text-slate-600 mb-3 px-1">
+                                    <span>100%</span><span>50%</span><span>0%</span>
                                 </div>
 
                                 {/* Checklist */}
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {[
-                                        { label: 'اسم المنتج', weight: 10, done: !!formData.name },
-                                        { label: 'وصف المنتج (50+ حرف)', weight: 15, done: formData.description.length > 50 },
-                                        { label: 'صورة واحدة على الأقل', weight: 10, done: images.length > 0 },
-                                        { label: 'مواصفات (3+)', weight: 10, done: specs.filter(s => s.key && s.value).length >= 3 },
-                                        { label: 'بيانات ميتا SEO', weight: 15, done: !!(formData.metaTitle && formData.metaDescription) },
-                                        { label: 'خلاصة LLM التقنية', weight: 20, done: !!(formData.llmDescription && formData.llmDescription.length > 50) },
-                                        { label: 'أسئلة FAQ (2+)', weight: 20, done: faqs.filter(f => f.question && f.answer).length >= 2 },
+                                        { label: 'بيانات ميتا SEO', weight: 25, done: !!(formData.metaTitle && formData.metaDescription) },
+                                        { label: 'خلاصة LLM التقنية', weight: 25, done: !!(formData.llmDescription && formData.llmDescription.length > 50) },
+                                        { label: 'أسئلة FAQ (5+ أسئلة)', weight: 20, done: faqs.filter(f => f.question && f.answer).length >= 5 },
+                                        { label: 'الربط الذكي بالمنتجات', weight: 15, done: relatedProductIds.length > 0 || accessoryProductIds.length > 0 || alternativeProductIds.length > 0 },
+                                        { label: 'المواصفات التقنية', weight: 15, done: specs.filter(s => s.key && s.value).length > 0 },
                                     ].map(item => (
-                                        <div key={item.label} className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`material-symbols-outlined text-[13px] flex-shrink-0 ${item.done ? 'text-emerald-400' : 'text-slate-600'}`}>
+                                        <div key={item.label} className="flex items-center justify-between group/item">
+                                            {/* Weight on the left */}
+                                            <div className={`text-xs font-black min-w-[45px] ${item.done ? 'text-emerald-500' : 'text-slate-700'}`}>
+                                                +{item.weight}%
+                                            </div>
+
+                                            {/* Label in the middle */}
+                                            <div className={`flex-1 text-center text-[11px] font-bold transition-colors ${item.done ? 'text-slate-200' : 'text-slate-500'}`}>
+                                                {item.label}
+                                            </div>
+
+                                            {/* Icon on the right */}
+                                            <div className="flex-shrink-0 ml-2">
+                                                <span className={`material-symbols-outlined text-[20px] transition-all ${item.done ? 'text-emerald-500 scale-110' : 'text-slate-700 opacity-40'}`}>
                                                     {item.done ? 'check_circle' : 'radio_button_unchecked'}
                                                 </span>
-                                                <span className={`text-[11px] ${item.done ? 'text-slate-300' : 'text-slate-600'}`}>{item.label}</span>
                                             </div>
-                                            <span className={`text-[10px] font-bold ${item.done ? 'text-emerald-500' : 'text-slate-700'}`}>+{item.weight}%</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 {/* Related Products AI */}
-                                <div className="mt-4 pt-4 border-t border-indigo-500/10">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h4 className="text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
-                                            <span className="material-symbols-outlined text-[14px]">device_hub</span>
+                                <div className="mt-6 pt-6 border-t border-white/5">
+                                    <div className="flex items-center justify-between flex-row-reverse mb-4">
+                                        <h4 className="text-[13px] font-black text-white flex items-center gap-2">
                                             الربط الذكي بالمنتجات
+                                            <span className="material-symbols-outlined text-[20px] text-indigo-400">hub</span>
                                         </h4>
                                         <button
                                             onClick={handleSuggestRelated}
                                             disabled={isSuggestingRelated || !formData.name}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-lg text-[11px] font-bold text-indigo-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                            title={!formData.name ? 'أدخل اسم المنتج أولاً لتفعيل هذه الميزة' : 'استخدام الذكاء الاصطناعي لاقتراح المنتجات ذات الصلة'}
+                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl text-[12px] font-black text-indigo-300 transition-all active:scale-95 disabled:opacity-40"
                                         >
                                             {isSuggestingRelated ? (
                                                 <span className="w-3 h-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
                                             ) : (
-                                                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                                                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
                                             )}
                                             {isSuggestingRelated ? 'جاري التحليل...' : 'اقتراح تلقائي'}
                                         </button>
