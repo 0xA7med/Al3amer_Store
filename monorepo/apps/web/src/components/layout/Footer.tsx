@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 
-const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
+// Footer logo: smaller size (120px) compressed via Cloudinary
+const LOGO_URL = 'https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_120,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Footer() {
     const { settings } = useSettings();

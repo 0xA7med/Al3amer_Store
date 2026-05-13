@@ -3,109 +3,116 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" />
+  <!-- Favicon via Cloudinary (tiny, compressed) -->
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_32,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مركز العامر - لأجهزة الكاشير وأنظمة المحاسبة</title>
 
-  <!-- Critical resource preconnects -->
+  <!-- Critical preconnects (max 2 for performance) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://i.ibb.co" crossorigin />
-  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
 
-  <!-- Preload the store logo (critical LCP resource) -->
-  <link rel="preload" as="image" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" fetchpriority="high" />
+  <!-- Preload Logo via Cloudinary (compressed to 160px width = ~3KB instead of 199KB) -->
+  <link rel="preload" as="image"
+    href="https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_160,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png"
+    fetchpriority="high" />
 
   <style>
     :root {
-      --bg: #101622;
+      --bg: #0d121c;
       --primary: #135bec;
       --surface: #161b26;
       --text: #e2e8f0;
     }
+    *, *::before, *::after { box-sizing: border-box; }
     body {
       background-color: var(--bg);
       margin: 0;
       font-family: 'Cairo', sans-serif;
       overflow-x: hidden;
       color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
-    .skeleton-header {
+    #root > .sk-wrap { display: block; }
+    #root.hydrated > .sk-wrap { display: none; }
+    .sk-header {
       height: 80px;
-      background: rgba(16, 22, 34, 0.9);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(13,18,28,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
       display: flex;
       align-items: center;
       padding: 0 5%;
     }
-    .skeleton-hero {
+    .sk-logo {
+      height: 40px;
+      width: 120px;
+      object-fit: contain;
+      opacity: 0.7;
+    }
+    .sk-hero {
       min-height: 550px;
       display: flex;
       align-items: center;
-      justify-content: center;
       padding: 40px 5%;
+      background: var(--bg);
     }
-    @media (min-width: 1024px) { .skeleton-hero { min-height: 750px; } }
-    .skeleton-content {
-      max-width: 1200px;
-      width: 100%;
-    }
-    .skeleton-title {
-      height: 48px;
-      width: 70%;
+    @media (min-width: 1024px) { .sk-hero { min-height: 680px; } }
+    .sk-content { max-width: 700px; }
+    .sk-bar {
       background: #1e293b;
       border-radius: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
+      height: 48px;
+      width: 75%;
     }
-    .skeleton-text {
-      height: 16px;
-      width: 50%;
-      background: #1e293b;
-      border-radius: 4px;
-      margin-bottom: 12px;
-    }
+    .sk-bar.sm { height: 16px; width: 55%; margin-bottom: 10px; }
+    .sk-bar.xs { height: 16px; width: 40%; }
   </style>
 
-  <!-- Preload API Data to Break the Waterfall (Prefetching) -->
-  <link rel="preconnect" href="https://al3amer-store.up.railway.app" crossorigin />
+  <!-- Preload API data immediately before JS loads (breaks network waterfall) -->
   <script>
-    // Initiate API fetches immediately before React/Vite JS even starts downloading!
-    // This reduces the time to first byte for API data by up to 5 seconds on slow 3G/4G.
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
-    window.__PREFETCHED_PROMISES__ = {
-      hero: fetch(`${apiBase}/products?isFeatured=true&limit=5`).catch(() => {}),
-      categories: fetch(`${apiBase}/categories`).catch(() => {})
-    };
+    (function() {
+      var base = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+      window.__PF__ = {
+        hero: fetch(base + '/products?isFeatured=true&limit=5', {priority:'high'}).catch(function(){}),
+        cats: fetch(base + '/categories', {priority:'low'}).catch(function(){})
+      };
+    })();
   </script>
 
-  <!-- Fonts — Non-blocking (print media trick) -->
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&family=Manrope:wght@400;500;700;800&display=swap" />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+  <!-- Fonts — fully non-blocking -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&family=Manrope:wght@400;500;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap"
     rel="stylesheet" media="print" onload="this.media='all'" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap"
     rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet" />
   </noscript>
 </head>
 
 <body>
   <div id="root">
-    <header class="skeleton-header">
-      <img src="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" alt="Logo" width="140" height="40" style="opacity: 0.5;">
-    </header>
-    <main>
-      <section class="skeleton-hero">
-        <div class="skeleton-content">
-          <div class="skeleton-title"></div>
-          <div class="skeleton-text"></div>
-          <div class="skeleton-text" style="width: 40%;"></div>
-        </div>
-      </section>
-    </main>
+    <div class="sk-wrap">
+      <header class="sk-header">
+        <img
+          src="https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_160,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png"
+          alt="مركز العامر"
+          width="120" height="40"
+          class="sk-logo"
+          fetchpriority="high"
+        />
+      </header>
+      <main>
+        <section class="sk-hero">
+          <div class="sk-content">
+            <div class="sk-bar"></div>
+            <div class="sk-bar sm"></div>
+            <div class="sk-bar xs"></div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

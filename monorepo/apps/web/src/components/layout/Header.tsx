@@ -7,7 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 import { optimizeImage } from '../../lib/image-optimizer';
 
-const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
+// Logo pre-compressed via Cloudinary Fetch (160px WebP ~3KB vs 1980px PNG ~199KB)
+const LOGO_URL = 'https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_160,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Header() {
     const { user, isAuthenticated, logout } = useAuth();
