@@ -81,6 +81,11 @@ export function ProductGallery({
                         src={optimizeImage(images[activeImageIndex] || images[0], 800)}
                         alt={product.name}
                         className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
+                        fetchPriority="high"
+                        loading="eager"
+                        decoding="sync"
+                        width="800"
+                        height="600"
                     />
                 </div>
                 <button
@@ -99,7 +104,7 @@ export function ProductGallery({
                         className={`relative size-16 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
                             }`}
                     >
-                        <img src={optimizeImage(img, 150)} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img src={optimizeImage(img, 150)} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" width="96" height="96" loading="lazy" />
                     </button>
                 ))}
                 {product.videos && product.videos.length > 0 && (

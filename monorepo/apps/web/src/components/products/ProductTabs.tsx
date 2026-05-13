@@ -1,7 +1,62 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, PlayCircle, Cpu, LayoutList, Verified, Plus, Minus, HelpCircle } from 'lucide-react';
 import { getEmbedUrl } from '../../utils/videoParser';
 import type { Product } from '../../hooks/useProducts';
+
+// YouTube Facade: extracts video ID to show thumbnail before loading iframe
+function getYouTubeId(url: string): string | null {
+    try {
+        const u = new URL(url);
+        if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+        return u.searchParams.get('v');
+    } catch { return null; }
+}
+
+// Lazy YouTube Player: shows thumbnail + play button, loads iframe only on click
+function LazyYouTube({ embedUrl, videoUrl, title }: { embedUrl: string; videoUrl: string; title: string }) {
+    const [activated, setActivated] = useState(false);
+    const videoId = getYouTubeId(videoUrl);
+    const thumbUrl = videoId
+        ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+        : null;
+
+    if (activated) {
+        return (
+            <iframe
+                className="w-full h-full"
+                src={`${embedUrl}&autoplay=1`}
+                title={title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+            />
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={() => setActivated(true)}
+            className="w-full h-full relative flex items-center justify-center bg-black/70 group"
+            aria-label={`تشغيل ${title}`}
+            style={{ aspectRatio: '16/9' }}
+        >
+            {thumbUrl && (
+                <img
+                    src={thumbUrl}
+                    alt={title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    loading="lazy"
+                    width="480" height="270"
+                />
+            )}
+            <div className="relative z-10 size-16 rounded-full bg-primary/90 hover:bg-primary flex items-center justify-center shadow-2xl shadow-primary/40 transition-all group-hover:scale-110">
+                <PlayCircle className="w-9 h-9 text-white" />
+            </div>
+        </button>
+    );
+}
 
 interface ProductTabsProps {
     product: Product;
@@ -172,15 +227,12 @@ export function ProductTabs({
                                                 </a>
                                             </div>
                                         ) : (
-                                            <div className="aspect-video w-full bg-black/50">
-                                                <iframe
-                                                    className="w-full h-full"
-                                                    src={embedUrl}
+                                            <div className="aspect-video w-full bg-black/50 overflow-hidden">
+                                                <LazyYouTube
+                                                    embedUrl={embedUrl}
+                                                    videoUrl={video.url}
                                                     title={video.title || `فيديو رقم ${idx + 1}`}
-                                                    frameBorder="0"
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                    allowFullScreen
-                                                ></iframe>
+                                                />
                                             </div>
                                         )}
                                     </div>
@@ -350,13 +402,19 @@ export function ProductTabs({
                                             <PlayCircle className="w-8 h-8 text-white" />
                                         </div>
                                     </div>
-                                    <iframe
-                                        className="w-full h-full absolute inset-0 z-10 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity"
-                                        src={embedUrl}
-                                        title={featured.title || "Video Preview"}
-                                        frameBorder="0"
-                                        allow="autoplay; encrypted-media"
-                                    ></iframe>
+                                    {/* Sidebar preview: static thumbnail only — no iframe loaded here */}
+                                    {(() => {
+                                        const vid = getYouTubeId(featured.url);
+                                        return vid ? (
+                                            <img
+                                                src={`https://i.ytimg.com/vi/${vid}/mqdefault.jpg`}
+                                                alt={featured.title || 'فيديو المنتج'}
+                                                className="w-full h-full absolute inset-0 object-cover opacity-80"
+                                                loading="lazy"
+                                                width="320" height="180"
+                                            />
+                                        ) : null;
+                                    })()}
                                 </div>
                                 <p className="text-slate-400 text-xs mt-3 leading-relaxed italic">اضغط لمشاهدة الفيديو كاملاً في قسم الفيديو أعلاه.</p>
                             </div>
