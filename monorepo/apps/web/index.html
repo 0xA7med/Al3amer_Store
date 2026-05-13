@@ -7,12 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مركز العامر - لأجهزة الكاشير وأنظمة المحاسبة</title>
 
-  <!-- DNS Prefetching -->
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-  <link rel="dns-prefetch" href="https://i.ibb.co" />
-  <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-
   <!-- Critical resource preconnects -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,44 +15,6 @@
 
   <!-- Preload the store logo (critical LCP resource) -->
   <link rel="preload" as="image" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" fetchpriority="high" />
-
-  <style>
-    :root { --bg: #030712; }
-    body { background: var(--bg); margin: 0; }
-    #root-skeleton {
-      background: var(--bg);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      direction: rtl;
-      font-family: 'Cairo', sans-serif;
-    }
-    .sk-nav { height: 80px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .sk-hero {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      text-align: center;
-    }
-    .sk-h1 {
-      color: white;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 900;
-      margin-bottom: 1.5rem;
-      opacity: 0.15;
-      animation: pulse 2s infinite ease-in-out;
-    }
-    .sk-btn {
-      width: 180px;
-      height: 48px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.2; } }
-  </style>
 
   <!-- Fonts — Non-blocking (print media trick) -->
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;700;800&family=Manrope:wght@400;500;700;800&display=swap" />
@@ -75,16 +31,7 @@
 </head>
 
 <body>
-  <div id="root">
-    <!-- Sophisticated Critical Skeleton -->
-    <div id="root-skeleton">
-      <div class="sk-nav"></div>
-      <div class="sk-hero">
-        <h1 class="sk-h1">طور نشاطك التجاري مع أحدث أجهزة الكاشير</h1>
-        <div class="sk-btn"></div>
-      </div>
-    </div>
-  </div>
+  <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
