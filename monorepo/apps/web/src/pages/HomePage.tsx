@@ -63,13 +63,13 @@ export function HomePage() {
               jsonLd={[organizationSchema, websiteSchema]}
             />
             {/* Hero Section */}
-            <section className="relative min-h-[450px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
+            <section className="relative min-h-[550px] lg:min-h-[750px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0 bg-[#0d121c]">
                     <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
                     <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+CjxjaXJjbGUgY3g9IjEiIGN5PSIxIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+Cjwvc3ZnPg==')] [background-size:24px_24px] pointer-events-none"></div>
                 </div>
-                <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10 lg:py-20">
+                <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-10 lg:py-24">
                     <div className="grid lg:grid-cols-2 gap-12 items-center">
                         <div className="flex flex-col gap-6 max-w-2xl">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 w-fit backdrop-blur-sm">

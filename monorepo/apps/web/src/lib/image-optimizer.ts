@@ -13,17 +13,23 @@ export function optimizeImage(url: string | null | undefined, width: number = 80
         return url;
     }
 
-    // If URL already has transformations, override the width parameter
-    if (url.includes('/upload/c_limit,w_')) {
-        return url.replace(/\/upload\/c_limit,w_\d+/, `/upload/c_limit,w_${width}`);
-    }
-    if (url.includes('/upload/c_') || url.includes('/upload/w_') || url.includes('/upload/q_')) {
-        // Already has transformations but not in our format — append our transforms
-        return url.replace('/upload/', `/upload/c_limit,w_${width},q_auto,f_auto/`);
+    // Use aggressive auto-quality and forced modern format (webp/avif)
+    const transforms = `c_scale,w_${width},q_auto:eco,f_auto`;
+
+    // If URL already has transformations, replace the entire segment
+    if (url.includes('/upload/')) {
+        const parts = url.split('/upload/');
+        // Find if there's an intermediate segment before the filename
+        const filenameIndex = parts[1].indexOf('/');
+        if (filenameIndex !== -1) {
+            // Has transformations — replace them
+            return `${parts[0]}/upload/${transforms}/${parts[1].substring(filenameIndex + 1)}`;
+        }
+        // No transformations — inject them
+        return `${parts[0]}/upload/${transforms}/${parts[1]}`;
     }
 
-    // Fresh URL — inject transformations
-    return url.replace('/upload/', `/upload/c_limit,w_${width},q_auto,f_auto/`);
+    return url;
 }
 
 /**

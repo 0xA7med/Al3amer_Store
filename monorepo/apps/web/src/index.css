@@ -17,6 +17,21 @@
   --font-display: "Cairo", "Manrope", sans-serif;
   --font-body: "Cairo", "Manrope", sans-serif;
   --font-numbers: "Manrope", sans-serif;
+  /* Accessibility Colors */
+  --color-gray-accessible: #9ca3af;
+}
+
+@layer base {
+  /* Improve Focus States for Accessibility */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 4px;
+  }
+
+  /* Stabilize Image Layouts */
+  img {
+    content-visibility: auto;
+  }
 }
 
 @utility animate-bounce-subtle {
@@ -41,6 +56,8 @@
 html {
   direction: rtl;
   scroll-behavior: smooth;
+  /* Fix content jumping */
+  scrollbar-gutter: stable;
 }
 
 html,
@@ -117,4 +134,11 @@ body {
   background: linear-gradient(to right, #60a5fa, #a78bfa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Layout Stability Helpers */
+.stable-aspect {
+  aspect-ratio: 4/3;
+  background-color: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
 }

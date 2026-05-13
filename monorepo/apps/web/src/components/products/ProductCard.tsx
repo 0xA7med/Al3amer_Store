@@ -123,7 +123,7 @@ export function ProductCard({
             {/* Image */}
             <Link
                 to={`/product/${slug || id}`}
-                className={`relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[110px] sm:w-full sm:aspect-[4/3] p-2 sm:p-5' : 'w-full aspect-[4/3] p-3 sm:p-6'} ${isOutOfStock ? 'opacity-55' : ''}`}
+                className={`relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-white/5 to-transparent shrink-0 aspect-[4/3] min-h-[160px] sm:min-h-[240px] ${mobileHorizontal ? 'w-[110px] sm:w-full p-2 sm:p-5' : 'w-full p-3 sm:p-6'} ${isOutOfStock ? 'opacity-55' : ''}`}
             >
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
                 <img
