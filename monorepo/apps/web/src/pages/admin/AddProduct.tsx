@@ -204,15 +204,17 @@ export function AddProduct() {
 
     const aiScore = useMemo(() => {
         let score = 0;
-        if (formData.name) score += 10;
-        if (formData.description && formData.description.length > 50) score += 15;
+        if (formData.name) score += 5;
+        if (formData.description && formData.description.length > 50) score += 10;
         if (specs.length >= 3) score += 10;
         if (images.length > 0) score += 10;
-        if (formData.metaTitle && formData.metaDescription) score += 15;
-        if (formData.llmDescription && formData.llmDescription.length > 50) score += 20;
-        if (faqs.length >= 2) score += 20;
+        if (formData.metaTitle && formData.metaDescription) score += 10;
+        if (formData.llmDescription && formData.llmDescription.length > 50) score += 15;
+        if (faqs.length >= 2) score += 15;
+        if (relatedProductIds.length > 0 || accessoryProductIds.length > 0 || alternativeProductIds.length > 0) score += 15;
+        if (videos.some(v => v.url)) score += 10;
         return score > 100 ? 100 : score;
-    }, [formData, specs, images, faqs]);
+    }, [formData, specs, images, faqs, relatedProductIds, accessoryProductIds, alternativeProductIds, videos]);
 
     // ---- Handlers ----
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -351,21 +353,27 @@ export function AddProduct() {
                 }
             }
 
-            // Smart Relationships: only if 'geo' and we have an ID (Edit mode)
-            if (section === 'geo' && isEditMode) {
-                try {
-                    setIsSuggestingRelated(true);
-                    const relations = await suggestRelatedMutation.mutateAsync(id);
-                    if (relations) {
-                        if (relations.related) setRelatedProductIds(relations.related);
-                        if (relations.accessories) setAccessoryProductIds(relations.accessories);
-                        if (relations.alternatives) setAlternativeProductIds(relations.alternatives);
-                        toast.success('🔗 تم تحديث الروابط الذكية تلقائياً');
+            // Smart Relationships: only if ('geo' OR 'all')
+            if (section === 'geo' || section === 'all') {
+                if (formData.name) {
+                    try {
+                        setIsSuggestingRelated(true);
+                        const { data: relations } = await api.post(`/products/${id || 'new'}/suggest-related`, {
+                            name: formData.name,
+                            categoryId: formData.category,
+                            brandId: formData.brand
+                        });
+                        if (relations) {
+                            if (relations.related) setRelatedProductIds(relations.related);
+                            if (relations.accessories) setAccessoryProductIds(relations.accessories);
+                            if (relations.alternatives) setAlternativeProductIds(relations.alternatives);
+                            toast.success('🔗 تم تحديث الروابط الذكية تلقائياً');
+                        }
+                    } catch (e) {
+                        console.error('Failed to suggest related products:', e);
+                    } finally {
+                        setIsSuggestingRelated(false);
                     }
-                } catch (e) {
-                    console.error('Failed to suggest related products:', e);
-                } finally {
-                    setIsSuggestingRelated(false);
                 }
             }
 
@@ -444,16 +452,23 @@ export function AddProduct() {
 
     // ---- Handle Suggest Related Products (AI) ----
     const handleSuggestRelated = async () => {
-        if (!id) { toast.error('يجب حفظ المنتج أولاً لاستخدام هذه الميزة'); return; }
+        if (!formData.name) { toast.error('يرجى إدخال اسم المنتج أولاً'); return; }
         setIsSuggestingRelated(true);
         try {
-            const result = await suggestRelatedMutation.mutateAsync(id);
-            setRelatedProductIds(result.related || []);
-            setAccessoryProductIds(result.accessories || []);
-            setAlternativeProductIds(result.alternatives || []);
-            toast.success(`✨ تم اقتراح ${(result.related?.length || 0) + (result.accessories?.length || 0) + (result.alternatives?.length || 0)} منتج ذو صلة`);
-        } catch (e) {
-            // Error is handled in the mutation's onError
+            const { data } = await api.post(`/products/${id || 'new'}/suggest-related`, {
+                name: formData.name,
+                categoryId: formData.category,
+                brandId: formData.brand
+            });
+            if (data) {
+                if (data.related) setRelatedProductIds(data.related);
+                if (data.accessories) setAccessoryProductIds(data.accessories);
+                if (data.alternatives) setAlternativeProductIds(data.alternatives);
+                toast.success('🔗 تم العثور على روابط ذكية مقترحة');
+            }
+        } catch (e: any) {
+            console.error('Failed to suggest related products:', e);
+            toast.error('فشل الحصول على مقترحات الروابط');
         } finally {
             setIsSuggestingRelated(false);
         }
@@ -928,10 +943,10 @@ export function AddProduct() {
                                         className="mr-auto text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20"
                                         type="button"
                                     >
-                                        <span className={`material-symbols-outlined text-[14px] ${generatingSection === 'geo' ? 'animate-spin' : ''}`}>
-                                            {generatingSection === 'geo' ? 'autorenew' : 'auto_awesome'}
+                                        <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'geo' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                            {(generatingSection === 'geo' || generatingSection === 'all') ? 'autorenew' : 'auto_awesome'}
                                         </span>
-                                        {generatingSection === 'geo' ? 'جاري توليد الكل...' : 'توليد كامل محتوى الـ GEO'}
+                                        {(generatingSection === 'geo' || generatingSection === 'all') ? 'جاري توليد الكل...' : 'توليد كامل محتوى الـ GEO'}
                                     </button>
                                 </div>
                                 
@@ -945,10 +960,10 @@ export function AddProduct() {
                                                 className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors disabled:opacity-50"
                                                 type="button"
                                             >
-                                                <span className={`material-symbols-outlined text-[14px] ${generatingSection === 'llm' ? 'animate-spin' : ''}`}>
-                                                    {generatingSection === 'llm' ? 'autorenew' : 'auto_fix_normal'}
+                                                <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'llm' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                                    {(generatingSection === 'llm' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
                                                 </span>
-                                                {generatingSection === 'llm' ? 'جاري التوليد...' : 'توليد وصف LLM'}
+                                                {(generatingSection === 'llm' || generatingSection === 'all') ? 'جاري التوليد...' : 'توليد وصف LLM'}
                                             </button>
                                         </div>
                                         <textarea
@@ -970,10 +985,10 @@ export function AddProduct() {
                                                     className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors disabled:opacity-50"
                                                     type="button"
                                                 >
-                                                    <span className={`material-symbols-outlined text-[14px] ${generatingSection === 'faq' ? 'animate-spin' : ''}`}>
-                                                        {generatingSection === 'faq' ? 'autorenew' : 'auto_fix_normal'}
+                                                    <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'faq' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                                        {(generatingSection === 'faq' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
                                                     </span>
-                                                    {generatingSection === 'faq' ? 'جاري التوليد...' : 'توليد FAQ بالذكاء الاصطناعي'}
+                                                    {(generatingSection === 'faq' || generatingSection === 'all') ? 'جاري التوليد...' : 'توليد FAQ بالذكاء الاصطناعي'}
                                                 </button>
                                                 <button onClick={addFaq} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1" type="button">
                                                     <span className="material-symbols-outlined text-[14px]">add</span> سؤال جديد
@@ -1285,9 +1300,9 @@ export function AddProduct() {
                                         </h4>
                                         <button
                                             onClick={handleSuggestRelated}
-                                            disabled={isSuggestingRelated || !id}
+                                            disabled={isSuggestingRelated || !formData.name}
                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-lg text-[11px] font-bold text-indigo-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                            title={!id ? 'احفظ المنتج أولاً لتفعيل هذه الميزة' : 'استخدام الذكاء الاصطناعي لاقتراح المنتجات ذات الصلة'}
+                                            title={!formData.name ? 'أدخل اسم المنتج أولاً لتفعيل هذه الميزة' : 'استخدام الذكاء الاصطناعي لاقتراح المنتجات ذات الصلة'}
                                         >
                                             {isSuggestingRelated ? (
                                                 <span className="w-3 h-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin" />
@@ -1385,8 +1400,8 @@ export function AddProduct() {
                                             />
                                         </div>
                                     </div>
-                                    {!id && (
-                                        <p className="text-[10px] text-slate-600 mt-2">احفظ المنتج أولاً لتفعيل الربط الذكي.</p>
+                                    {!formData.name && (
+                                        <p className="text-[10px] text-slate-600 mt-2">أدخل اسم المنتج أولاً لتفعيل الربط الذكي.</p>
                                     )}
                                 </div>
                             </div>

@@ -63,8 +63,8 @@ export class AIService {
     private buildPrompt(productName: string, section: AISection, langInst: string, lengthGuide: string): string {
         const baseContext = `You are an expert B2B e-commerce product copywriter for an Egyptian POS and retail electronics store called "العامر ستور".
 Product Name: "${productName}"
-Language: ${langInst}
-Tone: Professional, direct, informative, and technical.
+Language: ${langInst} (Must be professional Egyptian Arabic - عربي مصري).
+Tone: Professional, direct, informative, and technical. Avoid flowery language.
 
 **CRITICAL RULES:**
 1. ABSOLUTELY NO EMOJIS anywhere.
@@ -181,8 +181,11 @@ Structure the description with a professional overview paragraph, then a bullete
   ],
   "faq": [
     {"question": "سؤال تقني 1", "answer": "إجابة شاملة 1"},
-    {"question": "سؤال تقني 2", "answer": "إجابة شاملة 2"}
-  ], // Please generate 5-10 high quality FAQs total
+    {"question": "سؤال تقني 2", "answer": "إجابة شاملة 2"},
+    {"question": "سؤال تقني 3", "answer": "إجابة شاملة 3"},
+    {"question": "سؤال تقني 4", "answer": "إجابة شاملة 4"},
+    {"question": "سؤال تقني 5", "answer": "إجابة شاملة 5"}
+  ], // MANDATORY: Generate 5-10 high quality technical FAQs
   "tags": ["وسم1", "وسم2", "وسم3"]
 }
 \`\`\``;

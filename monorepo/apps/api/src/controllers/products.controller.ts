@@ -1047,26 +1047,55 @@ export class ProductsController {
     static async suggestRelatedProducts(req: Request, res: Response) {
         try {
             const { id } = req.params;
+            const { name: bodyName, categoryId: bodyCategoryId } = req.body;
 
-            const product = await db.query.products.findFirst({
-                where: eq(products.id, id),
-                with: { category: true, brand: true }
-            });
+            let productName = bodyName;
+            let categoryName = 'Unknown';
+            let categoryId = bodyCategoryId;
 
-            if (!product) {
-                return res.status(404).json({ error: 'Product not found' });
+            if (id !== 'new') {
+                const product = await db.query.products.findFirst({
+                    where: eq(products.id, id),
+                    with: { category: true, brand: true }
+                });
+
+                if (!product) {
+                    return res.status(404).json({ error: 'Product not found' });
+                }
+                productName = product.name;
+                categoryName = product.category?.name || 'Unknown';
+                categoryId = product.categoryId;
+            } else {
+                // If it's a new product, we at least need a name
+                if (!productName) {
+                    return res.status(400).json({ error: 'Product name is required for suggestions' });
+                }
+                // Resolve category name if categoryId provided in body
+                if (categoryId) {
+                    const cat = await db.query.categories.findFirst({
+                        where: eq(categories.id, categoryId)
+                    });
+                    if (cat) categoryName = cat.name;
+                }
             }
 
             let candidateProducts;
-            if (product.categoryId) {
+            if (categoryId) {
                 candidateProducts = await db.query.products.findMany({
-                    where: and(eq(products.categoryId, product.categoryId), eq(products.status, 'active'), ne(products.id, id)),
+                    where: and(
+                        eq(products.status, 'active'), 
+                        eq(products.categoryId, categoryId),
+                        id !== 'new' ? ne(products.id, id) : undefined
+                    ),
                     limit: 100,
                     with: { brand: true }
                 });
             } else {
                 candidateProducts = await db.query.products.findMany({
-                    where: and(eq(products.status, 'active'), ne(products.id, id)),
+                    where: and(
+                        eq(products.status, 'active'),
+                        id !== 'new' ? ne(products.id, id) : undefined
+                    ),
                     limit: 100,
                     with: { brand: true }
                 });
@@ -1092,8 +1121,8 @@ export class ProductsController {
 
             const aiService = new AIService(apiKey.trim());
             const relationships = await aiService.generateRelationships(
-                product.name,
-                product.category?.name || 'Unknown',
+                productName,
+                categoryName,
                 mappedCandidates
             );
 
