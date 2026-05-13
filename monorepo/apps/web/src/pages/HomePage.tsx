@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m, LazyMotion, domAnimation } from 'framer-motion';
 import { Sparkles, Package, Loader2, AlertTriangle } from 'lucide-react';
 import { ProductCard } from '../components/products';
 import { useQuery } from '@tanstack/react-query';
@@ -62,6 +62,7 @@ export function HomePage() {
               canonical="/"
               jsonLd={[organizationSchema, websiteSchema]}
             />
+            <LazyMotion features={domAnimation} strict>
             {/* Hero Section */}
             <section className="relative min-h-[550px] lg:min-h-[750px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0 bg-[#0d121c]">
@@ -151,11 +152,12 @@ export function HomePage() {
                                             const discountPercent = hasDiscount && price > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
                                             
                                             return (
-                                                <motion.div
+                                                <m.div
                                                     key={topProduct.id}
                                                     initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)', x: 30 }}
                                                     animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', x: 0 }}
                                                     exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)', x: -30 }}
+
                                                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                                     className="relative"
                                                 >
@@ -214,10 +216,11 @@ export function HomePage() {
                                                             </div>
                                                         )}
                                                     </Link>
-                                                </motion.div>
+                                                </m.div>
                                             );
                                         })()}
                                     </AnimatePresence>
+
                                 </div>
 
 
@@ -479,7 +482,7 @@ export function HomePage() {
                     </div>
                 </div>
             </section>
-
+            </LazyMotion>
         </>
     );
 }
