@@ -57,7 +57,7 @@ export const ProductDetailsPage = () => {
                 id: p.id,
                 name: p.name,
                 price: pDiscountPrice || pPrice,
-                image: p.images.find(img => img.isPrimary)?.url || p.images?.[0]?.url || 'https://via.placeholder.com/64',
+                image: p.images.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || 'https://via.placeholder.com/64',
                 quantity: 1,
                 sku: p.sku,
                 stock: p.stock,

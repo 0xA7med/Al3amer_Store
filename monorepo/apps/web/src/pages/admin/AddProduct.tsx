@@ -141,6 +141,7 @@ export function AddProduct() {
                 metaDescription: productData.metaDescription || '',
                 slug: productData.slug || '',
                 llmDescription: productData.llmDescription || '',
+                videoUrl: (productData as any).videoUrl || '',
             });
 
             if (productData.videos) {
