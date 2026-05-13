@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useProduct, useCategories, useBrands } from '../../hooks/useProducts';
-import { useCreateProduct, useUpdateProduct, useSuggestRelatedProducts, useAdminProducts } from '../../hooks/useAdmin';
+import { useCreateProduct, useUpdateProduct, useAdminProducts } from '../../hooks/useAdmin';
 import { useCategories as useCategoriesHook } from '../../hooks/useCategories';
 import { CustomSelect } from '../../components/ui/CustomSelect';
 import { BrandSelect } from '../../components/admin/BrandSelect';
