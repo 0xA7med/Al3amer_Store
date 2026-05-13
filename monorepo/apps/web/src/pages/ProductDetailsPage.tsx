@@ -39,9 +39,9 @@ export const ProductDetailsPage = () => {
     });
     
     // Smart Linkage Extraction
-    const accessories = (product as any).relationships?.filter((r: any) => r.type === 'accessory').map((r: any) => r.relatedProduct).filter(Boolean) || [];
-    const alternatives = (product as any).relationships?.filter((r: any) => r.type === 'alternative').map((r: any) => r.relatedProduct).filter(Boolean) || [];
-    const manualRelated = (product as any).relationships?.filter((r: any) => r.type === 'related').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+    const accessories = (product as any)?.relationships?.filter((r: any) => r.type === 'accessory').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+    const alternatives = (product as any)?.relationships?.filter((r: any) => r.type === 'alternative').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+    const manualRelated = (product as any)?.relationships?.filter((r: any) => r.type === 'related').map((r: any) => r.relatedProduct).filter(Boolean) || [];
 
     const relatedProducts = manualRelated.length > 0 
         ? manualRelated 
