@@ -117,13 +117,14 @@ export function Header() {
                     <div className="flex items-center justify-between h-20 gap-4">
                         {/* Logo & Brand */}
                         <div className="flex items-center gap-8 flex-1">
-                            <Link to="/" className="flex items-center gap-2 group">
+                            <Link to="/" className="flex items-center gap-2 group shrink-0">
                                 <img
-                                    src={optimizeImage(settings.logoUrl || LOGO_URL, 400)}
-                                    alt={`${settings.storeNameAr || 'Al3amer'} Logo`}
-                                    width="200"
-                                    height="56"
-                                    className="h-10 sm:h-14 w-auto object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
+                                    src={settings.logoUrl || LOGO_URL}
+                                    alt={`${settings.storeNameAr || 'مركز العامر'} Logo`}
+                                    width="160"
+                                    height="45"
+                                    fetchPriority="high"
+                                    className="h-10 sm:h-[45px] w-[120px] sm:w-[160px] object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                                 />
                                 <div className="flex flex-col">
                                     <h2 className="text-white text-lg sm:text-xl font-bold leading-none tracking-tight group-hover:text-primary transition-colors drop-shadow-sm">

@@ -3,7 +3,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { optimizeImage } from '../../lib/image-optimizer';
+import { optimizeImage, buildSrcset } from '../../lib/image-optimizer';
 
 interface ProductCardProps {
     id: string;
@@ -125,6 +125,8 @@ export function ProductCard({
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
                 <img
                     src={optimizeImage(imageUrl, 400)}
+                    srcSet={buildSrcset(imageUrl, [200, 400])}
+                    sizes="(max-width: 640px) 200px, 400px"
                     alt={name}
                     loading="lazy"
                     width="400"

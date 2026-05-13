@@ -76,9 +76,9 @@ export function HomePage() {
                                 <span className="flex h-2 w-2 rounded-full bg-primary"></span>
                                 <span className="text-primary-blue text-xs font-bold text-blue-200">حلول كاشير متطورة</span>
                             </div>
-                            <h1 className="text-4xl lg:text-6xl font-black text-white leading-[1.2]">
+                            <h1 className="text-4xl lg:text-6xl font-black text-white leading-[1.2] min-h-[56px] lg:min-h-[80px]">
                                 طور نشاطك التجاري مع{' '}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary to-blue-300">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-l from-primary to-blue-300 inline-block">
                                     أحدث أجهزة الكاشير
                                 </span>
                             </h1>
@@ -277,7 +277,7 @@ export function HomePage() {
                                     </span>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-white font-bold text-sm md:text-base mb-0.5">{feature.title}</h3>
+                                    <p className="text-white font-bold text-sm md:text-base mb-0.5">{feature.title}</p>
                                     <p className="text-gray-400 text-[11px] md:text-xs leading-relaxed">{feature.desc}</p>
                                 </div>
                             </div>
@@ -520,7 +520,7 @@ function BundleOfferCard({
             <div className="relative z-10 flex flex-col p-8 gap-5">
 
                 {/* Badge */}
-                <span className={`w-fit ${badgeClass} text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider`}>
+                <span className={`w-fit ${badgeClass} text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider`}>
                     {label}
                 </span>
 
@@ -529,14 +529,14 @@ function BundleOfferCard({
 
                 {/* Product List — Real data from API */}
                 {isLoading && (
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
                         <Loader2 className="w-4 h-4 animate-spin" />
                         <span>جاري تحميل الحزمة...</span>
                     </div>
                 )}
 
                 {isError && (
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <div className="flex items-center gap-2 text-gray-400 text-sm">
                         <AlertTriangle className="w-4 h-4 text-amber-500" />
                         <span>تعذر تحميل الحزمة</span>
                     </div>
