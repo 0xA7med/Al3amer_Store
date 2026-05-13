@@ -6,6 +6,7 @@ import { NotificationService } from '../services/notification.service.js';
 import { PaymobService } from '../services/paymob.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
 import { getMergedSettings } from '../lib/settings-helper.js';
+import { ProductsController } from './products.controller.js';
 
 export class OrdersController {
     // POST /api/orders - Create new order
@@ -218,6 +219,7 @@ export class OrdersController {
                 });
             }
 
+            ProductsController.clearCache();
             res.status(201).json(completeOrder);
         } catch (error: any) {
             console.error('SERVER ERROR: Create Order Failed:', error?.message || error);

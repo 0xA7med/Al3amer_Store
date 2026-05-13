@@ -1,6 +1,7 @@
 import { Heart, Share2, PlayCircle, ZoomIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Product } from '../../hooks/useProducts';
+import { optimizeImage } from '../../lib/image-optimizer';
 
 interface ProductGalleryProps {
     images: string[];
@@ -77,7 +78,7 @@ export function ProductGallery({
                     onClick={onZoomOpen}
                 >
                     <img
-                        src={images[activeImageIndex] || images[0]}
+                        src={optimizeImage(images[activeImageIndex] || images[0], 800)}
                         alt={product.name}
                         className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                     />
@@ -98,7 +99,7 @@ export function ProductGallery({
                         className={`relative size-16 md:size-24 rounded-xl border-2 transition-all overflow-hidden flex-shrink-0 bg-surface-dark shadow-lg ${activeImageIndex === idx ? 'border-primary shadow-primary/10' : 'border-transparent hover:border-slate-500 opacity-70 hover:opacity-100'
                             }`}
                     >
-                        <img src={img} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img src={optimizeImage(img, 150)} alt={`${product.name} - ${idx + 1}`} className="w-full h-full object-cover" />
                     </button>
                 ))}
                 {product.videos && product.videos.length > 0 && (

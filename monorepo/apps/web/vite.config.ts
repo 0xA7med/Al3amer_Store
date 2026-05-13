@@ -11,4 +11,15 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+        }
+      }
+    }
+  }
 })

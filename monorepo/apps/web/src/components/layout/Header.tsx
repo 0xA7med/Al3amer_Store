@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
+import { optimizeImage } from '../../lib/image-optimizer';
 
 const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
@@ -118,9 +119,11 @@ export function Header() {
                         <div className="flex items-center gap-8 flex-1">
                             <Link to="/" className="flex items-center gap-2 group">
                                 <img
-                                    src={settings.logoUrl || LOGO_URL}
+                                    src={optimizeImage(settings.logoUrl || LOGO_URL, 400)}
                                     alt={`${settings.storeNameAr || 'Al3amer'} Logo`}
-                                    className="h-10 sm:h-14 object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
+                                    width="200"
+                                    height="56"
+                                    className="h-10 sm:h-14 w-auto object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                                 />
                                 <div className="flex flex-col">
                                     <h2 className="text-white text-lg sm:text-xl font-bold leading-none tracking-tight group-hover:text-primary transition-colors drop-shadow-sm">
@@ -180,7 +183,7 @@ export function Header() {
                                                     >
                                                         <div className="size-12 bg-white/5 rounded-lg border border-white/5 p-1 flex items-center justify-center shrink-0">
                                                             <img
-                                                                src={product.image}
+                                                                src={optimizeImage(product.image, 100)}
                                                                 alt={product.name}
                                                                 className="w-full h-full object-contain"
                                                             />

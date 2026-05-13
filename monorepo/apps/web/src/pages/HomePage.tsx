@@ -10,6 +10,7 @@ import { useCategories, useNewArrivals, useOffers, useBestSellers, useFeaturedPr
 import { useSettings } from '../context/SettingsContext';
 import SEOHead from '../components/SEO/SEOHead';
 import { organizationSchema, websiteSchema } from '../components/SEO/OrganizationSchema';
+import { optimizeImage } from '../lib/image-optimizer';
 
 
 export function HomePage() {
@@ -143,7 +144,8 @@ export function HomePage() {
                                     <AnimatePresence mode="popLayout" initial={false}>
                                         {(() => {
                                             const topProduct = heroProducts[currentHeroIndex]!;
-                                            const imageUrl = topProduct.images.find(i => i.isPrimary)?.url || topProduct.images[0]?.url || '';
+                                            const rawImageUrl = topProduct.images.find(i => i.isPrimary)?.url || topProduct.images[0]?.url || '';
+                                            const imageUrl = optimizeImage(rawImageUrl, 800);
                                             const hasDiscount = !!topProduct.discountPrice;
                                             const price = parseFloat(topProduct.price);
                                             const discountPrice = hasDiscount ? parseFloat(topProduct.discountPrice as string) : price;
@@ -287,7 +289,7 @@ export function HomePage() {
 
 
             {/* Best Sellers Section */}
-            <section className="py-16 bg-[#0d121c]/50">
+            <section className="py-16 bg-[#0d121c]/50 min-h-[500px]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
@@ -297,8 +299,8 @@ export function HomePage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {isBestSellersLoading ? (
-                            <div className="col-span-full flex justify-center py-12">
-                                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <div className="col-span-full gap-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full">
+                                {[1,2,3,4].map(n => <div key={n} className="h-96 w-full bg-white/5 rounded-2xl animate-pulse border border-white/5"></div>)}
                             </div>
                         ) : (
                             bestSellers?.slice(0, 4).map((product) => (
@@ -324,7 +326,7 @@ export function HomePage() {
             </section>
 
             {/* New Arrivals Section */}
-            <section className="py-16">
+            <section className="py-16 min-h-[500px]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
@@ -335,8 +337,8 @@ export function HomePage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {isNewLoading ? (
-                            <div className="col-span-full gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                                {[1,2,3,4].map(n => <div key={n} className="h-80 bg-gray-800/50 rounded-xl animate-pulse"></div>)}
+                            <div className="col-span-full gap-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full">
+                                {[1,2,3,4].map(n => <div key={n} className="h-96 w-full bg-white/5 rounded-2xl animate-pulse border border-white/5"></div>)}
                             </div>
                         ) : (
                             newArrivals?.slice(0, 4).map((product) => (
@@ -361,7 +363,7 @@ export function HomePage() {
             </section>
 
             {/* Offers Section */}
-            <section className="py-16 bg-[#0d121c]/30">
+            <section className="py-16 bg-[#0d121c]/30 min-h-[500px]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
@@ -372,8 +374,8 @@ export function HomePage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                         {isOffersLoading ? (
-                            <div className="col-span-full gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                                {[1,2,3,4].map(n => <div key={n} className="h-80 bg-gray-800/50 rounded-xl animate-pulse"></div>)}
+                            <div className="col-span-full gap-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full">
+                                {[1,2,3,4].map(n => <div key={n} className="h-96 w-full bg-white/5 rounded-2xl animate-pulse border border-white/5"></div>)}
                             </div>
                         ) : (
                             offerProducts?.map((product) => (
@@ -413,15 +415,17 @@ export function HomePage() {
                             <span className="material-symbols-outlined rtl:rotate-180 text-lg">arrow_right_alt</span>
                         </Link>
                     </div>
-                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar md:grid md:grid-cols-4 lg:grid-cols-6 -mx-4 px-4 md:mx-0 md:px-0">
-                        {categories?.filter((cat: any) => cat.isActive && cat.isFeatured).map((cat: any) => (
+                    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar md:grid md:grid-cols-4 lg:grid-cols-6 -mx-4 px-4 md:mx-0 md:px-0 min-h-[144px]">
+                        {!categories ? (
+                            [1,2,3,4,5,6].map(n => <div key={n} className="h-36 min-w-[160px] md:min-w-0 w-full bg-white/5 rounded-xl animate-pulse border border-white/5 shrink-0"></div>)
+                        ) : categories.filter((cat: any) => cat.isActive && cat.isFeatured).map((cat: any) => (
                             <Link
                                 to={`/shop?categories=${cat.slug}`}
                                 key={cat.id}
                                 className="glass-card p-3 md:p-4 rounded-xl flex items-center md:flex-col md:justify-center gap-3 md:text-center group min-w-[160px] snap-center shrink-0 md:min-w-0 md:h-36"
                             >
                                 {cat.image ? (
-                                    <img src={cat.image} alt={cat.name} className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" />
+                                    <img src={optimizeImage(cat.image, 100)} alt={cat.name} className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" />
                                 ) : (
                                     <span className="material-symbols-outlined text-3xl md:text-4xl text-gray-500 group-hover:text-primary transition-colors shrink-0">
                                         {cat.icon || 'category'}

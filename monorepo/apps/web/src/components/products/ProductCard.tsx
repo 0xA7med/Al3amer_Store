@@ -3,6 +3,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../hooks/useWishlist';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { optimizeImage } from '../../lib/image-optimizer';
 
 interface ProductCardProps {
     id: string;
@@ -122,9 +123,13 @@ export function ProductCard({
                 className={`relative overflow-hidden flex items-center justify-center bg-gradient-to-b from-white/5 to-transparent shrink-0 ${mobileHorizontal ? 'w-[110px] sm:w-full sm:aspect-[4/3] p-2 sm:p-5' : 'w-full aspect-[4/3] p-3 sm:p-6'} ${isOutOfStock ? 'opacity-55' : ''}`}
             >
                 <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full scale-0 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-40" />
-                <div
-                    className={`w-full h-full bg-contain bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] ${isOutOfStock ? 'grayscale' : ''}`}
-                    style={{ backgroundImage: `url('${imageUrl}')` }}
+                <img
+                    src={optimizeImage(imageUrl, 400)}
+                    alt={name}
+                    loading="lazy"
+                    width="400"
+                    height="300"
+                    className={`w-full h-full object-contain object-center transition-transform duration-700 group-hover:scale-105 drop-shadow-[0_8px_16px_rgba(0,0,0,0.3)] ${isOutOfStock ? 'grayscale' : ''}`}
                 />
             </Link>
 

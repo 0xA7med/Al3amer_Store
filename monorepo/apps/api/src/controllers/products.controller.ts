@@ -84,9 +84,27 @@ export class ProductsController {
         }
     }
 
+    // Simple in-memory cache for high-traffic list requests (e.g. homepage)
+    static cache = new Map<string, { data: any; timestamp: number }>();
+    static CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+
+    static clearCache() {
+        ProductsController.cache.clear();
+    }
+
     // GET /api/products - List products with pagination and filtering
     static async list(req: Request, res: Response) {
         try {
+            const cacheKey = JSON.stringify(req.query);
+            // Only cache pure public listings (active status, no admin exclusions/dynamic filters)
+            const isCacheable = req.query.status === 'active' && !req.query.dynamicFilters;
+            if (isCacheable && ProductsController.cache.has(cacheKey)) {
+                const cached = ProductsController.cache.get(cacheKey)!;
+                if (Date.now() - cached.timestamp < ProductsController.CACHE_TTL) {
+                    return res.json(cached.data);
+                }
+            }
+
             const {
                 page = '1',
                 limit = '10',
@@ -232,8 +250,7 @@ export class ProductsController {
                 });
             }
 
-
-            res.json({
+            const responseData = {
                 data: productsList,
                 pagination: {
                     page: pageNum,
@@ -241,7 +258,13 @@ export class ProductsController {
                     total,
                     totalPages,
                 },
-            });
+            };
+
+            if (isCacheable) {
+                ProductsController.cache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+            }
+
+            res.json(responseData);
         } catch (error) {
             console.error('Error fetching products:', error);
             res.status(500).json({ error: 'Failed to fetch products' });
@@ -561,6 +584,7 @@ export class ProductsController {
                 },
             });
 
+            ProductsController.clearCache();
             res.status(201).json(createdProduct);
         } catch (error: any) {
             console.error('Error creating product:', error);
@@ -731,6 +755,7 @@ export class ProductsController {
                 }
             });
 
+            ProductsController.clearCache();
             res.json(updatedProduct);
         } catch (error: any) {
             console.error('Error updating product:', error);
@@ -780,6 +805,7 @@ export class ProductsController {
                 return res.status(404).json({ error: 'Product not found' });
             }
 
+            ProductsController.clearCache();
             res.json(updatedProduct);
         } catch (error) {
             console.error('Error updating product short name:', error);
@@ -810,6 +836,7 @@ export class ProductsController {
                 }
             });
 
+            ProductsController.clearCache();
             res.json({ message: 'Products updated successfully' });
         } catch (error) {
             console.error('Error in bulk update:', error);
@@ -956,7 +983,7 @@ export class ProductsController {
             } else {
                 return res.status(400).json({ error: `Unknown action: ${action}` });
             }
-
+            ProductsController.clearCache();
             res.json({ success: true, affected, message: `تم تطبيق الإجراء على ${affected} منتج` });
         } catch (error) {
             console.error('Error in bulk action:', error);
@@ -1049,6 +1076,7 @@ export class ProductsController {
 
             await db.delete(products).where(eq(products.id, id));
 
+            ProductsController.clearCache();
             res.json({ message: 'Product deleted successfully' });
         } catch (error) {
             console.error('Error deleting product:', error);
