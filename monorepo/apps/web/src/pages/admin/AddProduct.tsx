@@ -8,6 +8,7 @@ import { BrandSelect } from '../../components/admin/BrandSelect';
 import { CategoryModal } from './CategoriesManagement';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils/imageUtils';
+import api from '../../lib/api';
 
 
 // =========================================================
@@ -70,7 +71,6 @@ export function AddProduct() {
     const brandsList: any[] = Array.isArray(brandsData) ? brandsData : (brandsData as any)?.data || [];
     const createProductMutation = useCreateProduct();
     const updateProductMutation = useUpdateProduct();
-    const suggestRelatedMutation = useSuggestRelatedProducts();
     const { createCategory, isCreating: isCreatingCategory } = useCategoriesHook();
     const { data: allProductsData } = useAdminProducts({ limit: 1000 });
     const allProducts = allProductsData?.data || [];
