@@ -180,8 +180,9 @@ Structure the description with a professional overview paragraph, then a bullete
     {"key": "اسم المواصفة", "value": "القيمة"}
   ],
   "faq": [
-    {"question": "سؤال", "answer": "إجابة"}
-  ],
+    {"question": "سؤال تقني 1", "answer": "إجابة شاملة 1"},
+    {"question": "سؤال تقني 2", "answer": "إجابة شاملة 2"}
+  ], // Please generate 5-10 high quality FAQs total
   "tags": ["وسم1", "وسم2", "وسم3"]
 }
 \`\`\``;

@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Star, PlayCircle, Cpu, LayoutList, Verified, Plus, Minus } from 'lucide-react';
+import { Star, PlayCircle, Cpu, LayoutList, Verified, Plus, Minus, HelpCircle } from 'lucide-react';
 import { getEmbedUrl } from '../../utils/videoParser';
 import type { Product } from '../../hooks/useProducts';
 
 interface ProductTabsProps {
     product: Product;
-    activeTab: 'specs' | 'video' | 'reviews' | 'warranty';
-    onTabChange: (tab: 'specs' | 'video' | 'reviews' | 'warranty') => void;
+    activeTab: 'specs' | 'video' | 'reviews' | 'warranty' | 'faq';
+    onTabChange: (tab: 'specs' | 'video' | 'reviews' | 'warranty' | 'faq') => void;
     specifications: { key: string; value: string }[];
     showAllSpecs: boolean;
     onShowAllSpecsToggle: () => void;
@@ -62,6 +62,16 @@ export function ProductTabs({
                         <Star className="w-5 h-5" />
                         التقييمات ({product.reviewCount || 0})
                     </button>
+                    {product.faq && product.faq.length > 0 && (
+                        <button
+                            onClick={() => onTabChange('faq')}
+                            className={`border-b-2 px-4 py-4 text-base whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'faq' ? 'border-primary text-primary font-bold bg-primary/5' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600 font-medium'
+                                }`}
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                            الأسئلة الشائعة
+                        </button>
+                    )}
                 </nav>
             </div>
 
@@ -237,6 +247,28 @@ export function ProductTabs({
                                         لا توجد تقييمات لهذا المنتج بعد. كن أول من يقيم!
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'faq' && product.faq && product.faq.length > 0 && (
+                        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-2 mb-2">
+                                <HelpCircle className="w-6 h-6 text-primary" />
+                                <h3 className="text-xl font-bold text-white">الأسئلة الشائعة حول المنتج</h3>
+                            </div>
+                            <div className="grid gap-4">
+                                {product.faq.map((item, idx) => (
+                                    <div key={idx} className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-primary/20 transition-all group">
+                                        <div className="flex gap-4">
+                                            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold">؟</div>
+                                            <div className="flex flex-col gap-2">
+                                                <h4 className="text-white font-bold text-base group-hover:text-primary transition-colors">{item.question}</h4>
+                                                <p className="text-slate-400 text-sm leading-relaxed">{item.answer}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}

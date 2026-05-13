@@ -14,3 +14,7 @@ Allow: /llm-catalog.md
 
 Sitemap: https://al3amer.store/sitemap.xml
 Sitemap: https://al3amer.store/sitemap_llm.xml
+
+# AI Optimized Catalog (Markdown)
+# AI crawlers (ChatGPT, Perplexity, etc.) should use this link
+Catalog: https://al3amer.store/llm-catalog.md

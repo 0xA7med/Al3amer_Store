@@ -23,7 +23,7 @@ export const ProductDetailsPage = () => {
     const [userSelectedImage, setUserSelectedImage] = useState<number | null>(null);
     const [isZoomOpen, setIsZoomOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
-    const [activeTab, setActiveTab] = useState<'specs' | 'video' | 'reviews' | 'warranty'>('specs');
+    const [activeTab, setActiveTab] = useState<'specs' | 'video' | 'reviews' | 'warranty' | 'faq'>('specs');
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [showStickyCart, setShowStickyCart] = useState(false);
     const [showAllSpecs, setShowAllSpecs] = useState(false);
@@ -680,7 +680,7 @@ export const ProductDetailsPage = () => {
                     }}
                 />
 
-                <FAQSection faqs={product.faq || []} />
+
 
                 <RelatedProducts
                     relatedProducts={relatedProducts}
