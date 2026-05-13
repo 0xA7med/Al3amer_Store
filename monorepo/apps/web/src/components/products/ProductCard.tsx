@@ -61,6 +61,7 @@ export function ProductCard({
                         if (!isAuthenticated) return navigate('/login');
                         toggleWishlist(id);
                     }}
+                    aria-label={isWishlisted ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     className={`size-8 rounded-lg bg-black/40 backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-400 hover:text-red-400 border-white/10'} ${isToggling ? 'animate-pulse' : ''}`}
                 >
                     <span className={`material-symbols-outlined text-[17px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
@@ -77,6 +78,7 @@ export function ProductCard({
                             toast.success('تم نسخ الرابط');
                         }
                     }}
+                    aria-label="مشاركة المنتج"
                     className="size-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-gray-400 hover:text-primary transition-all"
                 >
                     <span className="material-symbols-outlined text-[17px]">share</span>
@@ -92,7 +94,8 @@ export function ProductCard({
                     if (!isAuthenticated) return navigate('/login');
                     toggleWishlist(id);
                 }}
-                className={`absolute top-2 left-2 z-20 sm:hidden size-7 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-500 bg-black/30 border-white/10'} ${isToggling ? 'animate-pulse' : ''}`}
+                aria-label={isWishlisted ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                className={`absolute top-2 left-2 z-20 sm:hidden size-7 rounded-lg backdrop-blur-md border flex items-center justify-center transition-all ${isWishlisted ? 'text-red-400 bg-red-500/10 border-red-500/30' : 'text-gray-400 bg-black/30 border-white/10'} ${isToggling ? 'animate-pulse' : ''}`}
             >
                 <span className={`material-symbols-outlined text-[15px] ${isWishlisted ? 'symbol-filled' : ''}`}>favorite</span>
             </button>
@@ -159,7 +162,7 @@ export function ProductCard({
                     {/* Price */}
                     <div className="flex flex-col min-w-0">
                         {originalPrice && (
-                            <span className="text-gray-500 text-[9px] font-bold line-through decoration-red-500/60 leading-none mb-0.5">
+                            <span className="text-gray-400 text-[9px] font-bold line-through decoration-red-500/60 leading-none mb-0.5">
                                 {originalPrice.toLocaleString()}
                             </span>
                         )}
@@ -173,7 +176,7 @@ export function ProductCard({
 
                     {/* Action Buttons */}
                     {isOutOfStock ? (
-                        <span className="text-[9px] text-gray-500 font-bold bg-white/5 border border-white/5 rounded-lg px-2.5 py-1.5 shrink-0">
+                        <span className="text-[9px] text-gray-400 font-bold bg-white/5 border border-white/5 rounded-lg px-2.5 py-1.5 shrink-0">
                             غير متوفر
                         </span>
                     ) : (
@@ -197,6 +200,7 @@ export function ProductCard({
                                     addToCart({ id, name, price, image: imageUrl });
                                     if (!isInCart) toast.success('تم الإضافة للسلة');
                                 }}
+                                aria-label={isInCart ? 'مضاف للسلة' : 'أضف للسلة'}
                                 className={`size-8 sm:size-9 rounded-xl text-white flex items-center justify-center transition-all active:scale-95 shadow-lg ${isInCart
                                     ? 'bg-emerald-500 border border-emerald-500/30 shadow-emerald-900/20'
                                     : 'bg-primary hover:bg-blue-500 shadow-primary/20 hover:shadow-primary/40'

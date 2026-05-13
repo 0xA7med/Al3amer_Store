@@ -12,11 +12,13 @@ export function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
                     {/* Brand Column */}
                     <div className="flex flex-col gap-6">
-                        <div className="flex items-center gap-3 group">
+                        <div className="flex items-center gap-3 group min-h-[40px]">
                             <img
                                 src={settings.logoUrl || LOGO_URL}
-                                alt={`${settings.storeNameAr || 'Al3amer'} Logo`}
-                                className="h-10 object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
+                                alt={`${settings.storeNameAr || 'مركز العامر'} Logo`}
+                                width="120"
+                                height="34"
+                                className="h-10 w-[120px] object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                             />
                             <h2 className="text-white text-xl font-bold group-hover:text-primary transition-colors">{settings.storeNameAr || 'مركز العامر'}</h2>
                         </div>
@@ -113,7 +115,7 @@ export function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-gray-500 text-sm">© ٢٠٢٤ مركز العامر. جميع الحقوق محفوظة.</p>
+                    <p className="text-gray-400 text-sm">© ٢٠٢٤ مركز العامر. جميع الحقوق محفوظة.</p>
                     <div className="flex gap-4">
                         <div className="w-10 h-6 bg-white/10 rounded"></div>
                         <div className="w-10 h-6 bg-white/10 rounded"></div>

@@ -15,15 +15,13 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Core React framework — always needed
+          // Core React framework — always needed on every page
           vendor: ['react', 'react-dom', 'react-router-dom'],
           // Server-state management
           query: ['@tanstack/react-query'],
-          // Firebase Auth — loaded on demand but grouped together
+          // Firebase Auth — large but needed for auth flows
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-          // Animations — only used in product pages and hero section
-          motion: ['framer-motion'],
-          // Charts — only used in admin dashboard
+          // Charts — admin dashboard only, never on customer pages
           charts: ['recharts'],
         }
       }

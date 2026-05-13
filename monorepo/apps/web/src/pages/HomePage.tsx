@@ -427,7 +427,7 @@ export function HomePage() {
                                 {cat.image ? (
                                     <img src={optimizeImage(cat.image, 100)} alt={cat.name} className="w-10 h-10 md:w-12 md:h-12 object-contain shrink-0" />
                                 ) : (
-                                    <span className="material-symbols-outlined text-3xl md:text-4xl text-gray-500 group-hover:text-primary transition-colors shrink-0">
+                                    <span className="material-symbols-outlined text-3xl md:text-4xl text-gray-400 group-hover:text-primary transition-colors shrink-0">
                                         {cat.icon || 'category'}
                                     </span>
                                 )}
@@ -565,7 +565,7 @@ function BundleOfferCard({
                             <span className="text-2xl font-extrabold text-white">
                                 {data.price.toLocaleString()} ج.م
                             </span>
-                            <span className="text-sm text-gray-500 line-through">
+                            <span className="text-sm text-gray-400 line-through">
                                 {data.originalPrice.toLocaleString()} ج.م
                             </span>
                             <span className="text-xs text-emerald-400 font-bold mr-auto">
