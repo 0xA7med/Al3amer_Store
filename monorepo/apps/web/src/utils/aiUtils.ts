@@ -20,37 +20,60 @@ export interface AiScoreInput {
  * - Smart Linkage (Related, Accessories, Alternatives): 15%
  * - Technical Specs: 15%
  */
-export const calculateAiScore = (data: AiScoreInput): number => {
+export const calculateAiScore = (data: any): number => {
     let score = 0;
 
+    // Normalize data
+    const metaTitle = data.metaTitle;
+    const metaDescription = data.metaDescription;
+    const llmDescription = data.llmDescription;
+    
+    // Filter out empty FAQs
+    const faq = (data.faq || []).filter((f: any) => f.question?.trim() && f.answer?.trim());
+    
+    // Relationships mapping
+    let hasLinkage = false;
+    if ((data.relatedProducts?.length || 0) > 0 || (data.accessories?.length || 0) > 0 || (data.alternatives?.length || 0) > 0) {
+        hasLinkage = true;
+    } else if (data.relationships && Array.isArray(data.relationships) && data.relationships.length > 0) {
+        hasLinkage = true;
+    }
+
+    // Specifications mapping
+    let hasSpecs = false;
+    if (data.specifications) {
+        if (Array.isArray(data.specifications)) {
+            hasSpecs = data.specifications.filter((s: any) => s.key?.trim() && s.value?.trim()).length > 0;
+        } else {
+            // It's an object from DB or mapped from state
+            hasSpecs = Object.entries(data.specifications).filter(([k, v]: [any, any]) => 
+                k?.toString().trim() && v?.toString().trim()
+            ).length > 0;
+        }
+    }
+
     // 1. SEO (Meta Title & Description) - 25%
-    if (data.metaTitle && data.metaDescription) {
+    if (metaTitle?.trim() && metaDescription?.trim()) {
         score += 25;
     }
 
     // 2. GEO / LLM Description - 25%
-    if (data.llmDescription && data.llmDescription.length > 50) {
+    if (llmDescription && llmDescription.trim().length > 50) {
         score += 25;
     }
 
     // 3. Technical FAQ (5+ questions) - 20%
-    if (data.faq && data.faq.length >= 5) {
+    if (faq.length >= 5) {
         score += 20;
-    } else if (data.faq && data.faq.length > 0) {
-        // Partial credit for some FAQs
-        score += 10;
     }
 
-    // 4. Smart Linkage (Related, Accessories, Alternatives) - 15%
-    const hasLinkage = (data.relatedProducts?.length || 0) > 0 || 
-                      (data.accessories?.length || 0) > 0 || 
-                      (data.alternatives?.length || 0) > 0;
+    // 4. Smart Linkage - 15%
     if (hasLinkage) {
         score += 15;
     }
 
     // 5. Technical Specs - 15%
-    if (data.specifications && Object.keys(data.specifications).length > 0) {
+    if (hasSpecs) {
         score += 15;
     }
 

@@ -198,6 +198,7 @@ export class ProductsController {
                             images: {
                                 orderBy: (images, { asc }) => [asc(images.sortOrder)],
                             },
+                            relationships: true,
                         },
                     });
                     // Reorder because findMany where inArray doesn't preserve incoming array order
@@ -226,6 +227,7 @@ export class ProductsController {
                         images: {
                             orderBy: (images, { asc }) => [asc(images.sortOrder)],
                         },
+                        relationships: true,
                     },
                 });
             }
@@ -361,7 +363,18 @@ export class ProductsController {
                             quantity: true
                         }
                     },
-                    relationships: true,
+                    relationships: {
+                        with: {
+                            relatedProduct: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             });
 
@@ -1081,24 +1094,38 @@ export class ProductsController {
 
             let candidateProducts;
             if (categoryId) {
+                // Try to find products in same category first
                 candidateProducts = await db.query.products.findMany({
                     where: and(
                         eq(products.status, 'active'), 
                         eq(products.categoryId, categoryId),
                         id !== 'new' ? ne(products.id, id) : undefined
                     ),
-                    limit: 100,
+                    limit: 150,
                     with: { brand: true }
                 });
-            } else {
-                candidateProducts = await db.query.products.findMany({
+            }
+
+            // If no candidates in same category, or we need more variety, get latest active products
+            if (!candidateProducts || candidateProducts.length < 20) {
+                const globalCandidates = await db.query.products.findMany({
                     where: and(
                         eq(products.status, 'active'),
                         id !== 'new' ? ne(products.id, id) : undefined
                     ),
-                    limit: 100,
+                    limit: 300,
+                    orderBy: (products, { desc }) => [desc(products.createdAt)],
                     with: { brand: true }
                 });
+                
+                // Merge if needed, or replace
+                if (candidateProducts && candidateProducts.length > 0) {
+                    const existingIds = new Set(candidateProducts.map(p => p.id));
+                    const newCandidates = globalCandidates.filter(p => !existingIds.has(p.id));
+                    candidateProducts = [...candidateProducts, ...newCandidates.slice(0, 150)];
+                } else {
+                    candidateProducts = globalCandidates;
+                }
             }
 
             const mappedCandidates = candidateProducts.map((p: any) => ({

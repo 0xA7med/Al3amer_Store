@@ -37,7 +37,15 @@ export const ProductDetailsPage = () => {
         category: product?.category?.slug || '',
         limit: 10
     });
-    const relatedProducts = (relatedProductsData?.data as Product[] || []).filter(p => p.id !== product?.id);
+    
+    // Smart Linkage Extraction
+    const accessories = (product as any).relationships?.filter((r: any) => r.type === 'accessory').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+    const alternatives = (product as any).relationships?.filter((r: any) => r.type === 'alternative').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+    const manualRelated = (product as any).relationships?.filter((r: any) => r.type === 'related').map((r: any) => r.relatedProduct).filter(Boolean) || [];
+
+    const relatedProducts = manualRelated.length > 0 
+        ? manualRelated 
+        : (relatedProductsData?.data as Product[] || []).filter(p => p.id !== product?.id);
 
     const handleAddAllToCart = () => {
         const topTwo = relatedProducts.slice(0, 2);
@@ -683,9 +691,27 @@ export const ProductDetailsPage = () => {
 
 
                 <RelatedProducts
+                    relatedProducts={accessories}
+                    addToCart={addToCart}
+                    items={items}
+                    title="إكسسوارات متوافقة"
+                    subtitle="منتجات نوصي بها لتعمل مع هذا المنتج بشكل مثالي"
+                />
+
+                <RelatedProducts
                     relatedProducts={relatedProducts}
                     addToCart={addToCart}
                     items={items}
+                    title="منتجات ذات صلة"
+                    subtitle="قد تجد هذه المنتجات مفيدة لك أيضاً"
+                />
+
+                <RelatedProducts
+                    relatedProducts={alternatives}
+                    addToCart={addToCart}
+                    items={items}
+                    title="بدائل مقترحة"
+                    subtitle="خيارات أخرى مشابهة لهذا المنتج قد تناسب احتياجك"
                 />
 
                 <ProductLightbox

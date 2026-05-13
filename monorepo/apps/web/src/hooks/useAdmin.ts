@@ -25,6 +25,7 @@ export interface Product {
     category: { id: string; name: string } | null;
     brand: { id: string; name: string } | null;
     images: { url: string; isPrimary: boolean }[];
+    relationships?: { id: string; productId: string; relatedProductId: string; type: string }[];
     createdAt?: string;
     accountingMultiplier?: string | null;
     salesTiers?: Array<{

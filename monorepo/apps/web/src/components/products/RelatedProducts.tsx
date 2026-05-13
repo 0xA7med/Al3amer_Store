@@ -8,9 +8,17 @@ interface RelatedProductsProps {
     relatedProducts: Product[];
     addToCart: (item: any) => void;
     items: CartItem[];
+    title?: string;
+    subtitle?: string;
 }
 
-export function RelatedProducts({ relatedProducts, addToCart, items }: RelatedProductsProps) {
+export function RelatedProducts({ 
+    relatedProducts, 
+    addToCart, 
+    items, 
+    title = "منتجات قد تعجبك",
+    subtitle = "تم اختيارها بناءً على اهتماماتك"
+}: RelatedProductsProps) {
     if (relatedProducts.length === 0) return null;
 
     return (
@@ -19,9 +27,9 @@ export function RelatedProducts({ relatedProducts, addToCart, items }: RelatedPr
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <span className="w-1.5 h-6 bg-brand-red rounded-full block"></span>
-                        منتجات قد تعجبك
+                        {title}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1 pr-4">تم اختيارها بناءً على اهتماماتك</p>
+                    <p className="text-slate-400 text-sm mt-1 pr-4">{subtitle}</p>
                 </div>
                 <div className="flex gap-2">
                     <button className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">

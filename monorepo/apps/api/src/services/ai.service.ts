@@ -303,7 +303,9 @@ Rules:
 1. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
 2. Return an array of valid IDs from the list provided for each category (max 5 IDs per category).
 3. Do NOT invent or hallucinate IDs. Only use IDs from the provided list.
-4. If there are no good matches for a category, return an empty array [].
+4. Aim to find at least 2-3 items for each category if reasonable. If a product is very unique and truly has no matches, return an empty array [].
+5. Focus on functional compatibility for accessories (e.g., printers need paper, systems need cables).
+6. Focus on similar price/specs for alternatives.
 
 \`\`\`json
 {

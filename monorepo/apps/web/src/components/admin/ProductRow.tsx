@@ -61,12 +61,18 @@ export const ProductRow = memo(({
             </td>
             <td className="px-6 py-2">
                 <div className="flex flex-col gap-0.5">
-                    <span className="text-slate-400 text-sm">{product.category?.name || 'غير مصنف'}</span>
+                    <span className="text-slate-400 text-sm font-medium">{product.category?.name || 'غير مصنف'}</span>
                     <div className="flex items-center gap-2">
-                        <span className="text-primary/70 text-[10px] font-bold">{product.brand?.name || ''}</span>
-                        <div className={`flex items-center gap-1 px-1 rounded border text-[8px] font-black transition-all ${aiScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : aiScore >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`} title="مؤشر جاهزية الـ AI">
-                            <span className="material-symbols-outlined text-[10px]">psychology</span>
-                            <span>{aiScore}%</span>
+                        <span className="text-primary/70 text-[10px] font-black uppercase tracking-tight">{product.brand?.name || ''}</span>
+                        
+                        {/* Premium AI Score Badge */}
+                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border-l-2 bg-white/[0.03] backdrop-blur-sm transition-all duration-300 group/ai cursor-help ${
+                            aiScore >= 80 ? 'border-emerald-500/40 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.05)]' : 
+                            aiScore >= 50 ? 'border-amber-500/40 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.05)]' : 
+                            'border-red-500/40 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.05)]'
+                        }`} title={`مؤشر جاهزية المحتوى للذكاء الاصطناعي: ${aiScore}%`}>
+                            <span className="material-symbols-outlined text-[12px] group-hover/ai:rotate-12 transition-transform">psychology</span>
+                            <span className="text-[10px] font-black tabular-nums tracking-tighter">{aiScore}%</span>
                         </div>
                     </div>
                 </div>
@@ -175,9 +181,13 @@ export const MobileProductCard = memo(({
                                 <span className="text-[10px] font-bold text-slate-500">{product.category?.name || 'غير مصنف'}</span>
                             </div>
                             <div className="w-1 h-1 rounded-full bg-slate-700"></div>
-                            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[8px] font-black transition-all ${aiScore >= 80 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : aiScore >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`} title="مؤشر جاهزية الـ AI">
-                                <span className="material-symbols-outlined text-[10px]">psychology</span>
-                                <span>{aiScore}%</span>
+                            <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border-l-2 bg-white/[0.03] backdrop-blur-sm transition-all duration-300 ${
+                                aiScore >= 80 ? 'border-emerald-500/40 text-emerald-400' : 
+                                aiScore >= 50 ? 'border-amber-500/40 text-amber-400' : 
+                                'border-red-500/40 text-red-400'
+                            }`} title={`مؤشر جاهزية الـ AI: ${aiScore}%`}>
+                                <span className="material-symbols-outlined text-[12px]">psychology</span>
+                                <span className="text-[10px] font-black">{aiScore}%</span>
                             </div>
                         </div>
                     </div>

@@ -98,6 +98,7 @@ export function AddProduct() {
         metaDescription: '',
         slug: '',
         llmDescription: '',
+        videoUrl: '',
     });
 
     const [specs, setSpecs] = useState<{ _id: number; key: string; value: string }[]>([
@@ -1273,11 +1274,11 @@ export function AddProduct() {
                                 {/* Checklist */}
                                 <div className="space-y-3">
                                     {[
-                                        { label: 'بيانات ميتا SEO', weight: 25, done: !!(formData.metaTitle && formData.metaDescription) },
-                                        { label: 'خلاصة LLM التقنية', weight: 25, done: !!(formData.llmDescription && formData.llmDescription.length > 50) },
-                                        { label: 'أسئلة FAQ (5+ أسئلة)', weight: 20, done: faqs.filter(f => f.question && f.answer).length >= 5 },
+                                        { label: 'بيانات ميتا SEO', weight: 25, done: !!(formData.metaTitle?.trim() && formData.metaDescription?.trim()) },
+                                        { label: 'خلاصة LLM التقنية', weight: 25, done: !!(formData.llmDescription?.trim() && formData.llmDescription.trim().length > 50) },
+                                        { label: 'أسئلة FAQ (5+ أسئلة)', weight: 20, done: faqs.filter(f => f.question?.trim() && f.answer?.trim()).length >= 5 },
                                         { label: 'الربط الذكي بالمنتجات', weight: 15, done: relatedProductIds.length > 0 || accessoryProductIds.length > 0 || alternativeProductIds.length > 0 },
-                                        { label: 'المواصفات التقنية', weight: 15, done: specs.filter(s => s.key && s.value).length > 0 },
+                                        { label: 'المواصفات التقنية', weight: 15, done: specs.filter(s => s.key?.trim() && s.value?.trim()).length > 0 },
                                     ].map(item => (
                                         <div key={item.label} className="flex items-center justify-between group/item">
                                             {/* Weight on the left */}
