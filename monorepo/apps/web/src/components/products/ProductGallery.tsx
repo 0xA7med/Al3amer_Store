@@ -78,14 +78,20 @@ export function ProductGallery({
                     onClick={onZoomOpen}
                 >
                     <img
-                        src={optimizeImage(images[activeImageIndex] || images[0], 800)}
+                        src={optimizeImage(images[activeImageIndex] || images[0], 500)}
+                        srcSet={[
+                            `${optimizeImage(images[activeImageIndex] || images[0], 400)} 400w`,
+                            `${optimizeImage(images[activeImageIndex] || images[0], 600)} 600w`,
+                            `${optimizeImage(images[activeImageIndex] || images[0], 800)} 800w`,
+                        ].join(', ')}
+                        sizes="(max-width: 768px) 90vw, 500px"
                         alt={product.name}
                         className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                         fetchPriority="high"
                         loading="eager"
                         decoding="sync"
-                        width="800"
-                        height="600"
+                        width="500"
+                        height="500"
                     />
                 </div>
                 <button

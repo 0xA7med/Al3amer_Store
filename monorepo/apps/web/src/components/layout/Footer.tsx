@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
+import { optimizeImage } from '../../lib/image-optimizer';
 
-// Footer logo: smaller size (120px) compressed via Cloudinary
+// Fallback logo compressed via Cloudinary Fetch (120px WebP)
 const LOGO_URL = 'https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_120,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Footer() {
@@ -15,10 +16,11 @@ export function Footer() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-3 group min-h-[40px]">
                             <img
-                                src={settings.logoUrl || LOGO_URL}
+                                src={optimizeImage(settings.logoUrl || LOGO_URL, 120)}
                                 alt={`${settings.storeNameAr || 'مركز العامر'} Logo`}
                                 width="120"
                                 height="34"
+                                loading="lazy"
                                 className="h-10 w-[120px] object-contain brightness-110 contrast-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all group-hover:drop-shadow-[0_0_12px_rgba(19,91,236,0.2)]"
                             />
                             <h2 className="text-white text-xl font-bold group-hover:text-primary transition-colors">{settings.storeNameAr || 'مركز العامر'}</h2>
