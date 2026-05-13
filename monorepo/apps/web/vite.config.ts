@@ -12,17 +12,29 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'esnext',
+    cssMinify: 'lightningcss', // Faster and better minification
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Core React framework — always needed on every page
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          // Server-state management
-          query: ['@tanstack/react-query'],
-          // Firebase Auth — large but needed for auth flows
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-          // Charts — admin dashboard only, never on customer pages
-          charts: ['recharts'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            if (id.includes('framer-motion')) {
+              return 'framer-motion';
+            }
+            if (id.includes('recharts')) {
+              return 'charts';
+            }
+            if (id.includes('@tanstack')) {
+              return 'query';
+            }
+            return 'libs'; // Generic libs
+          }
         }
       }
     }

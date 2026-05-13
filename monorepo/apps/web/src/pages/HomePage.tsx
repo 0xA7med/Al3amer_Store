@@ -167,6 +167,9 @@ export function HomePage() {
                                                             <img 
                                                             src={imageUrl} 
                                                             alt={topProduct.name}
+                                                            fetchPriority="high"
+                                                            loading="eager"
+                                                            decoding="sync"
                                                             className="max-w-full max-h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
                                                             />
                                                         </div>
