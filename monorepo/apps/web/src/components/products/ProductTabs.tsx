@@ -336,7 +336,7 @@ export function ProductTabs({
                             {topTwo.map((rp: Product) => (
                                 <div key={rp.id} className="flex gap-3 items-center group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-colors">
                                     <Link to={`/product/${rp.slug || rp.id}`} className="size-16 rounded-lg bg-surface-dark border border-white/5 overflow-hidden flex-shrink-0 relative">
-                                        <img src={rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url || 'https://via.placeholder.com/64'} alt={rp.name} className="w-full h-full object-contain" />
+                                        <img src={rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url || 'https://via.placeholder.com/64'} alt={rp.name} width="64" height="64" className="w-full h-full object-contain" />
                                     </Link>
                                     <div className="flex flex-col flex-1">
                                         <Link to={`/product/${rp.slug || rp.id}`}>

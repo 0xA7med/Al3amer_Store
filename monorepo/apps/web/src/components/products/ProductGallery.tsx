@@ -49,6 +49,7 @@ export function ProductGallery({
                             }
                             if (product?.id) onWishlistToggle(product.id);
                         }}
+                        aria-label={isWishlisted ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                         className={`size-9 rounded-xl flex items-center justify-center backdrop-blur-md border shadow-lg transition-all ${
                             isWishlisted
                                 ? 'bg-red-500/90 border-red-400/50 text-white'
@@ -68,6 +69,7 @@ export function ProductGallery({
                                 toast.success('تم نسخ الرابط');
                             }
                         }}
+                        aria-label="مشاركة المنتج"
                         className="size-9 rounded-xl flex items-center justify-center backdrop-blur-md border bg-surface-dark/80 border-white/10 text-slate-300 hover:bg-primary/80 hover:text-white hover:border-primary/30 shadow-lg transition-all"
                     >
                         <Share2 className="w-4 h-4" />
@@ -96,6 +98,7 @@ export function ProductGallery({
                 </div>
                 <button
                     onClick={onZoomOpen}
+                    aria-label="تكبير الصورة"
                     className="absolute bottom-4 left-4 p-2.5 rounded-xl bg-surface-dark/80 text-white hover:bg-primary transition-all backdrop-blur-md border border-white/10 hover:border-primary shadow-lg"
                 >
                     <ZoomIn className="w-5 h-5" />

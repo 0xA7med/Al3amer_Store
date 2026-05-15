@@ -411,9 +411,9 @@ export const ProductDetailsPage = () => {
 
 
                         {/* Title — hidden on mobile (shown above gallery) */}
-                        <h1 className="hidden lg:block text-3xl md:text-4xl font-extrabold text-white leading-tight tracking-tight mt-1 mb-1">
+                        <div className="hidden lg:block text-3xl md:text-4xl font-extrabold text-white leading-tight tracking-tight mt-1 mb-1" aria-hidden="true">
                             {product.name}
-                        </h1>
+                        </div>
                         <div className="flex flex-wrap items-center gap-3 text-[11px] md:text-sm">
                             <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
                                 <div className="flex text-yellow-400 gap-0.5">
@@ -577,6 +577,7 @@ export const ProductDetailsPage = () => {
                             <div className="grid grid-cols-12 gap-3 md:gap-4">
                                 <div className="col-span-5 md:col-span-4 flex items-center justify-between bg-surface-dark rounded-xl border border-white/10 h-12 md:h-12 px-1 focus-within:border-primary/50 transition-colors">
                                     <button
+                                        aria-label="زيادة الكمية"
                                         onClick={() => setQuantity(q => Math.min(q + 1, maxQuantity))}
                                         disabled={quantity >= maxQuantity}
                                         className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors"
@@ -585,6 +586,7 @@ export const ProductDetailsPage = () => {
                                     </button>
                                     <span className="text-white font-bold text-base md:text-lg">{quantity}</span>
                                     <button
+                                        aria-label="تقليل الكمية"
                                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
                                         disabled={quantity <= 1}
                                         className="size-8 md:size-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors"

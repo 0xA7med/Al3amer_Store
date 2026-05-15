@@ -19,6 +19,8 @@ export default defineConfig({
           query: ['@tanstack/react-query'],
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
           charts: ['recharts'],
+          motion: ['framer-motion'],
+          icons: ['lucide-react']
         }
       }
     }

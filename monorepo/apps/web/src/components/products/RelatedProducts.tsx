@@ -32,10 +32,10 @@ export function RelatedProducts({
                     <p className="text-slate-400 text-sm mt-1 pr-4">{subtitle}</p>
                 </div>
                 <div className="flex gap-2">
-                    <button className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
+                    <button aria-label="التالي" className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
                         <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
                     </button>
-                    <button className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
+                    <button aria-label="السابق" className="size-10 rounded-full bg-surface-dark hover:bg-primary hover:text-white text-slate-300 flex items-center justify-center border border-white/10 transition-colors rtl:rotate-180 shadow-md">
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                 </div>
@@ -51,9 +51,11 @@ export function RelatedProducts({
                                 <img
                                     src={rp.images.find(img => img.isPrimary)?.url || rp.images[0]?.url || 'https://via.placeholder.com/400'}
                                     alt={rp.name}
+                                    width="400"
+                                    height="400"
                                     className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-110"
                                 />
-                                <button className="absolute top-2 left-2 size-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-brand-red transition-colors backdrop-blur-sm z-20 opacity-0 group-hover:opacity-100 transform translate-y-[-10px] group-hover:translate-y-0 duration-300">
+                                <button aria-label="إضافة للمفضلة" className="absolute top-2 left-2 size-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-brand-red transition-colors backdrop-blur-sm z-20 opacity-0 group-hover:opacity-100 transform translate-y-[-10px] group-hover:translate-y-0 duration-300">
                                     <Heart className="w-4 h-4" />
                                 </button>
                             </div>

@@ -166,12 +166,14 @@ export function HomePage() {
                                                             className="w-[450px] aspect-[4/3] bg-gradient-to-br from-black/60 to-black/20 rounded-xl overflow-hidden group-hover:scale-[1.02] transition-transform duration-700 flex items-center justify-center p-6" 
                                                         >
                                                             <img 
-                                                            src={imageUrl} 
-                                                            alt={topProduct.name}
-                                                            fetchPriority="high"
-                                                            loading="eager"
-                                                            decoding="sync"
-                                                            className="max-w-full max-h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+                                                                src={imageUrl} 
+                                                                alt={topProduct.name}
+                                                                width="800"
+                                                                height="600"
+                                                                fetchPriority="high"
+                                                                loading="eager"
+                                                                decoding="sync"
+                                                                className="max-w-full max-h-full object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
                                                             />
                                                         </div>
                                                         
