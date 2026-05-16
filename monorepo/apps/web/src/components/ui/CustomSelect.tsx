@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
-interface Option {
+export interface Option {
     value: string;
     label: string;
 }
 
-interface CustomSelectProps {
+export interface CustomSelectProps {
     value: string;
     onChange: (val: string) => void;
     options: Option[];
