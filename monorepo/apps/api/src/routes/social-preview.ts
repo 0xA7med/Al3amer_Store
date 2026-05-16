@@ -5,6 +5,17 @@ import { eq } from 'drizzle-orm';
 
 const router: Router = Router();
 
+// ⚠️ SEO CRITICAL WARNING ⚠️
+// This endpoint returns a "thin" skeleton HTML with ONLY meta tags and no actual React content.
+// It is intended ONLY for social media bots (WhatsApp, Facebook, Twitter, Discord, etc.) that 
+// do not execute JavaScript and only read meta tags for link previews.
+// 
+// NEVER route Search Engine Crawlers (Googlebot, Bingbot, YandexBot, etc.) to this endpoint!
+// If Search Engines receive this skeleton HTML, they will classify the page as "Thin Content" 
+// or an "Orphan Page" and will REFUSE TO INDEX IT.
+// 
+// Check `apps/web/vercel.json` to ensure only social scrapers are intercepted.
+
 // Catch all paths that are routed here from web frontend
 router.get('/*', async (req: Request, res: Response) => {
     // req.params[0] will be the part matched by `/*` e.g., 'product/my-item-slug'
