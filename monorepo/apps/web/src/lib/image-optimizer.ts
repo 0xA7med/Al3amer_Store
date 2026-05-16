@@ -26,8 +26,8 @@ export function optimizeImage(url: string | null | undefined, width: number = 80
     // 2. If it's an external URL (like ImgBB or other HTTP links)
     // We use Cloudinary's powerful 'fetch' API to compress ANY image on the web!
     if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Exclude local dev URLs or already fetched URLs to avoid double-fetching
-        if (!url.includes('localhost') && !url.includes('image/fetch')) {
+        // Exclude local dev URLs, already fetched URLs, or ImgBB (which blocks Cloudinary fetch)
+        if (!url.includes('localhost') && !url.includes('image/fetch') && !url.includes('ibb.co')) {
             const CLOUD_NAME = 'dupkphrlw'; // Target cloud name
             return `https://res.cloudinary.com/${CLOUD_NAME}/image/fetch/${transforms}/${encodeURI(url)}`;
         }

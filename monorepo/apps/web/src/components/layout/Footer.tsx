@@ -3,7 +3,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { optimizeImage } from '../../lib/image-optimizer';
 
 // Fallback logo compressed via Cloudinary Fetch (120px WebP)
-const LOGO_URL = 'https://res.cloudinary.com/dupkphrlw/image/fetch/c_limit,w_120,q_auto:eco,f_auto/https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
+const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Footer() {
     const { settings } = useSettings();
