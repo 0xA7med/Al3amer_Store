@@ -718,7 +718,7 @@ export function AddProduct() {
                                                 src={img.url}
                                                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=No+Image'; }}
                                                 className="w-full h-full object-cover pointer-events-none"
-                                                alt=""
+                                                alt="صورة المنتج"
                                             />
                                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                 {!img.isPrimary && (

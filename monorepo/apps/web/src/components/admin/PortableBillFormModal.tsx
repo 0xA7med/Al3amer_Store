@@ -438,7 +438,7 @@ export function PortableBillFormModal({ orders: inputOrders, onClose }: Portable
                                                     }))}
                                                     style={{ x: layout.logo?.x || 0, y: layout.logo?.y || 0, position: 'relative', zIndex: isDesignMode ? 50 : 2 }}
                                                 >
-                                                    <img src={settings?.logoUrl || "https://i.ibb.co/KkCv1LF/Logo-Al3amer.png"} className="logo pointer-events-none" alt="logo" />
+                                                    <img src={settings?.logoUrl || "https://i.ibb.co/KkCv1LF/Logo-Al3amer.png"} className="logo pointer-events-none" alt="شعار المتجر" />
                                                     {isDesignMode && (
                                                         <>
                                                             <div className="design-overlay" />

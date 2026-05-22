@@ -78,9 +78,9 @@ export function Footer() {
                         <ul className="flex flex-col gap-3 text-sm text-gray-400">
                             <li><Link to="/" className="hover:text-primary transition-colors">الرئيسية</Link></li>
                             <li><Link to="/about" className="hover:text-primary transition-colors">عن الشركة</Link></li>
-                            <li><Link to="/warranty" className="hover:text-primary transition-colors">سياسة الضمان</Link></li>
-                            <li><Link to="/terms" className="hover:text-primary transition-colors">الشروط والأحكام</Link></li>
-                            <li><Link to="/blog" className="hover:text-primary transition-colors">مدونة التقنية</Link></li>
+                            <li><Link to="/offers" className="hover:text-primary transition-colors">العروض</Link></li>
+                            <li><Link to="/shop" className="hover:text-primary transition-colors">المتجر</Link></li>
+                            <li><Link to="/ai-builder" className="hover:text-primary transition-colors">بناء البundle الذكي</Link></li>
                         </ul>
                     </div>
 

@@ -613,7 +613,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                                 <div className="absolute top-full left-0 w-full bg-[#1e2330] border border-white/10 rounded-lg mt-1 shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-white/5">
                                     {productsData.data.map(product => (
                                         <div key={product.id} onClick={() => addToCart(product)} className="p-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 active:bg-primary/10">
-                                            {product.images?.[0]?.url && <img src={product.images[0].url} className="size-10 rounded object-cover shadow-lg" />}
+                                            {product.images?.[0]?.url && <img src={product.images[0].url} alt={product.name} className="size-10 rounded object-cover shadow-lg" />}
                                             <div className="flex-1">
                                                 <div className="text-white text-sm font-bold">{product.name}</div>
                                                 <div className="text-slate-400 text-xs">{product.price} ج.م | المخزون: {product.stock}</div>
@@ -635,7 +635,7 @@ function CreateOrderModal({ onClose, initialPhone }: { onClose: () => void, init
                                 <div key={idx} className="flex flex-col gap-2 bg-white/5 p-4 rounded-xl border border-white/5 group relative overflow-hidden">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3">
-                                            {item.product.images?.[0]?.url && <img src={item.product.images[0].url} className="size-10 rounded object-cover" />}
+                                            {item.product.images?.[0]?.url && <img src={item.product.images[0].url} alt={item.product.name} className="size-10 rounded object-cover" />}
                                             <div className="text-white font-medium text-sm leading-tight">{item.product.name}</div>
                                         </div>
                                         <button onClick={() => removeFromCart(idx)} className="text-red-400/50 hover:text-red-400 transition-colors">

@@ -81,7 +81,7 @@ export function ProductLightbox({
                                 onClick={() => onImageSelect(idx)}
                                 className={`size-16 rounded-lg border-2 overflow-hidden transition-all flex-shrink-0 ${activeImageIndex === idx ? 'border-primary ring-4 ring-primary/20' : 'border-white/10 opacity-50 hover:opacity-100'}`}
                             >
-                                <img src={img} alt="" className="w-full h-full object-cover" />
+                                <img src={img} alt="صورة المنتج" className="w-full h-full object-cover" />
                             </button>
                         ))}
                     </div>

@@ -40,6 +40,7 @@ export default function SEOHead({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
       {url && <link rel="canonical" href={url} />}
+      {url && <meta property="og:url" content={url} />}
       {noindex && <meta name="robots" content="noindex, nofollow" />}
       {jsonLd && (
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

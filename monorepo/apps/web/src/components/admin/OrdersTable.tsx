@@ -312,7 +312,7 @@ export default function SharedOrdersTable({
                                                             className="size-8 rounded-lg border border-white/10 bg-slate-800 overflow-hidden relative flex-shrink-0"
                                                         >
                                                             {item.product?.images?.[0]?.url ? (
-                                                                <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />
+<img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center bg-white/5">
                                                                     <span className="material-symbols-outlined text-[14px] text-slate-500">image</span>
@@ -501,7 +501,7 @@ export default function SharedOrdersTable({
                                         {order.items?.slice(0, 3).map((item, idx) => (
                                             <div key={idx} className="size-7 rounded-lg border border-white/10 bg-slate-800 overflow-hidden shrink-0">
                                                 {item.product?.images?.[0]?.url ? (
-                                                    <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />
+                                                    <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-[12px]">image</span></div>
                                                 )}

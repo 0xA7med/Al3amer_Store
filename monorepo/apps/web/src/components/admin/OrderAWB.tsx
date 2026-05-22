@@ -97,7 +97,7 @@ export function OrderAWB() {
                 <div className="p-4 border-b-2 border-slate-200">
                     <div className="flex justify-between items-center gap-4">
                         <div className="flex items-center gap-4">
-                            <img src={storeLogo} alt="Logo" className="h-16 w-16 object-contain rounded-lg border border-slate-100 p-1" />
+                            <img src={storeLogo} alt={storeName || 'شعار المتجر'} className="h-16 w-16 object-contain rounded-lg border border-slate-100 p-1" />
                             <div>
                                 <h1 className="text-xl font-black text-slate-900 leading-tight">{storeName}</h1>
                                 <p className="text-sm font-bold text-slate-600">Al3amer Store Systems</p>

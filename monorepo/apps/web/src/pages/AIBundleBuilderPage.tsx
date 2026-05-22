@@ -675,7 +675,7 @@ function CascadingBuilder() {
                             <div className="hidden md:flex -space-x-3 rtl:space-x-reverse min-w-[80px]">
                                 {Object.values(selectedItems).slice(0, 5).map((item, i) => (
                                     item && <div key={i} className="size-12 rounded-full border-2 border-[#1a1f2e] bg-white p-1 overflow-hidden shadow-lg">
-                                        <img src={item.images?.[0]?.url || 'https://via.placeholder.com/50'} className="w-full h-full object-contain" />
+                                        <img src={item.images?.[0]?.url || 'https://via.placeholder.com/50'} alt={item.name || 'منتج'} className="w-full h-full object-contain" />
                                     </div>
                                 ))}
                             </div>

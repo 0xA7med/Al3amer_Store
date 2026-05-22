@@ -12,6 +12,12 @@ router.get('/sitemap.xml', async (_req, res) => {
         const allProducts = await db.query.products.findMany({
             where: eq(products.status, 'active'),
             columns: { slug: true, updatedAt: true },
+            with: {
+                images: {
+                    columns: { url: true, isPrimary: true },
+                    orderBy: (images, { desc }) => [desc(images.isPrimary)],
+                },
+            },
         });
 
         const allCategories = await db.query.categories.findMany({
@@ -45,18 +51,25 @@ router.get('/sitemap.xml', async (_req, res) => {
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>`),
-            ...allProducts.map(p => `
+            ...allProducts.map(p => {
+                const imageTags = (p.images || []).slice(0, 5).filter(img => img?.url).map(img => `
+      <image:image>
+        <image:loc>${img.url}</image:loc>
+      </image:image>`).join('');
+                return `
     <url>
       <loc>${baseUrl}/product/${p.slug}</loc>
       <lastmod>${new Date(p.updatedAt ?? now).toISOString()}</lastmod>
       <changefreq>weekly</changefreq>
-      <priority>0.9</priority>
-    </url>`),
+      <priority>0.9</priority>${imageTags}
+    </url>`;
+            }),
         ].join('');
 
         res.header('Content-Type', 'application/xml; charset=utf-8');
         res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   ${urls}
 </urlset>`);
     } catch (error) {

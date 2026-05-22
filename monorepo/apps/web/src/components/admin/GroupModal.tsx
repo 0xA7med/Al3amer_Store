@@ -184,7 +184,7 @@ export function GroupModal({ products, onClose, onApply, isPending }: {
                                             </div>
                                         </div>
                                         {tier.imageUrl && (
-                                            <img src={tier.imageUrl} className="size-8 rounded border border-white/10 object-cover" alt="" />
+                                            <img src={tier.imageUrl} alt={tier.name || 'صورة'} className="size-8 rounded border border-white/10 object-cover" />
                                         )}
                                     </div>
                                     <div className="col-span-1 flex justify-end">
