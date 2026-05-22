@@ -80,6 +80,20 @@ export function buildProductSchema(product: any) {
       reviewCount: product.reviewCount,
       bestRating: 5,
     } : undefined,
+    review: product.reviews?.length > 0 ? product.reviews.map((r: any) => ({
+      '@type': 'Review',
+      author: {
+        '@type': 'Person',
+        name: r.customerName || r.user?.name || 'عميل مركز العامر',
+      },
+      datePublished: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : undefined,
+      reviewBody: r.text || undefined,
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: r.rating || 5,
+        bestRating: 5,
+      },
+    })) : undefined,
   };
 }
 

@@ -144,10 +144,12 @@ export function ProductCard({
                 {/* Brand & Rating */}
                 <div className="flex items-center justify-between gap-1 mb-1">
                     <span className="text-[9px] sm:text-[10px] font-bold text-primary uppercase tracking-widest truncate max-w-[55%]">{brand}</span>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                        <span className="material-symbols-outlined symbol-filled text-yellow-400 text-[12px]">star</span>
-                        <span className="text-[9px] text-gray-400 font-bold">{rating.toFixed(1)}</span>
-                    </div>
+                    {rating > 0 && (
+                        <div className="flex items-center gap-0.5 shrink-0">
+                            <span className="material-symbols-outlined symbol-filled text-yellow-400 text-[12px]">star</span>
+                            <span className="text-[9px] text-gray-400 font-bold">{rating.toFixed(1)}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Product Name */}

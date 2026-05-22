@@ -1,11 +1,18 @@
 
 import { Award, ShieldCheck, Truck, Users } from 'lucide-react';
 import SEOHead from '../components/SEO/SEOHead';
+import { buildBreadcrumbSchema } from '../components/SEO/ProductSchema';
 
 const AboutUsPage = () => {
+    const breadcrumbItems = [
+        { name: 'الرئيسية', url: '/' },
+        { name: 'عن مركز العامر', url: '/about' },
+    ];
+    const breadcrumbJsonLd = buildBreadcrumbSchema(breadcrumbItems);
+
     return (
         <div className="bg-background-dark min-h-screen text-slate-200 font-body">
-            <SEOHead title="عن مركز العامر" description="تعرف على مركز العامر - أكبر متخصص في أجهزة الكاشير وأنظمة المحاسبة في مصر. خبرة +10 سنوات وأكثر من 5000 عميل سعيد." canonical="/about" />
+            <SEOHead title="عن مركز العامر" description="تعرف على مركز العامر - أكبر متخصص في أجهزة الكاشير وأنظمة المحاسبة في مصر. خبرة +10 سنوات وأكثر من 5000 عميل سعيد." canonical="/about" jsonLd={[breadcrumbJsonLd]} />
             {/* Hero */}
             <div className="py-20 px-4 text-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full bg-primary/5 blur-3xl rounded-full scale-150 pointer-events-none -translate-y-1/2" />

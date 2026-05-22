@@ -5,6 +5,7 @@ import { ProductCard } from '../components/products';
 import { useProducts } from '../hooks/useProducts';
 import api from '../lib/api';
 import SEOHead from '../components/SEO/SEOHead';
+import { buildBreadcrumbSchema } from '../components/SEO/ProductSchema';
 
 // =========================================================
 // Collapsible Filter Section Component
@@ -624,12 +625,20 @@ export function ShopPage() {
         ? `أفضل ${currentCategory.name} - أجهزة كاشير وأنظمة محاسبة`
         : 'تسوق أحدث أجهزة الكاشير وأنظمة المحاسبة';
 
+    const breadcrumbItems = [
+        { name: 'الرئيسية', url: '/' },
+        { name: 'المتجر', url: '/shop' },
+        ...(currentCategory ? [{ name: currentCategory.name, url: `/shop?categories=${currentCategory.slug}` }] : []),
+    ];
+    const breadcrumbJsonLd = buildBreadcrumbSchema(breadcrumbItems);
+
     return (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
             <SEOHead
               title={shopTitle}
               description={shopDesc}
               canonical={currentCategory?.slug ? `/shop?categories=${currentCategory.slug}` : '/shop'}
+              jsonLd={[breadcrumbJsonLd]}
             />
             {/* Breadcrumb */}
             <nav className="flex mb-6 text-sm font-medium text-gray-400">
@@ -1026,7 +1035,7 @@ export function ShopPage() {
                                     brand={product.brand?.name || 'Generic'}
                                     price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
                                     originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
-                                    rating={5}
+                                    rating={product.averageRating || 0}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     stock={product.stock}

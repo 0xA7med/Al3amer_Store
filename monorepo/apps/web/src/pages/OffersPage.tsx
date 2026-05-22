@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ProductCard } from '../components/products/ProductCard';
 import { useProducts } from '../hooks/useProducts';
 import SEOHead from '../components/SEO/SEOHead';
+import { buildBreadcrumbSchema } from '../components/SEO/ProductSchema';
 
 const OffersPage = () => {
     const { data: response, isLoading } = useProducts();
@@ -28,6 +29,12 @@ const OffersPage = () => {
         // Map other categories if needed, or just use the name directly
     };
 
+    const breadcrumbItems = [
+        { name: 'الرئيسية', url: '/' },
+        { name: 'العروض', url: '/offers' },
+    ];
+    const breadcrumbJsonLd = buildBreadcrumbSchema(breadcrumbItems);
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background-dark">
@@ -38,7 +45,7 @@ const OffersPage = () => {
 
     return (
         <div className="bg-background-dark min-h-screen text-slate-200 font-body">
-            <SEOHead title="عروض وتخفيضات" description="أفضل العروض والتخفيضات على أجهزة الكاشير وأنظمة المحاسبة - خصومات تصل إلى 50%" canonical="/offers" />
+            <SEOHead title="عروض وتخفيضات" description="أفضل العروض والتخفيضات على أجهزة الكاشير وأنظمة المحاسبة - خصومات تصل إلى 50%" canonical="/offers" jsonLd={[breadcrumbJsonLd]} />
             {/* Hero Banner */}
             <div className="relative h-[300px] overflow-hidden flex items-center justify-center">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-900 to-blue-900 opacity-50" />
@@ -82,7 +89,7 @@ const OffersPage = () => {
                                 brand={product.brand?.name || product.category?.name || 'Generic'}
                                 price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
                                 originalPrice={userHasDiscount(product) ? parseFloat(product.price) : undefined}
-                                rating={5} // Mock rating if not available
+                                rating={product.averageRating || 0}
                                 imageUrl={product.images?.[0]?.url || 'https://via.placeholder.com/300'}
                                 slug={product.slug}
                                 stock={product.stock}

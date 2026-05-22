@@ -217,6 +217,7 @@ export class ProductsController {
                                 orderBy: (images, { asc }) => [asc(images.sortOrder)],
                             },
                             relationships: true,
+                            reviews: true,
                         },
                     });
                     // Reorder because findMany where inArray doesn't preserve incoming array order
@@ -255,9 +256,19 @@ export class ProductsController {
                             orderBy: (images, { asc }) => [asc(images.sortOrder)],
                         },
                         relationships: true,
+                        reviews: true,
                     },
                 });
             }
+
+            // Enrich with review metrics
+            productsList = productsList.map(p => ({
+                ...p,
+                reviewCount: p.reviews?.length || 0,
+                averageRating: p.reviews?.length > 0
+                    ? Number((p.reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / p.reviews.length).toFixed(1))
+                    : 0,
+            }));
 
             const responseData = {
                 data: productsList,

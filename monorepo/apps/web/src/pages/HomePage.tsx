@@ -9,7 +9,7 @@ import api from '../lib/api';
 import { useCategories, useNewArrivals, useOffers, useBestSellers, useFeaturedProducts } from '../hooks/useProducts';
 import { useSettings } from '../context/SettingsContext';
 import SEOHead from '../components/SEO/SEOHead';
-import { organizationSchema, websiteSchema } from '../components/SEO/OrganizationSchema';
+import { buildOrganizationSchema, websiteSchema } from '../components/SEO/OrganizationSchema';
 import { optimizeImage } from '../lib/image-optimizer';
 
 
@@ -60,7 +60,7 @@ export function HomePage() {
               title={settings.metaTitle || 'الرئيسية'}
               description={settings.metaDescription || 'أجهزة كاشير وأنظمة محاسبة متكاملة - مركز العامر'}
               canonical="/"
-              jsonLd={[organizationSchema, websiteSchema]}
+              jsonLd={[buildOrganizationSchema(settings), websiteSchema]}
             />
             <LazyMotion features={domAnimation} strict>
             {/* Hero Section */}
@@ -318,7 +318,7 @@ export function HomePage() {
                                     brand={product.brand?.name || 'Generic'}
                                     price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
                                     originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
-                                    rating={5}
+                                    rating={product.averageRating || 0}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     stock={product.stock}
@@ -356,7 +356,7 @@ export function HomePage() {
                                     brand={product.brand?.name || 'Generic'}
                                     price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
                                     originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
-                                    rating={5}
+                                    rating={product.averageRating || 0}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     stock={product.stock}
@@ -393,7 +393,7 @@ export function HomePage() {
                                     brand={product.brand?.name || 'Generic'}
                                     price={product.discountPrice ? parseFloat(product.discountPrice) : parseFloat(product.price)}
                                     originalPrice={product.discountPrice ? parseFloat(product.price) : undefined}
-                                    rating={5}
+                                    rating={product.averageRating || 0}
                                     imageUrl={product.images.find(i => i.isPrimary)?.url || product.images[0]?.url || ''}
                                     slug={product.slug}
                                     stock={product.stock}
