@@ -86,20 +86,50 @@ export const ProductRow = memo(({
                 </div>
             </td>
             <td className="px-6 py-2">
-                <div className="flex flex-col gap-1 w-full max-w-[140px]">
-                    <div className="relative group/input min-w-[100px]">
-                        <input type="text"
-                            value={product.discountPrice ? (editedValue?.discountPrice ?? product.discountPrice) : (editedValue?.price ?? product.price)}
-                            onChange={(e) => onEditChange(product.id, product.discountPrice ? 'discountPrice' : 'price', e.target.value)}
-                            className={`w-full bg-white/5 border ${(product.discountPrice ? editedValue?.discountPrice !== undefined : editedValue?.price !== undefined) ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-3 py-2 pl-9 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`} />
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-bold pointer-events-none bg-white/5 px-1 rounded">ج.م</span>
-                    </div>
-                    {product.discountPrice && (
-                        <div className="flex items-center gap-1.5 px-1 mt-0.5">
-                            <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">السعر الأساسي: {product.price} ج.م</span>
+                {product.discountPrice ? (
+                    <div className="flex flex-col gap-1.5 min-w-[130px]">
+                        {/* Effective price (what customer pays) */}
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-1">
+                                <span className="text-[9px] font-bold text-emerald-400">السعر بعد الخصم</span>
+                                <span className="text-[7px] text-emerald-500/60">← عرض للعميل</span>
+                            </div>
+                            <div className="relative group/input">
+                                <input type="text"
+                                    value={editedValue?.discountPrice ?? product.discountPrice}
+                                    onChange={(e) => onEditChange(product.id, 'discountPrice', e.target.value)}
+                                    className={`w-full bg-white/5 border ${editedValue?.discountPrice !== undefined ? 'border-emerald-500/50' : 'border-emerald-500/20'} hover:border-emerald-500/40 rounded px-3 py-1.5 pl-9 text-sm font-bold text-emerald-300 transition-all focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 outline-none`} />
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-500/60 font-bold pointer-events-none">ج.م</span>
+                            </div>
                         </div>
-                    )}
-                </div>
+                        {/* Base price reference (editable) */}
+                        <div className="space-y-0.5">
+                            <span className="text-[9px] font-bold text-amber-500/80">سعر البيع الأساسي</span>
+                            <div className="relative group/input">
+                                <input type="text"
+                                    value={editedValue?.price ?? product.price}
+                                    onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
+                                    className={`w-full bg-white/5 border ${editedValue?.price !== undefined ? 'border-amber-500/50' : 'border-white/5'} hover:border-white/20 rounded px-3 py-1.5 pl-9 text-xs font-bold text-slate-400 line-through decoration-slate-500/50 transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 outline-none`} />
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] text-slate-500 font-bold pointer-events-none">ج.م</span>
+                            </div>
+                        </div>
+                        {/* Discount badge */}
+                        <span className="text-[8px] text-emerald-500/80 font-bold px-1.5 py-0.5 bg-emerald-500/10 rounded-full w-fit">
+                            -{Math.round((1 - parseFloat(product.discountPrice) / parseFloat(product.price)) * 100)}%
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-1 w-full max-w-[140px]">
+                        <span className="text-[9px] font-bold text-slate-400">سعر البيع الأساسي</span>
+                        <div className="relative group/input min-w-[100px]">
+                            <input type="text"
+                                value={editedValue?.price ?? product.price}
+                                onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
+                                className={`w-full bg-white/5 border ${editedValue?.price !== undefined ? 'border-primary/50' : 'border-white/5'} hover:border-white/20 rounded px-3 py-2 pl-9 text-sm font-bold text-white transition-all focus:border-primary focus:ring-1 focus:ring-primary outline-none`} />
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-bold pointer-events-none bg-white/5 px-1 rounded">ج.م</span>
+                        </div>
+                    </div>
+                )}
             </td>
             <td className="px-6 py-2">
                 <div className="max-w-[80px]">
@@ -194,19 +224,58 @@ export const MobileProductCard = memo(({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-white/5">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 px-1">
-                            <span className="material-symbols-outlined text-[14px] text-primary">payments</span>
-                            السعر الحالي
-                        </label>
-                        <div className="relative group/price">
-                            <input type="text"
-                                value={product.discountPrice ? (editedValue?.discountPrice ?? product.discountPrice) : (editedValue?.price ?? product.price)}
-                                onChange={(e) => onEditChange(product.id, product.discountPrice ? 'discountPrice' : 'price', e.target.value)}
-                                className={`w-full bg-[#0f1115] border ${editedValue?.price || editedValue?.discountPrice ? 'border-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]' : 'border-white/10'} rounded-xl px-3 py-2.5 text-xs font-black text-white outline-none focus:border-primary transition-all pr-8`} />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">ج.م</span>
+                    {product.discountPrice ? (
+                        <div className="col-span-2 space-y-2">
+                            {/* Effective price */}
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-emerald-400 flex items-center gap-1.5 px-1">
+                                    <span className="material-symbols-outlined text-[14px]">local_offer</span>
+                                    السعر بعد الخصم (عرض للعميل)
+                                </label>
+                                <div className="relative group/price">
+                                    <input type="text"
+                                        value={editedValue?.discountPrice ?? product.discountPrice}
+                                        onChange={(e) => onEditChange(product.id, 'discountPrice', e.target.value)}
+                                        className={`w-full bg-[#0f1115] border ${editedValue?.discountPrice !== undefined ? 'border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'border-emerald-500/20'} rounded-xl px-3 py-2.5 text-xs font-black text-emerald-300 outline-none focus:border-emerald-500 transition-all pr-8`} />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500/60 bg-white/5 px-1.5 py-0.5 rounded">ج.م</span>
+                                </div>
+                            </div>
+                            {/* Base price */}
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-amber-500/80 flex items-center gap-1.5 px-1">
+                                    <span className="material-symbols-outlined text-[14px]">sell</span>
+                                    سعر البيع الأساسي
+                                </label>
+                                <div className="relative group/price">
+                                    <input type="text"
+                                        value={editedValue?.price ?? product.price}
+                                        onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
+                                        className={`w-full bg-[#0f1115] border ${editedValue?.price !== undefined ? 'border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]' : 'border-white/10'} rounded-xl px-3 py-2 text-xs font-black text-slate-400 line-through decoration-slate-500/50 outline-none focus:border-amber-500 transition-all pr-8`} />
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">ج.م</span>
+                                </div>
+                            </div>
+                            {/* Discount badge */}
+                            <div className="flex items-center gap-2 px-1">
+                                <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                    -{Math.round((1 - parseFloat(product.discountPrice) / parseFloat(product.price)) * 100)}%
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 px-1">
+                                <span className="material-symbols-outlined text-[14px] text-primary">payments</span>
+                                سعر البيع الأساسي
+                            </label>
+                            <div className="relative group/price">
+                                <input type="text"
+                                    value={editedValue?.price ?? product.price}
+                                    onChange={(e) => onEditChange(product.id, 'price', e.target.value)}
+                                    className={`w-full bg-[#0f1115] border ${editedValue?.price !== undefined ? 'border-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.1)]' : 'border-white/10'} rounded-xl px-3 py-2.5 text-xs font-black text-white outline-none focus:border-primary transition-all pr-8`} />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500 bg-white/5 px-1.5 py-0.5 rounded">ج.م</span>
+                            </div>
+                        </div>
+                    )}
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 px-1">
                             <span className="material-symbols-outlined text-[14px] text-secondary">inventory_2</span>

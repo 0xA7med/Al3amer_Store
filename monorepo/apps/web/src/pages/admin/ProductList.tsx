@@ -318,8 +318,12 @@ export function ProductList() {
                                 <th className="px-6 py-4 whitespace-nowrap w-24 text-center cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('status')}>
                                     <div className="flex items-center justify-center gap-1">الحالة {renderSortIcon('status')}</div>
                                 </th>
-                                <th className="px-6 py-4 whitespace-nowrap w-40 cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('price')}>
-                                    <div className="flex items-center gap-1">السعر {renderSortIcon('price')}</div>
+                                <th className="px-6 py-4 whitespace-nowrap w-52 cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('price')}>
+                                    <div className="flex items-center gap-1">
+                                        التسعير
+                                        <span className="text-[9px] text-slate-500 font-medium">(الأساسي / بعد الخصم)</span>
+                                        {renderSortIcon('price')}
+                                    </div>
                                 </th>
                                 <th className="px-6 py-4 whitespace-nowrap w-32 cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('stock')}>
                                     <div className="flex items-center gap-1">المخزون {renderSortIcon('stock')}</div>

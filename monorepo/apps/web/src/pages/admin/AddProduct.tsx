@@ -518,8 +518,8 @@ export function AddProduct() {
                             title="توليد كافة التفاصيل بالذكاء الاصطناعي"
                             type="button"
                         >
-                            <span className={`material-symbols-outlined text-[18px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
-                                {isGeneratingAI ? 'autorenew' : 'auto_awesome'}
+                            <span className={`material-symbols-outlined text-[18px] ${generatingSection === 'all' ? 'animate-spin' : ''}`}>
+                                {generatingSection === 'all' ? 'autorenew' : 'auto_awesome'}
                             </span>
                             <span className="hidden sm:inline">أكمل بالذكاء الاصطناعي</span>
                         </button>
@@ -576,7 +576,7 @@ export function AddProduct() {
                                     className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                                     type="button"
                                 >
-                                    {isGeneratingAI ? (
+                                    {generatingSection === 'all' ? (
                                         <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                     ) : (
                                         <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
@@ -617,8 +617,8 @@ export function AddProduct() {
                                                 title="تحسين باستخدام AI"
                                                 type="button"
                                             >
-                                                <span className={`material-symbols-outlined text-[20px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
-                                                    {isGeneratingAI ? 'autorenew' : 'auto_awesome'}
+                                                <span className={`material-symbols-outlined text-[20px] ${(generatingSection === 'title' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                                    {(generatingSection === 'title' || generatingSection === 'all') ? 'autorenew' : 'auto_awesome'}
                                                 </span>
                                             </button>
                                         </div>
@@ -633,10 +633,10 @@ export function AddProduct() {
                                                 className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors"
                                                 type="button"
                                             >
-                                                <span className={`material-symbols-outlined text-[14px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
-                                                    {isGeneratingAI ? 'autorenew' : 'auto_fix_normal'}
+                                                <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'description' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                                    {(generatingSection === 'description' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
                                                 </span>
-                                                {isGeneratingAI ? 'جاري التحسين...' : 'تحسين الوصف'}
+                                                {(generatingSection === 'description' || generatingSection === 'all') ? 'جاري التحسين...' : 'تحسين الوصف'}
                                             </button>
                                         </div>
                                         <textarea
@@ -833,10 +833,10 @@ export function AddProduct() {
                                             className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20"
                                             type="button"
                                         >
-                                            <span className={`material-symbols-outlined text-[14px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
-                                                {isGeneratingAI ? 'autorenew' : 'auto_fix_normal'}
+                                            <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'specs' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                                {(generatingSection === 'specs' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
                                             </span>
-                                            {isGeneratingAI ? 'جاري...' : 'توليد بالذكاء الاصطناعي'}
+                                            {(generatingSection === 'specs' || generatingSection === 'all') ? 'جاري...' : 'توليد بالذكاء الاصطناعي'}
                                         </button>
                                         <button onClick={addSpec} className="btn-ghost text-xs" type="button">
                                             <span className="material-symbols-outlined text-[16px]">add</span> إضافة مواصفة
@@ -964,10 +964,10 @@ export function AddProduct() {
                                                 className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors disabled:opacity-50"
                                                 type="button"
                                             >
-                                                <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'llm' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
-                                                    {(generatingSection === 'llm' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
+                                                <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'llm' || generatingSection === 'all' || generatingSection === 'geo') ? 'animate-spin' : ''}`}>
+                                                    {(generatingSection === 'llm' || generatingSection === 'all' || generatingSection === 'geo') ? 'autorenew' : 'auto_fix_normal'}
                                                 </span>
-                                                {(generatingSection === 'llm' || generatingSection === 'all') ? 'جاري التوليد...' : 'توليد وصف LLM'}
+                                                {(generatingSection === 'llm' || generatingSection === 'all' || generatingSection === 'geo') ? 'جاري التوليد...' : 'توليد وصف LLM'}
                                             </button>
                                         </div>
                                         <textarea
@@ -989,10 +989,10 @@ export function AddProduct() {
                                                     className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors disabled:opacity-50"
                                                     type="button"
                                                 >
-                                                    <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'faq' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
-                                                        {(generatingSection === 'faq' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
+                                                    <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'faq' || generatingSection === 'all' || generatingSection === 'geo') ? 'animate-spin' : ''}`}>
+                                                        {(generatingSection === 'faq' || generatingSection === 'all' || generatingSection === 'geo') ? 'autorenew' : 'auto_fix_normal'}
                                                     </span>
-                                                    {(generatingSection === 'faq' || generatingSection === 'all') ? 'جاري التوليد...' : 'توليد FAQ بالذكاء الاصطناعي'}
+                                                    {(generatingSection === 'faq' || generatingSection === 'all' || generatingSection === 'geo') ? 'جاري التوليد...' : 'توليد FAQ بالذكاء الاصطناعي'}
                                                 </button>
                                                 <button onClick={addFaq} className="text-xs text-primary hover:text-primary/80 flex items-center gap-1" type="button">
                                                     <span className="material-symbols-outlined text-[14px]">add</span> سؤال جديد
@@ -1129,8 +1129,13 @@ export function AddProduct() {
                                     <h3>التسعير</h3>
                                 </div>
                                 <div className="space-y-4">
-                                    <div>
-                                        <label className="field-label">سعر البيع <span className="text-secondary">*</span></label>
+                                    {/* Base Price */}
+                                    <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="material-symbols-outlined text-amber-400 text-[18px]">sell</span>
+                                            <label className="text-sm font-bold text-amber-300">سعر البيع الأساسي <span className="text-secondary">*</span></label>
+                                            <span className="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded-full mr-auto">السعر الذي يظهر للعميل (بدون خصم)</span>
+                                        </div>
                                         <div className="relative">
                                             <input
                                                 name="price"
@@ -1143,14 +1148,55 @@ export function AddProduct() {
                                             <span className="absolute inset-y-0 right-4 flex items-center text-slate-500 font-bold text-xs">EGP</span>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="field-label">سعر الخصم</label>
-                                            <input name="discountPrice" value={formData.discountPrice} onChange={handleInputChange} className="input-field" placeholder="0.00" type="number" />
+
+                                    {/* Discount Price */}
+                                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="material-symbols-outlined text-emerald-400 text-[18px]">local_offer</span>
+                                            <label className="text-sm font-bold text-emerald-300">السعر بعد الخصم</label>
+                                            <span className="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded-full mr-auto">اختياري - اتركه فارغاً إذا لا يوجد خصم</span>
                                         </div>
-                                        <div>
-                                            <label className="field-label">التكلفة</label>
-                                            <input name="cost" value={formData.cost} onChange={handleInputChange} className="input-field" placeholder="0.00" type="number" />
+                                        <div className="relative">
+                                            <input
+                                                name="discountPrice"
+                                                value={formData.discountPrice}
+                                                onChange={handleInputChange}
+                                                className="input-field text-lg font-bold pr-12"
+                                                placeholder="0.00"
+                                                type="number"
+                                            />
+                                            <span className="absolute inset-y-0 right-4 flex items-center text-slate-500 font-bold text-xs">EGP</span>
+                                        </div>
+                                        {formData.price && formData.discountPrice && (
+                                            <div className="mt-2 flex items-center gap-2 text-[11px] text-emerald-400">
+                                                <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                                الخصم: {Math.round((1 - parseFloat(formData.discountPrice) / parseFloat(formData.price)) * 100)}%
+                                                <span className="text-slate-500">|</span>
+                                                العميل سيدفع <strong>{parseFloat(formData.discountPrice).toLocaleString()} ج.م</strong> بدلاً من {parseFloat(formData.price).toLocaleString()} ج.م
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Separator */}
+                                    <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                                    {/* Cost (internal) */}
+                                    <div>
+                                        <label className="field-label flex items-center gap-1.5">
+                                            <span className="material-symbols-outlined text-[14px] text-slate-500">receipt_long</span>
+                                            التكلفة (داخلي)
+                                            <span className="text-[9px] text-slate-600">— للمحاسبة فقط</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                name="cost"
+                                                value={formData.cost}
+                                                onChange={handleInputChange}
+                                                className="input-field pr-12"
+                                                placeholder="0.00"
+                                                type="number"
+                                            />
+                                            <span className="absolute inset-y-0 right-4 flex items-center text-slate-500 font-bold text-xs">EGP</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1200,10 +1246,10 @@ export function AddProduct() {
                                         className="mr-auto text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-indigo-500/10 hover:bg-indigo-500/20"
                                         type="button"
                                     >
-                                        <span className={`material-symbols-outlined text-[14px] ${isGeneratingAI ? 'animate-spin' : ''}`}>
-                                            {isGeneratingAI ? 'autorenew' : 'auto_fix_normal'}
+                                        <span className={`material-symbols-outlined text-[14px] ${(generatingSection === 'seo' || generatingSection === 'all') ? 'animate-spin' : ''}`}>
+                                            {(generatingSection === 'seo' || generatingSection === 'all') ? 'autorenew' : 'auto_fix_normal'}
                                         </span>
-                                        {isGeneratingAI ? 'جاري التحسين...' : 'تحسين بالذكاء الاصطناعي'}
+                                        {(generatingSection === 'seo' || generatingSection === 'all') ? 'جاري التحسين...' : 'تحسين بالذكاء الاصطناعي'}
                                     </button>
                                 </div>
                                 <div className="space-y-4">
