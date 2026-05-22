@@ -10,4 +10,3 @@ Disallow: /track-order/
 
 Sitemap: https://al3amer.store/sitemap.xml
 Sitemap: https://al3amer.store/sitemap_llm.xml
-Sitemap: https://al3amer.store/llm-catalog.md
