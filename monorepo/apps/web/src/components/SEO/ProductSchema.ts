@@ -27,6 +27,52 @@ export function buildProductSchema(product: any) {
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'EG',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 14,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'EG',
+        },
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: 0,
+          currency: 'EGP',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          businessDays: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: [
+              'https://schema.org/Saturday',
+              'https://schema.org/Sunday',
+              'https://schema.org/Monday',
+              'https://schema.org/Tuesday',
+              'https://schema.org/Wednesday',
+              'https://schema.org/Thursday',
+            ],
+          },
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 5,
+            unitCode: 'DAY',
+          },
+        },
+      },
     },
     aggregateRating: product.reviewCount ? {
       '@type': 'AggregateRating',

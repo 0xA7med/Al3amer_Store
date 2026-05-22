@@ -7,10 +7,7 @@ Disallow: /cart/
 Disallow: /payment/
 Disallow: /order-success/
 Disallow: /track-order/
-Disallow: /api/
 
 Sitemap: https://al3amer.store/sitemap.xml
 Sitemap: https://al3amer.store/sitemap_llm.xml
-
-# AI Optimized Catalog (Markdown format for AI crawlers like ChatGPT, Perplexity)
-# https://al3amer.store/llm-catalog.md
+Sitemap: https://al3amer.store/llm-catalog.md

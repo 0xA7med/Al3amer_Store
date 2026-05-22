@@ -19,32 +19,35 @@ router.get('/sitemap.xml', async (_req, res) => {
             columns: { slug: true },
         });
 
+        const now = new Date().toISOString();
+
         const staticPages = [
             { loc: '/', priority: '1.0', changefreq: 'daily' },
             { loc: '/shop', priority: '0.9', changefreq: 'daily' },
             { loc: '/offers', priority: '0.8', changefreq: 'daily' },
             { loc: '/about', priority: '0.7', changefreq: 'weekly' },
             { loc: '/ai-builder', priority: '0.6', changefreq: 'weekly' },
-            { loc: '/login', priority: '0.3', changefreq: 'monthly' },
         ];
 
         const urls = [
             ...staticPages.map(p => `
     <url>
       <loc>${baseUrl}${p.loc}</loc>
+      <lastmod>${now}</lastmod>
       <changefreq>${p.changefreq}</changefreq>
       <priority>${p.priority}</priority>
     </url>`),
             ...allCategories.map(c => `
     <url>
       <loc>${baseUrl}/shop?categories=${c.slug}</loc>
+      <lastmod>${now}</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>`),
             ...allProducts.map(p => `
     <url>
       <loc>${baseUrl}/product/${p.slug}</loc>
-      <lastmod>${new Date(p.updatedAt ?? new Date()).toISOString()}</lastmod>
+      <lastmod>${new Date(p.updatedAt ?? now).toISOString()}</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.9</priority>
     </url>`),

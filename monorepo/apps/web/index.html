@@ -7,13 +7,18 @@
   <link rel="icon" type="image/png" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مركز العامر - لأجهزة الكاشير وأنظمة المحاسبة</title>
-  
-  <!-- Canonical tags are injected dynamically by SEOHead.tsx per-page via react-helmet-async -->
-  <!-- DO NOT add a static canonical here — it would make ALL pages look like homepage duplicates to Googlebot -->
+  <meta name="description" content="المركز الرائد في مصر لتوريد وتركيب أجهزة الكاشير، أنظمة نقاط البيع، كاميرات المراقبة، والحلول التقنية للمحلات التجارية والمطاعم" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="مركز العامر" />
+  <meta property="og:locale" content="ar_EG" />
+  <meta name="theme-color" content="#0d121c" />
+  <link rel="alternate" type="text/markdown" href="/llm-catalog.md" title="AI-Ready Product Catalog" />
 
   <!-- Critical preconnects (max 2 for performance) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://al3amer-store-wf1t.vercel.app" crossorigin />
 
   <!-- Preload Logo -->
   <link rel="preload" as="image" href="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" fetchpriority="high" />
@@ -90,6 +95,39 @@
   <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet" />
   </noscript>
+
+  <!-- Static JSON-LD for Googlebot Wave 1 and AI crawlers (no JS required) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "@id": "https://al3amer.store/#organization",
+    "name": "مركز العامر",
+    "url": "https://al3amer.store",
+    "logo": "https://i.ibb.co/KkCv1LF/Logo-Al3amer.png",
+    "description": "المركز الرائد في مصر لتوريد وتركيب أجهزة الكاشير، أنظمة نقاط البيع، كاميرات المراقبة، والحلول التقنية للمحلات التجارية والمطاعم",
+    "areaServed": "EG",
+    "currenciesAccepted": "EGP",
+    "priceRange": "$$"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://al3amer.store/#website",
+    "url": "https://al3amer.store",
+    "name": "مركز العامر",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://al3amer.store/shop?search={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -107,6 +145,22 @@
     </div>
   </div>
   <script type="module" src="/src/main.tsx"></script>
+
+  <noscript>
+    <div style="padding: 20px; font-family: 'Cairo', sans-serif; direction: rtl; text-align: center; color: #e2e8f0; background: #0d121c; min-height: 100vh;">
+      <h1 style="font-size: 2rem; margin-bottom: 1rem;">مركز العامر</h1>
+      <img src="https://i.ibb.co/KkCv1LF/Logo-Al3amer.png" alt="مركز العامر" width="200" height="67" style="margin-bottom: 1rem;" />
+      <p style="font-size: 1.2rem; max-width: 600px; margin: 0 auto 2rem;">
+        المركز الرائد في مصر لتوريد وتركيب أجهزة الكاشير، أنظمة نقاط البيع، كاميرات المراقبة، والحلول التقنية للمحلات التجارية والمطاعم
+      </p>
+      <nav style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/shop" style="color: #135bec; text-decoration: none; font-size: 1.1rem;">المتجر</a>
+        <a href="/offers" style="color: #135bec; text-decoration: none; font-size: 1.1rem;">العروض</a>
+        <a href="/about" style="color: #135bec; text-decoration: none; font-size: 1.1rem;">من نحن</a>
+        <a href="/ai-builder" style="color: #135bec; text-decoration: none; font-size: 1.1rem;">AI Bundle Builder</a>
+      </nav>
+    </div>
+  </noscript>
 </body>
 
 </html>

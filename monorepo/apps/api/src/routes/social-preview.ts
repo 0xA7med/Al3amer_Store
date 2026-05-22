@@ -505,9 +505,100 @@ router.get('/*', async (req: Request, res: Response) => {
             html = await renderShopPage(req);
         } else if (path === '' || path === '/') {
             html = await renderHomePage();
+        } else if (path === 'about') {
+            const title = 'من نحن | مركز العامر';
+            const desc = 'تعرف على مركز العامر، المركز الرائد في مصر لتوريد وتركيب أجهزة الكاشير، أنظمة نقاط البيع، كاميرات المراقبة، والحلول التقنية. خبرة أكثر من 10 سنوات في تجهيز المحلات التجارية والمطاعم.';
+            html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escHtml(title)}</title>
+    <meta name="description" content="${escHtml(desc)}">
+    <link rel="canonical" href="${SITE_URL}/about">
+    <meta property="og:title" content="${escHtml(title)}">
+    <meta property="og:description" content="${escHtml(desc)}">
+    <meta property="og:image" content="${DEFAULT_IMAGE}">
+    <meta property="og:url" content="${SITE_URL}/about">
+    <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+    <h1>من نحن</h1>
+    <p>${escHtml(desc)}</p>
+    <section>
+        <h2>لماذا مركز العامر؟</h2>
+        <ul>
+            <li>✓ ضمان معتمد على جميع المنتجات</li>
+            <li>✓ تركيب وصيانة محترفة</li>
+            <li>✓ دعم فني متخصص</li>
+            <li>✓ أفضل الأسعار في السوق المصري</li>
+            <li>✓ شحن لجميع محافظات مصر</li>
+        </ul>
+    </section>
+    <nav>
+        <a href="${SITE_URL}">الرئيسية</a> |
+        <a href="${SITE_URL}/shop">المتجر</a> |
+        <a href="${SITE_URL}/offers">العروض</a>
+    </nav>
+</body>
+</html>`;
+        } else if (path === 'offers') {
+            const title = 'العروض والتخفيضات | مركز العامر';
+            const desc = 'أقوى العروض والتخفيضات على أجهزة الكاشير، الباركود، الطابعات، وأنظمة نقاط البيع. عروض حصرية لفترة محدودة.';
+            html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escHtml(title)}</title>
+    <meta name="description" content="${escHtml(desc)}">
+    <link rel="canonical" href="${SITE_URL}/offers">
+    <meta property="og:title" content="${escHtml(title)}">
+    <meta property="og:description" content="${escHtml(desc)}">
+    <meta property="og:image" content="${DEFAULT_IMAGE}">
+    <meta property="og:url" content="${SITE_URL}/offers">
+    <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+    <h1>العروض والتخفيضات</h1>
+    <p>${escHtml(desc)}</p>
+    <p>تصفح جميع المنتجات المخفضة في متجرنا: <a href="${SITE_URL}/shop">جميع المنتجات</a></p>
+    <nav>
+        <a href="${SITE_URL}">الرئيسية</a> |
+        <a href="${SITE_URL}/shop">المتجر</a> |
+        <a href="${SITE_URL}/about">من نحن</a>
+    </nav>
+</body>
+</html>`;
+        } else if (path === 'ai-builder') {
+            const title = 'AI Bundle Builder | مركز العامر';
+            const desc = 'صمم حزمة المنتجات المثالية لمحلك التجاري باستخدام الذكاء الاصطناعي. اختر نوع المحل وسنقترح لك أفضل أجهزة الكاشير والطابعات والباركود.';
+            html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escHtml(title)}</title>
+    <meta name="description" content="${escHtml(desc)}">
+    <link rel="canonical" href="${SITE_URL}/ai-builder">
+    <meta property="og:title" content="${escHtml(title)}">
+    <meta property="og:description" content="${escHtml(desc)}">
+    <meta property="og:image" content="${DEFAULT_IMAGE}">
+    <meta property="og:url" content="${SITE_URL}/ai-builder">
+    <meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+    <h1>AI Bundle Builder</h1>
+    <p>${escHtml(desc)}</p>
+    <nav>
+        <a href="${SITE_URL}">الرئيسية</a> |
+        <a href="${SITE_URL}/shop">المتجر</a>
+    </nav>
+</body>
+</html>`;
         }
 
-        // Fallback for unrecognised paths (about, offers, etc.)
+        // Fallback for any other unrecognised paths
         if (!html) {
             const title = 'مركز العامر - أجهزة الكاشير وأنظمة المحاسبة';
             const desc = 'المركز الرائد لتجهيزات المحلات التجارية والكاشير وأنظمة المراقبة في مصر';
