@@ -51,8 +51,12 @@ export const createProductSchema = z.object({
     llmDescription: z.string().optional().nullable(),
     faq: z.array(z.object({
         question: z.string(),
-        answer: z.string()
-    })).optional().default([]),
+        answer: z.string(),
+    })).optional(),
+    relationships: z.array(z.object({
+        relatedProductId: z.string(),
+        type: z.enum(['related', 'accessory', 'alternative']),
+    })).optional(),
 });
 export const updateProductSchema = createProductSchema.partial();
 export const bulkUpdateSchema = z.object({
@@ -87,7 +91,7 @@ export const validateCartSchema = z.object({
 });
 export const aiGenerateSchema = z.object({
     name: z.string().min(1, 'Product name is required'),
-    section: z.string().optional().default('all'), // 'all' | 'description' | 'seo' | 'specs' | 'llm_geo'
+    section: z.string().optional().default('all'),
     category: z.string().optional(),
     brand: z.string().optional(),
 });

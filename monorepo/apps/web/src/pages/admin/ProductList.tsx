@@ -15,7 +15,7 @@ export function ProductList() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('');
-    const [sortBy, setSortBy] = useState('name');
+    const [sortBy, setSortBy] = useState('newest');
     const limit = 50;
 
     const { data: statsData } = useAdminStats();
@@ -131,6 +131,20 @@ export function ProductList() {
         setShowGroupModal(false);
     };
 
+    const handleSort = (key: string) => {
+        if (sortBy === `${key}_asc`) {
+            setSortBy(`${key}_desc`);
+        } else {
+            setSortBy(`${key}_asc`);
+        }
+    };
+
+    const renderSortIcon = (key: string) => {
+        if (sortBy === `${key}_asc`) return <span className="material-symbols-outlined text-[16px] text-primary transition-all">arrow_upward</span>;
+        if (sortBy === `${key}_desc`) return <span className="material-symbols-outlined text-[16px] text-primary transition-all">arrow_downward</span>;
+        return <span className="material-symbols-outlined text-[16px] text-slate-500 opacity-0 group-hover:opacity-100 transition-all">unfold_more</span>;
+    };
+
     const filteredProducts = showLowStockOnly
         ? productsList.filter(p => p.stock < 10 && p.stock > 0)
         : productsList;
@@ -236,8 +250,8 @@ export function ProductList() {
                 </div>
 
                 <div className={`${isFiltersOpen ? 'flex' : 'hidden md:flex'} glass-panel rounded-xl p-4 flex-col items-stretch justify-between gap-4 relative z-10 animate-in fade-in slide-in-from-top-2 duration-200`}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:items-center gap-3">
-                        <div className="relative w-full lg:w-64">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="relative w-full">
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
                                 <span className="material-symbols-outlined text-[20px]">search</span>
                             </div>
@@ -252,7 +266,20 @@ export function ProductList() {
                             options={[{ value: '', label: 'الحالة: الكل' }, { value: 'active', label: 'نشط' }, { value: 'draft', label: 'غير نشط' }]}
                             placeholder="الحالة: الكل" className="w-full" />
                         <CustomSelect value={sortBy} onChange={setSortBy}
-                            options={[{ value: 'name', label: 'الاسم (أ-ي)' }, { value: 'price_asc', label: 'السعر: من الأقل' }, { value: 'price_desc', label: 'السعر: من الأعلى' }, { value: 'newest', label: 'الأحدث أولاً' }, { value: 'oldest', label: 'الأقدم أولاً' }]}
+                            options={[
+                                { value: 'newest', label: 'الأحدث أولاً' }, 
+                                { value: 'oldest', label: 'الأقدم أولاً' },
+                                { value: 'name_asc', label: 'الاسم (أ-ي)' }, 
+                                { value: 'name_desc', label: 'الاسم (ي-أ)' }, 
+                                { value: 'price_asc', label: 'السعر: من الأقل' }, 
+                                { value: 'price_desc', label: 'السعر: من الأعلى' },
+                                { value: 'stock_asc', label: 'المخزون: من الأقل' },
+                                { value: 'stock_desc', label: 'المخزون: من الأعلى' },
+                                { value: 'status_asc', label: 'الحالة: نشط أولاً' },
+                                { value: 'status_desc', label: 'الحالة: غير نشط أولاً' },
+                                { value: 'ai_desc', label: 'مؤشر الذكاء الاصطناعي: الأعلى' },
+                                { value: 'ai_asc', label: 'مؤشر الذكاء الاصطناعي: الأقل' }
+                            ]}
                             placeholder="ترتيب حسب" className="w-full" icon="sort" />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
@@ -282,11 +309,21 @@ export function ProductList() {
                                             onChange={toggleSelectAll} className="rounded border-white/10 bg-white/5 text-primary focus:ring-0 cursor-pointer" />
                                     </div>
                                 </th>
-                                <th className="px-6 py-4 whitespace-nowrap">المنتج</th>
-                                <th className="px-6 py-4 whitespace-nowrap">القسم / الماركة</th>
-                                <th className="px-6 py-4 whitespace-nowrap w-24 text-center">الحالة</th>
-                                <th className="px-6 py-4 whitespace-nowrap w-40">السعر</th>
-                                <th className="px-6 py-4 whitespace-nowrap w-32">المخزون</th>
+                                <th className="px-6 py-4 whitespace-nowrap cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('name')}>
+                                    <div className="flex items-center gap-1">المنتج {renderSortIcon('name')}</div>
+                                </th>
+                                <th className="px-6 py-4 whitespace-nowrap cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('ai')}>
+                                    <div className="flex items-center gap-1">القسم / الماركة / الذكاء الاصطناعي {renderSortIcon('ai')}</div>
+                                </th>
+                                <th className="px-6 py-4 whitespace-nowrap w-24 text-center cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('status')}>
+                                    <div className="flex items-center justify-center gap-1">الحالة {renderSortIcon('status')}</div>
+                                </th>
+                                <th className="px-6 py-4 whitespace-nowrap w-40 cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('price')}>
+                                    <div className="flex items-center gap-1">السعر {renderSortIcon('price')}</div>
+                                </th>
+                                <th className="px-6 py-4 whitespace-nowrap w-32 cursor-pointer hover:text-white group transition-colors" onClick={() => handleSort('stock')}>
+                                    <div className="flex items-center gap-1">المخزون {renderSortIcon('stock')}</div>
+                                </th>
                                 <th className="px-6 py-4 whitespace-nowrap text-left">إجراءات</th>
                             </tr>
                         </thead>

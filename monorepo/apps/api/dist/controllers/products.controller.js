@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
-import { products, productImages, categories, brands, reviews, orderItems, productRelations } from '../db/schema.js';
-import { eq, and, or, sql, inArray, desc, count, gte, ilike } from 'drizzle-orm';
+import { products, productImages, categories, brands, reviews, orderItems, productRelationships } from '../db/schema.js';
+import { eq, and, or, sql, inArray, desc, count, gte, ne, ilike } from 'drizzle-orm';
 import { AIService } from '../services/ai.service.js';
 import { decryptText } from '../lib/crypto.utils.js';
 import { getMergedSettings } from '../lib/settings-helper.js';
@@ -19,25 +19,6 @@ export class ProductsController {
             .replace(/--+/g, '-') // Replace multiple - with single -
             .replace(/^-+/, '') // Trim - from start of text
             .replace(/-+$/, ''); // Trim - from end of text
-    }
-    // Helper to calculate AI Readiness Score
-    static calculateAIReadinessScore(product) {
-        let score = 0;
-        if (product.llmDescription)
-            score += 30;
-        if (product.faq && Array.isArray(product.faq) && product.faq.length >= 5)
-            score += 20;
-        if (product.description && product.description.length >= 100)
-            score += 10;
-        if (product.specifications && Array.isArray(product.specifications) && product.specifications.length >= 3)
-            score += 10;
-        if (product.metaDescription)
-            score += 10;
-        if (product.tags && Array.isArray(product.tags) && product.tags.length >= 3)
-            score += 10;
-        if (product.images && Array.isArray(product.images) && product.images.length >= 2)
-            score += 10;
-        return score;
     }
     // Generate AI Content
     static async aiGenerate(req, res) {
@@ -60,7 +41,7 @@ export class ProductsController {
                 return res.status(400).json({ error: errorMessage });
             }
             const aiService = new AIService(apiKey.trim());
-            const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium', section, category, brand, section === 'llm_geo' ? 'Generate a detailed marketing description optimized for LLM search (GEO) and 5-10 frequently asked questions about the product in Arabic.' : undefined);
+            const result = await aiService.generateProductDetails(name, appSettings?.aiLanguage || 'ar', appSettings?.aiTone || 'Marketing', appSettings?.aiDescriptionLength || 'medium', section, category, brand);
             return res.json(result);
         }
         catch (error) {
@@ -83,9 +64,24 @@ export class ProductsController {
             });
         }
     }
+    // Simple in-memory cache for high-traffic list requests (e.g. homepage)
+    static cache = new Map();
+    static CACHE_TTL = 3 * 60 * 1000; // 3 minutes
+    static clearCache() {
+        ProductsController.cache.clear();
+    }
     // GET /api/products - List products with pagination and filtering
     static async list(req, res) {
         try {
+            const cacheKey = JSON.stringify(req.query);
+            // Only cache pure public listings (active status, no admin exclusions/dynamic filters)
+            const isCacheable = req.query.status === 'active' && !req.query.dynamicFilters;
+            if (isCacheable && ProductsController.cache.has(cacheKey)) {
+                const cached = ProductsController.cache.get(cacheKey);
+                if (Date.now() - cached.timestamp < ProductsController.CACHE_TTL) {
+                    return res.json(cached.data);
+                }
+            }
             const { page = '1', limit = '10', categories: categoriesParam, search, minPrice, status = 'active', featured, hasDiscount, sort, exclude, dynamicFilters, } = req.query;
             const pageNum = parseInt(page);
             const limitNum = parseInt(limit);
@@ -170,6 +166,7 @@ export class ProductsController {
                             images: {
                                 orderBy: (images, { asc }) => [asc(images.sortOrder)],
                             },
+                            relationships: true,
                         },
                     });
                     // Reorder because findMany where inArray doesn't preserve incoming array order
@@ -182,12 +179,30 @@ export class ProductsController {
                     limit: limitNum,
                     offset,
                     orderBy: (products, { desc, asc }) => {
+                        if (sort === 'name_asc')
+                            return [asc(products.name)];
+                        if (sort === 'name_desc')
+                            return [desc(products.name)];
                         if (sort === 'newest')
                             return [desc(products.createdAt)];
+                        if (sort === 'oldest')
+                            return [asc(products.createdAt)];
                         if (sort === 'price_asc')
                             return [asc(products.price)];
                         if (sort === 'price_desc')
                             return [desc(products.price)];
+                        if (sort === 'stock_asc')
+                            return [asc(products.stock)];
+                        if (sort === 'stock_desc')
+                            return [desc(products.stock)];
+                        if (sort === 'status_asc')
+                            return [asc(products.status)];
+                        if (sort === 'status_desc')
+                            return [desc(products.status)];
+                        if (sort === 'ai_asc')
+                            return [desc(products.llmDescription)];
+                        if (sort === 'ai_desc')
+                            return [asc(products.llmDescription)];
                         return [desc(products.createdAt)]; // Default to newest
                     },
                     with: {
@@ -202,18 +217,23 @@ export class ProductsController {
                         images: {
                             orderBy: (images, { asc }) => [asc(images.sortOrder)],
                         },
+                        relationships: true,
                     },
                 });
             }
-            res.json({
-                data: productsList.map(p => ({ ...p, aiReadinessScore: ProductsController.calculateAIReadinessScore(p) })),
+            const responseData = {
+                data: productsList,
                 pagination: {
                     page: pageNum,
                     limit: limitNum,
                     total,
                     totalPages,
                 },
-            });
+            };
+            if (isCacheable) {
+                ProductsController.cache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+            }
+            res.json(responseData);
         }
         catch (error) {
             console.error('Error fetching products:', error);
@@ -320,7 +340,19 @@ export class ProductsController {
                         columns: {
                             quantity: true
                         }
-                    }
+                    },
+                    relationships: {
+                        with: {
+                            relatedProduct: {
+                                with: {
+                                    images: {
+                                        where: eq(productImages.isPrimary, true),
+                                        limit: 1,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
             });
             if (!product) {
@@ -361,8 +393,7 @@ export class ProductsController {
                 salesCount,
                 reviewCount,
                 averageRating: Number(averageRating.toFixed(1)),
-                supportPhone: storeSettings?.supportPhone || '201012345678',
-                aiReadinessScore: ProductsController.calculateAIReadinessScore(product)
+                supportPhone: storeSettings?.supportPhone || '201012345678'
             });
         }
         catch (error) {
@@ -373,7 +404,8 @@ export class ProductsController {
     // POST /api/products - Create new product
     static async create(req, res) {
         try {
-            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images: imageUrls, slug: manualSlug, brand: brandName, llmDescription, faq, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images: imageUrls, slug: manualSlug, brand: brandName, // Allow name for auto-resolution
+            llmDescription, faq, relationships, } = req.body;
             // Resolve brand name to ID if brandName is provided
             let resolvedBrandId = brandId;
             if (brandName && !brandId) {
@@ -421,35 +453,79 @@ export class ProductsController {
                 specifications,
                 dynamicAttributes: dynamicAttributes || null,
                 tags,
-                llmDescription,
+                llmDescription: llmDescription || null,
                 faq: faq || [],
             }).returning();
+            // Insert product relationships if provided
+            if (relationships && Array.isArray(relationships) && relationships.length > 0) {
+                const relationsData = relationships.map((rel) => ({
+                    productId: newProduct.id,
+                    relatedProductId: rel.relatedProductId,
+                    type: rel.type
+                }));
+                await db.insert(productRelationships).values(relationsData);
+            }
             // Insert product images if provided
             if (imageUrls && Array.isArray(imageUrls) && imageUrls.length > 0) {
                 const hasExplicitPrimary = imageUrls.some((u) => typeof u === 'object' && u.isPrimary);
                 const imagesData = await Promise.all(imageUrls.map(async (img, index) => {
                     let url = typeof img === 'string' ? img : img.url;
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            }
+                            else {
+                                url = await uploadToCloudinary(url);
+                            }
                         }
                         catch (err) {
-                            console.error('❌ Failed to upload image to cloudinary:', err);
+                            console.error('❌ Failed to upload image to cloudinary, falling back to base64 string:', err);
                         }
                     }
                     return {
                         productId: newProduct.id,
                         url: url,
-                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        isPrimary: index === 0, // Always make the first image primary
                         sortOrder: index,
                     };
                 }));
                 await db.insert(productImages).values(imagesData);
             }
-            res.status(201).json(newProduct);
+            // Fetch the created product with relations
+            const createdProduct = await db.query.products.findFirst({
+                where: eq(products.id, newProduct.id),
+                with: {
+                    category: true,
+                    brand: true,
+                    images: true,
+                },
+            });
+            ProductsController.clearCache();
+            res.status(201).json(createdProduct);
         }
         catch (error) {
             console.error('Error creating product:', error);
+            // Handle unique constraint violations (Postgres error 23505)
+            const pgCode = error?.code || error?.cause?.code || error?.original?.code;
+            if (pgCode === '23505') {
+                let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
+                if (error.detail?.includes('slug')) {
+                    message = 'هذا الرابط (Slug) مستخدم بالفعل لمنتج آخر، يرجى تغيير اسم المنتج';
+                }
+                else if (error.detail?.includes('external_id')) {
+                    message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';
+                }
+                else if (error.detail?.includes('sku')) {
+                    message = 'هذا الكود (SKU) مستخدم بالفعل لمنتج آخر';
+                }
+                return res.status(400).json({
+                    message,
+                    error: 'DUPLICATE_ENTRY',
+                    detail: error.detail,
+                });
+            }
             res.status(500).json({ error: 'Failed to create product' });
         }
     }
@@ -457,7 +533,9 @@ export class ProductsController {
     static async update(req, res) {
         try {
             const { id } = req.params;
-            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images, slug: manualSlug, brand: brandName, llmDescription, faq, } = req.body;
+            const { name, description, price, discountPrice, cost, sku, external_id, stock, barcode, categoryId, brandId, status, videos, metaTitle, metaDescription, isFeatured, specifications, dynamicAttributes, tags, images, slug: manualSlug, brand: brandName, // Allow name for auto-resolution
+            llmDescription, faq, relationships, } = req.body;
+            // Resolve brand name to ID if brandName is provided
             let resolvedBrandId = brandId;
             if (brandName && !brandId) {
                 const existingBrand = await db.query.brands.findFirst({
@@ -491,40 +569,64 @@ export class ProductsController {
                 specifications,
                 dynamicAttributes: dynamicAttributes !== undefined ? dynamicAttributes : undefined,
                 tags,
-                llmDescription,
-                faq: faq || [],
+                llmDescription: llmDescription !== undefined ? llmDescription : undefined,
+                faq: faq !== undefined ? faq : undefined,
                 updatedAt: new Date(),
             };
+            // Update slug if provided or name changed
             if (manualSlug) {
                 updateData.slug = manualSlug;
             }
             else if (name) {
                 updateData.slug = ProductsController.slugify(name);
             }
+            // Remove undefined fields to avoid overwriting with null if they weren't in payload
             Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
             await db.update(products)
                 .set(updateData)
                 .where(eq(products.id, id));
-            if (images && Array.isArray(images)) {
+            // Handle relationships update if provided
+            if (relationships && Array.isArray(relationships)) {
+                await db.delete(productRelationships).where(eq(productRelationships.productId, id));
+                if (relationships.length > 0) {
+                    const relationsData = relationships.map((rel) => ({
+                        productId: id,
+                        relatedProductId: rel.relatedProductId,
+                        type: rel.type
+                    }));
+                    await db.insert(productRelationships).values(relationsData);
+                }
+            }
+            // Handle images update if provided
+            if (req.body.images && Array.isArray(req.body.images)) {
+                // Delete existing images
                 await db.delete(productImages).where(eq(productImages.productId, id));
-                const hasExplicitPrimary = images.some((u) => typeof u === 'object' && u.isPrimary);
-                const imagesData = await Promise.all(images.map(async (img, index) => {
+                // Insert new images
+                console.log('DEBUG: Updating images with body:', JSON.stringify(req.body.images));
+                const imagesData = await Promise.all(req.body.images.map(async (img, index) => {
                     let url = typeof img === 'string' ? img : img.url;
+                    // If url is base64, try to upload to cloudinary, but fallback gracefully
                     if (url.startsWith('data:image/')) {
                         try {
-                            url = await uploadToCloudinary(url);
+                            if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+                                console.warn('⚠️ Cloudinary is not properly configured. Falling back to storing Base64 string directly.');
+                            }
+                            else {
+                                url = await uploadToCloudinary(url);
+                            }
                         }
                         catch (err) {
-                            console.error('❌ Failed to upload update image:', err);
+                            console.error('❌ Failed to upload update image to cloudinary, falling back to base64 string:', err);
                         }
                     }
                     return {
                         productId: id,
                         url: url,
-                        isPrimary: typeof img === 'object' ? !!img.isPrimary : (!hasExplicitPrimary && index === 0),
+                        isPrimary: index === 0, // Always make the first image primary
                         sortOrder: index,
                     };
                 }));
+                // Insert new images only if we have some
                 if (imagesData.length > 0) {
                     await db.insert(productImages).values(imagesData);
                 }
@@ -537,110 +639,198 @@ export class ProductsController {
                     brand: true,
                 }
             });
+            ProductsController.clearCache();
             res.json(updatedProduct);
         }
         catch (error) {
             console.error('Error updating product:', error);
-            res.status(500).json({ error: 'Failed to update product' });
+            // Handle unique constraint violations (Postgres error 23505)
+            const pgCode = error?.code || error?.cause?.code || error?.original?.code;
+            if (pgCode === '23505') {
+                let message = 'هذا الرقم التعريفي أو الكود مستخدم بالفعل مسبقاً';
+                if (error.detail?.includes('external_id')) {
+                    message = 'هذا الرقم التعريفي الخارجي (External ID) مستخدم بالفعل لمنتج آخر';
+                }
+                else if (error.detail?.includes('sku')) {
+                    message = 'هذا الكود (SKU) مستخدم بالفعل لمنتج آخر';
+                }
+                else if (error.detail?.includes('slug')) {
+                    message = 'هذا الرابط (Slug) مستخدم بالفعل لمنتج آخر، يرجى تغيير اسم المنتج';
+                }
+                return res.status(400).json({
+                    message,
+                    error: 'DUPLICATE_ENTRY',
+                    detail: error.detail
+                });
+            }
+            res.status(500).json({
+                message: 'حدث خطأ أثناء تحديث المنتج',
+                error: error instanceof Error ? error.message : 'Unknown error',
+                details: error
+            });
         }
     }
-    // PATCH /api/products/:id/short-name
+    // PATCH /api/products/:id/short-name - Update product's AWB short name
     static async updateShortName(req, res) {
         try {
             const { id } = req.params;
             const { shortNameAwb } = req.body;
             const [updatedProduct] = await db.update(products)
-                .set({ shortNameAwb, updatedAt: new Date() })
+                .set({
+                shortNameAwb,
+                updatedAt: new Date()
+            })
                 .where(eq(products.id, id))
                 .returning();
+            if (!updatedProduct) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+            ProductsController.clearCache();
             res.json(updatedProduct);
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed' });
+            console.error('Error updating product short name:', error);
+            res.status(500).json({ error: 'Failed to update short name' });
         }
     }
-    // PATCH /api/products/bulk
+    // PATCH /api/products/bulk - Bulk update products (inline price/stock edits)
     static async bulkUpdate(req, res) {
         try {
-            const { updates } = req.body;
-            if (!updates || !Array.isArray(updates))
-                return res.status(400).json({ error: 'Invalid updates' });
+            const { updates } = req.body; // Array of { id, price, stock }
+            if (!updates || !Array.isArray(updates)) {
+                return res.status(400).json({ error: 'Updates must be an array' });
+            }
             await db.transaction(async (tx) => {
                 for (const update of updates) {
                     const { id, ...data } = update;
-                    await tx.update(products).set({ ...data, updatedAt: new Date() }).where(eq(products.id, id));
+                    // Sanitize nullable numeric strings: convert empty string to null
+                    if (data.discountPrice === '')
+                        data.discountPrice = null;
+                    if (data.cost === '')
+                        data.cost = null;
+                    await tx.update(products)
+                        .set({ ...data, updatedAt: new Date() })
+                        .where(eq(products.id, id));
                 }
             });
-            res.json({ success: true });
+            ProductsController.clearCache();
+            res.json({ message: 'Products updated successfully' });
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed' });
+            console.error('Error in bulk update:', error);
+            res.status(500).json({ error: 'Failed to perform bulk update' });
         }
     }
-    // POST /api/products/bulk-action
+    // POST /api/products/bulk-action - Comprehensive bulk actions
     static async bulkAction(req, res) {
         try {
             const { ids, action, payload } = req.body;
-            if (!ids || !Array.isArray(ids) || ids.length === 0)
-                return res.status(400).json({ error: 'No IDs' });
+            if (!ids || !Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ error: 'No product IDs provided' });
+            }
+            if (!action) {
+                return res.status(400).json({ error: 'Action is required' });
+            }
             let affected = 0;
             if (action === 'delete') {
                 await db.delete(products).where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'show') {
-                await db.update(products).set({ status: 'active', updatedAt: new Date() }).where(inArray(products.id, ids));
+                await db.update(products)
+                    .set({ status: 'active', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'hide') {
-                await db.update(products).set({ status: 'draft', updatedAt: new Date() }).where(inArray(products.id, ids));
+                await db.update(products)
+                    .set({ status: 'draft', updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'category') {
-                await db.update(products).set({ categoryId: payload.categoryId, updatedAt: new Date() }).where(inArray(products.id, ids));
+                if (!payload?.categoryId)
+                    return res.status(400).json({ error: 'categoryId is required' });
+                await db.update(products)
+                    .set({ categoryId: payload.categoryId, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'price') {
+                if (!payload?.priceMode || payload.priceValue === undefined) {
+                    return res.status(400).json({ error: 'priceMode and priceValue are required' });
+                }
                 const val = payload.priceValue;
                 const mode = payload.priceMode;
+                // Build a single SQL expression based on the mode — no row-by-row loop
                 let priceExpr;
-                if (mode === 'add_fixed')
+                if (mode === 'add_fixed') {
                     priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) + ${val})::TEXT`;
-                else if (mode === 'subtract_fixed')
+                }
+                else if (mode === 'subtract_fixed') {
                     priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) - ${val})::TEXT`;
-                else if (mode === 'add_percent')
+                }
+                else if (mode === 'add_percent') {
                     priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 + ${val} / 100.0))::TEXT`;
-                else if (mode === 'subtract_percent')
+                }
+                else if (mode === 'subtract_percent') {
                     priceExpr = sql `GREATEST(0, CAST(${products.price} AS NUMERIC) * (1 - ${val} / 100.0))::TEXT`;
-                else if (mode === 'set_fixed')
+                }
+                else if (mode === 'set_fixed') {
                     priceExpr = sql `${val.toString()}`;
-                await db.update(products).set({ price: priceExpr, updatedAt: new Date() }).where(inArray(products.id, ids));
+                }
+                else {
+                    return res.status(400).json({ error: 'Invalid priceMode' });
+                }
+                await db.update(products)
+                    .set({ price: priceExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'stock') {
+                if (!payload?.stockMode || payload.stockValue === undefined) {
+                    return res.status(400).json({ error: 'stockMode and stockValue are required' });
+                }
                 const val = payload.stockValue;
                 const mode = payload.stockMode;
                 let stockExpr;
-                if (mode === 'add')
+                if (mode === 'add') {
                     stockExpr = sql `GREATEST(0, COALESCE(${products.stock}, 0) + ${val})`;
-                else if (mode === 'subtract')
+                }
+                else if (mode === 'subtract') {
                     stockExpr = sql `GREATEST(0, COALESCE(${products.stock}, 0) - ${val})`;
-                else if (mode === 'set')
+                }
+                else if (mode === 'set') {
                     stockExpr = sql `${val}`;
-                await db.update(products).set({ stock: stockExpr, updatedAt: new Date() }).where(inArray(products.id, ids));
+                }
+                else {
+                    return res.status(400).json({ error: 'Invalid stockMode' });
+                }
+                await db.update(products)
+                    .set({ stock: stockExpr, updatedAt: new Date() })
+                    .where(inArray(products.id, ids));
                 affected = ids.length;
             }
             else if (action === 'group') {
-                const firstChild = await db.query.products.findFirst({ where: eq(products.id, payload.variants[0].id) });
+                if (!payload?.groupName || !payload?.variants) {
+                    return res.status(400).json({ error: 'groupName and variants mapping are required' });
+                }
+                // Get first child to inherit category and brand
+                const firstChild = await db.query.products.findFirst({
+                    where: eq(products.id, payload.variants[0].id)
+                });
+                // Create Parent Product
                 const [parentProduct] = await db.insert(products).values({
                     name: payload.groupName,
                     slug: ProductsController.slugify(payload.groupName) + '-' + Math.floor(Math.random() * 10000),
-                    price: '0', status: 'active',
+                    price: '0',
+                    status: 'active',
                     categoryId: firstChild?.categoryId,
                     brandId: firstChild?.brandId,
                     accountingMultiplier: payload.accountingMultiplier ? String(payload.accountingMultiplier) : null,
                     salesTiers: payload.salesTiers || null,
                 }).returning();
+                // Link children variants and update their multipliers/tiers if needed
                 for (const variant of payload.variants) {
                     await db.update(products).set({
                         parentId: parentProduct.id,
@@ -652,29 +842,52 @@ export class ProductsController {
                 }
                 affected = payload.variants.length;
             }
-            res.json({ success: true, affected });
+            else {
+                return res.status(400).json({ error: `Unknown action: ${action}` });
+            }
+            ProductsController.clearCache();
+            res.json({ success: true, affected, message: `تم تطبيق الإجراء على ${affected} منتج` });
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed' });
+            console.error('Error in bulk action:', error);
+            res.status(500).json({ error: 'Failed to perform bulk action' });
         }
     }
-    // POST /api/products/validate-cart
+    // POST /api/products/validate-cart - Validate cart items still exist and return fresh data
     static async validateCart(req, res) {
         try {
             const { items } = req.body;
-            if (!items || !Array.isArray(items))
-                return res.status(400).json({ error: 'Invalid items' });
-            const productIds = items.map((i) => i.id).filter((id) => typeof id === 'string');
-            if (productIds.length === 0)
-                return res.json({ validProducts: [], invalidIds: [], capped: [] });
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({ error: 'items must be a non-empty array' });
+            }
+            const productIds = items
+                .map((i) => i.id)
+                .filter((id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id));
+            if (productIds.length === 0) {
+                return res.json({ validProducts: [], invalidIds: items.map((i) => i.id), capped: [] });
+            }
+            // Fetch all matching products in a single DB query
             const foundProducts = await db.query.products.findMany({
                 where: inArray(products.id, productIds),
-                with: { images: { where: eq(productImages.isPrimary, true), limit: 1 } },
-                columns: { id: true, name: true, price: true, discountPrice: true, stock: true, status: true }
+                with: {
+                    images: {
+                        where: eq(productImages.isPrimary, true),
+                        limit: 1,
+                    },
+                },
+                columns: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    discountPrice: true,
+                    stock: true,
+                    status: true,
+                },
             });
+            // Build lookup map
             const productMap = new Map(foundProducts.map(p => [p.id, p]));
-            const validProducts = [];
             const invalidIds = [];
+            const validProducts = [];
             const capped = [];
             for (const item of items) {
                 const dbProduct = productMap.get(item.id);
@@ -683,56 +896,125 @@ export class ProductsController {
                     continue;
                 }
                 const stock = dbProduct.stock ?? 0;
-                const requested = item.quantity || 1;
-                const finalQuantity = Math.min(requested, stock);
+                const multiplier = Number(item.multiplier) || 1;
+                const maxQuantity = stock > 0 ? Math.floor(stock / multiplier) : 0;
+                const requested = Math.max(1, item.quantity || 1);
+                const finalQuantity = Math.min(requested, maxQuantity);
                 validProducts.push({
-                    id: dbProduct.id, name: dbProduct.name, price: dbProduct.price,
-                    discountPrice: dbProduct.discountPrice, image: dbProduct.images[0]?.url || null, stock
+                    id: dbProduct.id,
+                    name: dbProduct.name,
+                    price: dbProduct.price,
+                    discountPrice: dbProduct.discountPrice,
+                    stock: dbProduct.stock,
+                    maxQuantity,
+                    image: dbProduct.images[0]?.url || null,
                 });
-                if (finalQuantity < requested)
+                if (finalQuantity < requested) {
                     capped.push({ id: dbProduct.id, requested, max: finalQuantity });
+                }
             }
-            res.json({ validProducts, invalidIds, capped });
+            return res.json({ validProducts, invalidIds, capped });
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed' });
+            console.error('Error validating cart:', error);
+            res.status(500).json({ error: 'Failed to validate cart' });
         }
     }
-    // DELETE /api/products/:id
+    // DELETE /api/products/:id - Delete product
     static async delete(req, res) {
         try {
             const { id } = req.params;
             await db.delete(products).where(eq(products.id, id));
-            res.json({ message: 'Deleted' });
+            ProductsController.clearCache();
+            res.json({ message: 'Product deleted successfully' });
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed' });
+            console.error('Error deleting product:', error);
+            res.status(500).json({ error: 'Failed to delete product' });
         }
     }
-    // POST /api/products/:id/relations
-    static async updateRelations(req, res) {
+    // POST /api/products/:id/suggest-related
+    static async suggestRelatedProducts(req, res) {
         try {
             const { id } = req.params;
-            const { relations: newRelations } = req.body; // Array of { relatedId, type, sortOrder }
-            if (!Array.isArray(newRelations))
-                return res.status(400).json({ error: 'Invalid relations format' });
-            await db.transaction(async (tx) => {
-                // Delete existing relations
-                await tx.delete(productRelations).where(eq(productRelations.productId, id));
-                // Insert new ones if any
-                if (newRelations.length > 0) {
-                    await tx.insert(productRelations).values(newRelations.map((r) => ({
-                        productId: id,
-                        relatedId: r.relatedId,
-                        relationType: r.type || 'related',
-                        sortOrder: r.sortOrder || 0
-                    })));
+            const { name: bodyName, categoryId: bodyCategoryId } = req.body;
+            let productName = bodyName;
+            let categoryName = 'Unknown';
+            let categoryId = bodyCategoryId;
+            if (id !== 'new') {
+                const product = await db.query.products.findFirst({
+                    where: eq(products.id, id),
+                    with: { category: true, brand: true }
+                });
+                if (!product) {
+                    return res.status(404).json({ error: 'Product not found' });
                 }
-            });
-            res.json({ success: true });
+                productName = product.name;
+                categoryName = product.category?.name || 'Unknown';
+                categoryId = product.categoryId;
+            }
+            else {
+                // If it's a new product, we at least need a name
+                if (!productName) {
+                    return res.status(400).json({ error: 'Product name is required for suggestions' });
+                }
+                // Resolve category name if categoryId provided in body
+                if (categoryId) {
+                    const cat = await db.query.categories.findFirst({
+                        where: eq(categories.id, categoryId)
+                    });
+                    if (cat)
+                        categoryName = cat.name;
+                }
+            }
+            let candidateProducts;
+            if (categoryId) {
+                // Try to find products in same category first
+                candidateProducts = await db.query.products.findMany({
+                    where: and(eq(products.status, 'active'), eq(products.categoryId, categoryId), id !== 'new' ? ne(products.id, id) : undefined),
+                    limit: 150,
+                    with: { brand: true }
+                });
+            }
+            // If no candidates in same category, or we need more variety, get latest active products
+            if (!candidateProducts || candidateProducts.length < 20) {
+                const globalCandidates = await db.query.products.findMany({
+                    where: and(eq(products.status, 'active'), id !== 'new' ? ne(products.id, id) : undefined),
+                    limit: 300,
+                    orderBy: (products, { desc }) => [desc(products.createdAt)],
+                    with: { brand: true }
+                });
+                // Merge if needed, or replace
+                if (candidateProducts && candidateProducts.length > 0) {
+                    const existingIds = new Set(candidateProducts.map(p => p.id));
+                    const newCandidates = globalCandidates.filter(p => !existingIds.has(p.id));
+                    candidateProducts = [...candidateProducts, ...newCandidates.slice(0, 150)];
+                }
+                else {
+                    candidateProducts = globalCandidates;
+                }
+            }
+            const mappedCandidates = candidateProducts.map((p) => ({
+                id: p.id,
+                name: p.name,
+                brand: p.brand?.name
+            }));
+            if (mappedCandidates.length === 0) {
+                return res.json({ related: [], accessories: [], alternatives: [] });
+            }
+            const appSettings = await getMergedSettings();
+            const rawKey = appSettings?.aiApiKey || appSettings?.googleApiKey || process.env.GOOGLE_API_KEY;
+            const apiKey = rawKey ? decryptText(rawKey) : undefined;
+            if (!apiKey) {
+                return res.status(400).json({ error: 'مفتاح Google API غير مهيأ في الإعدادات' });
+            }
+            const aiService = new AIService(apiKey.trim());
+            const relationships = await aiService.generateRelationships(productName, categoryName, mappedCandidates);
+            res.json(relationships);
         }
         catch (error) {
-            res.status(500).json({ error: 'Failed to update relations' });
+            console.error('Error suggesting related products:', error);
+            res.status(500).json({ error: 'Failed to suggest related products: ' + error.message });
         }
     }
 }

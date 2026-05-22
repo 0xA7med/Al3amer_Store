@@ -2,8 +2,20 @@ import { db } from '../db/index.js';
 import { categories, products } from '../db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 export class CategoriesController {
+    static cache = new Map();
+    static CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    static clearCache() {
+        CategoriesController.cache.clear();
+    }
     async list(req, res) {
         try {
+            const cacheKey = 'all_categories';
+            if (CategoriesController.cache.has(cacheKey)) {
+                const cached = CategoriesController.cache.get(cacheKey);
+                if (Date.now() - cached.timestamp < CategoriesController.CACHE_TTL) {
+                    return res.json(cached.data);
+                }
+            }
             // Get all categories with their parent info
             const allCategories = await db.query.categories.findMany({
                 with: {
@@ -42,6 +54,7 @@ export class CategoriesController {
                 productCount: totalCountMap[cat.id] || 0,
                 activeProductCount: activeCountMap[cat.id] || 0
             }));
+            CategoriesController.cache.set(cacheKey, { data: result, timestamp: Date.now() });
             res.json(result);
         }
         catch (error) {
@@ -87,6 +100,7 @@ export class CategoriesController {
                 isFeatured: isFeatured ?? false,
                 attributesSchema,
             }).returning();
+            CategoriesController.clearCache();
             res.status(201).json(newCategory);
         }
         catch (error) {
@@ -125,6 +139,7 @@ export class CategoriesController {
             if (!updatedCategory) {
                 return res.status(404).json({ error: 'Category not found' });
             }
+            CategoriesController.clearCache();
             res.json(updatedCategory);
         }
         catch (error) {
@@ -155,6 +170,7 @@ export class CategoriesController {
             if (!deletedCategory) {
                 return res.status(404).json({ error: 'القسم غير موجود' });
             }
+            CategoriesController.clearCache();
             res.json({ message: 'Category deleted successfully' });
         }
         catch (error) {

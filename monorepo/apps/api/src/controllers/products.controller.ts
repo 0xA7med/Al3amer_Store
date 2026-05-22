@@ -228,9 +228,18 @@ export class ProductsController {
                     limit: limitNum,
                     offset,
                     orderBy: (products, { desc, asc }) => {
+                        if (sort === 'name_asc') return [asc(products.name)];
+                        if (sort === 'name_desc') return [desc(products.name)];
                         if (sort === 'newest') return [desc(products.createdAt)];
+                        if (sort === 'oldest') return [asc(products.createdAt)];
                         if (sort === 'price_asc') return [asc(products.price)];
                         if (sort === 'price_desc') return [desc(products.price)];
+                        if (sort === 'stock_asc') return [asc(products.stock)];
+                        if (sort === 'stock_desc') return [desc(products.stock)];
+                        if (sort === 'status_asc') return [asc(products.status)];
+                        if (sort === 'status_desc') return [desc(products.status)];
+                        if (sort === 'ai_asc') return [desc(products.llmDescription)];
+                        if (sort === 'ai_desc') return [asc(products.llmDescription)];
                         return [desc(products.createdAt)]; // Default to newest
                     },
                     with: {

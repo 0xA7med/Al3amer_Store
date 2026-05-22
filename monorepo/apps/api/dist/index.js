@@ -79,7 +79,7 @@ app.use('/api/debug', debugRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/checkout', checkoutRouter);
 app.use('/api/social-preview', socialPreviewRouter);
-app.use(sitemapRouter);
+app.use('/api', sitemapRouter);
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'ok', message: 'Al3amer API is running' });

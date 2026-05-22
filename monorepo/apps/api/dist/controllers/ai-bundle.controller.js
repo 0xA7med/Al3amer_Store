@@ -54,6 +54,7 @@ export class AIBundleController {
                         where: eq(productImages.isPrimary, true),
                         limit: 1,
                     },
+                    relationships: true,
                 },
             });
             // Filter OS & Group by Category
@@ -104,15 +105,20 @@ export class AIBundleController {
                 const allPrinters = productsByCat['printers'].sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
                 const receiptPrinters = allPrinters.filter(p => checkAttr(p, 'نوع الطباعة', 'فواتير'));
                 const barcodePrinters = allPrinters.filter(p => checkAttr(p, 'نوع الطباعة', 'باركود'));
-                const twoInOnePrinters = allPrinters.filter(p => checkAttr(p, 'نوع الطباعة', 'فواتير') && checkAttr(p, 'نوع الطباعة', 'باركود'));
                 // Adjusted needs based on integrated hardware deduction
                 const finalNeedsReceipt = needsReceiptPrinter && !hasBuiltInPrinter;
                 const finalNeedsBarcode = needsBarcodePrinter; // Usually POS built-ins don't print barcode labels
+                // --- Printer Selection & Smart Linkage ---
+                const twoInOnePrinters = allPrinters.filter(p => checkAttr(p, 'نوع الطباعة', 'فواتير') && checkAttr(p, 'نوع الطباعة', 'باركود'));
+                const cheapestReceipt = receiptPrinters.find(p => !twoInOnePrinters.includes(p));
+                const cheapestBarcode = barcodePrinters.find(p => !twoInOnePrinters.includes(p));
+                const linkedAccessories = selectedPOS.relationships?.filter((r) => r.type === 'accessory') || [];
+                const linkedPrinter = allPrinters.find(p => linkedAccessories.some((r) => r.relatedProductId === p.id));
+                const cheapest2In1 = linkedPrinter && checkAttr(linkedPrinter, 'نوع الطباعة', 'فواتير') && checkAttr(linkedPrinter, 'نوع الطباعة', 'باركود')
+                    ? linkedPrinter
+                    : twoInOnePrinters[0];
+                // ----------------------------------------
                 if (finalNeedsReceipt && finalNeedsBarcode) {
-                    // We need BOTH. Evaluate Option A (Separate) vs Option B (2-in-1)
-                    const cheapestReceipt = receiptPrinters.find(p => !twoInOnePrinters.includes(p));
-                    const cheapestBarcode = barcodePrinters.find(p => !twoInOnePrinters.includes(p));
-                    const cheapest2In1 = twoInOnePrinters[0];
                     const priceSeparate = (cheapestReceipt ? parseFloat(cheapestReceipt.price) : Infinity) +
                         (cheapestBarcode ? parseFloat(cheapestBarcode.price) : Infinity);
                     const price2In1 = cheapest2In1 ? parseFloat(cheapest2In1.price) : Infinity;

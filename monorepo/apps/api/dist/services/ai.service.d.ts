@@ -20,7 +20,7 @@ interface GeniusAIProductDetails {
         answer: string;
     }>;
 }
-export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo' | 'llm_geo';
+export type AISection = 'all' | 'title' | 'description' | 'specs' | 'seo' | 'llm' | 'faq';
 export declare class AIService {
     private client;
     private apiKey;
@@ -36,6 +36,15 @@ export declare class AIService {
      */
     private buildPrompt;
     generateProductDetails(productName: string, language?: string, tone?: string, length?: string, section?: AISection, category?: string, brand?: string): Promise<GeniusAIProductDetails>;
+    generateRelationships(productName: string, category: string, availableProducts: {
+        id: string;
+        name: string;
+        brand?: string;
+    }[]): Promise<{
+        related: string[];
+        accessories: string[];
+        alternatives: string[];
+    }>;
 }
 export {};
 //# sourceMappingURL=ai.service.d.ts.map

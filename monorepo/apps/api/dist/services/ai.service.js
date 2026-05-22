@@ -41,8 +41,8 @@ export class AIService {
     buildPrompt(productName, section, langInst, lengthGuide) {
         const baseContext = `You are an expert B2B e-commerce product copywriter for an Egyptian POS and retail electronics store called "العامر ستور".
 Product Name: "${productName}"
-Language: ${langInst}
-Tone: Professional, direct, informative, and technical.
+Language: ${langInst} (Must be professional Egyptian Arabic - عربي مصري).
+Tone: Professional, direct, informative, and technical. Avoid flowery language.
 
 **CRITICAL RULES:**
 1. ABSOLUTELY NO EMOJIS anywhere.
@@ -107,19 +107,27 @@ Generate ONLY SEO metadata for this product:
   "tags": ["وسم1", "وسم2", "وسم3"]
 }
 \`\`\``;
-            case 'llm_geo':
+            case 'llm':
                 return `${baseContext}
 
-Generate content optimized for Generative Engine Optimization (GEO):
-1. llmDescription: A rich, technical, and semantic description (150-200 words) in ${langInst}. Focus on explaining "why" this product is the best choice for specific use cases. Use high-value industry terminology.
-2. faq: A list of 5-10 frequently asked questions and their detailed answers in ${langInst}. Focus on common pain points, technical compatibility, and maintenance.
+Generate ONLY a highly technical LLM-optimized summary of the product.
+This description will be read by AI crawlers and bots (like ChatGPT, Gemini). It should clearly outline the product's category, technical specifications, use-cases, and compatibility in a structured format. NO marketing fluff. Provide it in ${langInst}.
 
 \`\`\`json
 {
-  "llmDescription": "وصف سيمانتك غني للمنتج يركز على حالات الاستخدام والقيمة التقنية...",
+  "llmDescription": "Technical summary formatted for LLMs without marketing fluff."
+}
+\`\`\``;
+            case 'faq':
+                return `${baseContext}
+
+Generate 5-10 Frequently Asked Questions (FAQ) for this product, highly relevant to B2B electronics/POS buyers. Provide it in ${langInst}.
+
+\`\`\`json
+{
   "faq": [
-    {"question": "سؤال شائع 1؟", "answer": "إجابة تفصيلية 1..."},
-    {"question": "...", "answer": "..."}
+    {"question": "سؤال متكرر 1", "answer": "إجابة دقيقة وتقنية 1"},
+    {"question": "سؤال متكرر 2", "answer": "إجابة دقيقة وتقنية 2"}
   ]
 }
 \`\`\``;
@@ -127,20 +135,29 @@ Generate content optimized for Generative Engine Optimization (GEO):
             default:
                 return `${baseContext}
 
-Write a complete product listing with ALL fields including GEO content.
+Write a complete product listing with ALL fields.
 Description length: ${lengthGuide}
+Structure the description with a professional overview paragraph, then a bulleted list of key features using dashes (-).
 
 \`\`\`json
 {
-  "title": "عنوان احترافي",
-  "description": "وصف المنتج...",
-  "llmDescription": "وصف GEO محسن للذكاء الاصطناعي...",
-  "faq": [
-    {"question": "سؤال؟", "answer": "إجابة"}
+  "title": "عنوان احترافي ودقيق للمنتج",
+  "description": "وصف احترافي يبدأ بنظرة عامة ثم قائمة مميزات.\\n\\n- ميزة 1\\n- ميزة 2\\n- ميزة 3",
+  "slug": "english-seo-friendly-slug",
+  "metaTitle": "عنوان ميتا احترافي",
+  "metaDescription": "وصف ميتا احترافي ومحسّن للسيو",
+  "llmDescription": "Technical summary in ${langInst} formatted for LLMs without marketing fluff.",
+  "specs": [
+    {"key": "اسم المواصفة", "value": "القيمة"}
   ],
-  "slug": "slug",
-  "specs": [{"key": "K", "value": "V"}],
-  "tags": ["tag1"]
+  "faq": [
+    {"question": "سؤال تقني 1", "answer": "إجابة شاملة 1"},
+    {"question": "سؤال تقني 2", "answer": "إجابة شاملة 2"},
+    {"question": "سؤال تقني 3", "answer": "إجابة شاملة 3"},
+    {"question": "سؤال تقني 4", "answer": "إجابة شاملة 4"},
+    {"question": "سؤال تقني 5", "answer": "إجابة شاملة 5"}
+  ], // MANDATORY: Generate 5-10 high quality technical FAQs
+  "tags": ["وسم1", "وسم2", "وسم3"]
 }
 \`\`\``;
         }
@@ -217,6 +234,57 @@ Description length: ${lengthGuide}
             }
             throw new Error(`All AI models failed. Errors: ${errors.join(' | ')}`);
         }
+    }
+    async generateRelationships(productName, category, availableProducts) {
+        await this.ensureModelsDiscovered();
+        const modelsToTry = this.availableModels.length > 0 ? this.availableModels : AIService.FALLBACK_MODELS;
+        const prompt = `You are an expert e-commerce merchandiser for an Egyptian POS and retail electronics store.
+We are configuring relationships for this product: "${productName}" (Category: ${category || 'Unknown'}).
+
+Below is a JSON list of available products in our store:
+${JSON.stringify(availableProducts.slice(0, 80))}
+
+Your task is to select the BEST product IDs from the list above for the following relationships:
+1. related: Products that are frequently bought together or highly relevant.
+2. accessories: Products that complement or are accessories for the main product.
+3. alternatives: Products that are direct substitutes or alternatives (similar specs/price/category).
+
+Rules:
+1. Output MUST be ONLY valid JSON wrapped in \`\`\`json block.
+2. Return an array of valid IDs from the list provided for each category (max 5 IDs per category).
+3. Do NOT invent or hallucinate IDs. Only use IDs from the provided list.
+4. Aim to find at least 2-3 items for each category if reasonable. If a product is very unique and truly has no matches, return an empty array [].
+5. Focus on functional compatibility for accessories (e.g., printers need paper, systems need cables).
+6. Focus on similar price/specs for alternatives.
+
+\`\`\`json
+{
+  "related": ["id1", "id2"],
+  "accessories": ["id3"],
+  "alternatives": ["id4", "id5"]
+}
+\`\`\``;
+        const sanitizeJsonText = (rawText) => {
+            return rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        };
+        let errors = [];
+        for (const modelName of modelsToTry) {
+            try {
+                const response = await this.client.models.generateContent({
+                    model: modelName,
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                });
+                const text = response.text;
+                if (!text)
+                    throw new Error(`Empty response`);
+                return JSON.parse(sanitizeJsonText(text));
+            }
+            catch (error) {
+                console.warn(`⚠️ Model ${modelName} failed relationship generation: ${error.message}`);
+                errors.push(`${modelName}: ${error.message}`);
+            }
+        }
+        throw new Error(`AI Relationship Generation Failed. Errors: ${errors.join(' | ')}`);
     }
 }
 //# sourceMappingURL=ai.service.js.map
