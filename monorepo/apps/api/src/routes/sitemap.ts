@@ -37,7 +37,7 @@ router.get('/sitemap.xml', async (_req, res) => {
     </url>`),
             ...allCategories.map(c => `
     <url>
-      <loc>${baseUrl}/shop?category=${c.slug}</loc>
+      <loc>${baseUrl}/shop?categories=${c.slug}</loc>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>`),
@@ -90,7 +90,8 @@ router.get('/llm-catalog.md', async (_req, res) => {
         const baseUrl = process.env.SITE_URL || 'https://al3amer.store';
         const allProducts = await db.query.products.findMany({
             where: eq(products.status, 'active'),
-            columns: { name: true, slug: true, description: true, llmDescription: true, faq: true, price: true, discountPrice: true, brand: true, specs: true },
+            columns: { name: true, slug: true, description: true, llmDescription: true, faq: true, price: true, discountPrice: true, specifications: true },
+            with: { brand: true },
         });
 
         let markdown = `# Al3amer Store - AI-Ready Product Catalog\n`;
@@ -103,7 +104,7 @@ router.get('/llm-catalog.md', async (_req, res) => {
             markdown += `## ${p.name}\n`;
             markdown += `**URL:** ${baseUrl}/product/${p.slug}\n`;
             markdown += `**Price:** ${currentPrice.toLocaleString()} EGP\n`;
-            if (p.brand) markdown += `**Brand:** ${p.brand}\n`;
+            if (p.brand) markdown += `**Brand:** ${(p.brand as any).name}\n`;
             markdown += `\n`;
 
             if (p.llmDescription) {
@@ -112,9 +113,9 @@ router.get('/llm-catalog.md', async (_req, res) => {
                 markdown += `### Description\n${p.description?.slice(0, 500) || ''}...\n\n`;
             }
 
-            if (p.specs && Array.isArray(p.specs) && p.specs.length > 0) {
+            if (p.specifications && Array.isArray(p.specifications) && p.specifications.length > 0) {
                 markdown += `### Technical Specifications\n`;
-                p.specs.forEach((s: any) => {
+                p.specifications.forEach((s: any) => {
                     markdown += `- **${s.key}:** ${s.value}\n`;
                 });
                 markdown += `\n`;

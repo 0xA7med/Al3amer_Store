@@ -283,7 +283,8 @@ const FILTERABLE_SPEC_KEYS = new Set([
 // =========================================================
 export function ShopPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const queryCategories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
+    // Accept both ?categories= (internal links) and ?category= (sitemap/external links)
+    const queryCategories = (searchParams.get('categories') || searchParams.get('category'))?.split(',').filter(Boolean) || [];
     const querySearch = searchParams.get('search') || '';
 
     // State
@@ -296,7 +297,8 @@ export function ShopPage() {
 
     // Sync state if url changes
     useEffect(() => {
-        const categoriesFromUrl = searchParams.get('categories')?.split(',').filter(Boolean) || [];
+        // Accept both ?categories= (internal links) and ?category= (sitemap/external links)
+        const categoriesFromUrl = (searchParams.get('categories') || searchParams.get('category'))?.split(',').filter(Boolean) || [];
         setSelectedCategories(categoriesFromUrl);
     }, [searchParams]);
 
@@ -627,7 +629,7 @@ export function ShopPage() {
             <SEOHead
               title={shopTitle}
               description={shopDesc}
-              canonical={currentCategory?.slug ? `/shop?category=${currentCategory.slug}` : '/shop'}
+              canonical={currentCategory?.slug ? `/shop?categories=${currentCategory.slug}` : '/shop'}
             />
             {/* Breadcrumb */}
             <nav className="flex mb-6 text-sm font-medium text-gray-400">

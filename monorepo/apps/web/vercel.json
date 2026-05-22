@@ -1,7 +1,7 @@
 {
     "headers": [
         {
-            "source": "/(.*)\\.(jpg|jpeg|png|webp|avif|svg|ico|gif|woff|woff2|ttf|eot|mp4|webm)",
+            "source": "/(.*)\\.(?:jpg|jpeg|png|webp|avif|svg|ico|gif|woff|woff2|ttf|eot|mp4|webm)",
             "headers": [
                 {
                     "key": "Cache-Control",
@@ -42,7 +42,7 @@
                 {
                     "type": "header",
                     "key": "user-agent",
-                    "value": "(?i).*(whatsapp|telegram|facebookexternalhit|twitterbot|linkedinbot|pinterest|slackbot|discordbot).*"
+                    "value": "(?i).*(googlebot|google-extended|googleother|bingbot|yandexbot|duckduckbot|baiduspider|applebot|slurp|gptbot|chatgpt-user|claudebot|anthropic-ai|google-extended|gemini-ai|perplexitybot|meta-externalagent|meta-externalfetcher|whatsapp|telegram|facebookexternalhit|twitterbot|linkedinbot|pinterest|slackbot|discordbot).*"
                 }
             ],
             "destination": "https://al3amer-store-wf1t.vercel.app/api/social-preview/$1"
@@ -52,4 +52,4 @@
             "destination": "/index.html"
         }
     ]
-}
+}
