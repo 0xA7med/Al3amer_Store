@@ -243,32 +243,34 @@ export function ProductTabs({
 
                     {activeTab === 'reviews' && (
                         <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-wrap gap-4 sm:gap-8 items-center bg-gradient-to-br from-surface-dark to-transparent">
-                                <div className="flex flex-col items-center justify-center gap-1 min-w-[120px] sm:min-w-[140px] border-l border-white/5 pl-4 sm:pl-8">
-                                    <span className="text-6xl font-extrabold text-white tracking-tighter">{product.averageRating || 0}</span>
-                                    <div className="flex text-yellow-400 gap-0.5 my-1">
-                                        {Array.from({ length: 5 }).map((_, i) => (
-                                            <Star key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 0) ? 'fill-current' : ''}`} />
-                                        ))}
+                            {product.reviews && product.reviews.length > 0 && (
+                                <div className="glass-panel p-4 sm:p-6 rounded-2xl flex flex-wrap gap-4 sm:gap-8 items-center bg-gradient-to-br from-surface-dark to-transparent">
+                                    <div className="flex flex-col items-center justify-center gap-1 min-w-[120px] sm:min-w-[140px] border-l border-white/5 pl-4 sm:pl-8">
+                                        <span className="text-6xl font-extrabold text-white tracking-tighter">{product.averageRating}</span>
+                                        <div className="flex text-yellow-400 gap-0.5 my-1">
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <Star key={i} className={`w-6 h-6 ${i < Math.floor(product.averageRating || 0) ? 'fill-current' : ''}`} />
+                                            ))}
+                                        </div>
+                                        <span className="text-slate-400 text-sm font-medium">بناءً على {product.reviewCount} تقييم</span>
                                     </div>
-                                    <span className="text-slate-400 text-sm font-medium">بناءً على {product.reviewCount || 0} تقييم</span>
-                                </div>
-                                <div className="flex-1 min-w-[200px] flex flex-col gap-3">
-                                    {[5, 4, 3, 2, 1].map((star) => {
-                                        const count = product.reviews?.filter(r => r.rating === star).length || 0;
-                                        const percent = product.reviewCount ? Math.round((count / product.reviewCount) * 100) : 0;
-                                        return (
-                                            <div key={star} className="flex items-center gap-3">
-                                                <span className="text-slate-400 text-xs w-6 font-bold">{star} نجوم</span>
-                                                <div className="flex-1 h-2.5 bg-black/40 rounded-full overflow-hidden">
-                                                    <div style={{ width: `${percent}%` }} className="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full shadow-[0_0_10px_rgba(19,91,236,0.3)]"></div>
+                                    <div className="flex-1 min-w-[200px] flex flex-col gap-3">
+                                        {[5, 4, 3, 2, 1].map((star) => {
+                                            const count = product.reviews?.filter(r => r.rating === star).length || 0;
+                                            const percent = product.reviewCount ? Math.round((count / product.reviewCount) * 100) : 0;
+                                            return (
+                                                <div key={star} className="flex items-center gap-3">
+                                                    <span className="text-slate-400 text-xs w-6 font-bold">{star} نجوم</span>
+                                                    <div className="flex-1 h-2.5 bg-black/40 rounded-full overflow-hidden">
+                                                        <div style={{ width: `${percent}%` }} className="h-full bg-gradient-to-r from-primary to-blue-400 rounded-full shadow-[0_0_10px_rgba(19,91,236,0.3)]"></div>
+                                                    </div>
+                                                    <span className="text-slate-400 text-xs w-8 text-left font-bold">{percent}%</span>
                                                 </div>
-                                                <span className="text-slate-400 text-xs w-8 text-left font-bold">{percent}%</span>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="space-y-4">
                                 {product.reviews && product.reviews.length > 0 ? product.reviews.map((review) => (

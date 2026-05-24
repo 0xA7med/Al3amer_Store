@@ -415,16 +415,18 @@ export const ProductDetailsPage = () => {
                             {product.name}
                         </div>
                         <div className="flex flex-wrap items-center gap-3 text-[11px] md:text-sm">
-                            <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
-                                <div className="flex text-yellow-400 gap-0.5">
-                                    {Array.from({ length: 5 }).map((_, i) => (
-                                        <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.averageRating || 0) ? 'fill-current' : 'opacity-30'}`} />
-                                    ))}
+                            {(product.averageRating ?? 0) > 0 && (
+                                <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                                    <div className="flex text-yellow-400 gap-0.5">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(product.averageRating || 0) ? 'fill-current' : 'opacity-30'}`} />
+                                        ))}
+                                    </div>
+                                    <span className="text-white font-bold">{product.averageRating}</span>
+                                    <span className="text-slate-500 font-medium">({product.reviewCount} تقييم)</span>
                                 </div>
-                                <span className="text-white font-bold">{product.averageRating || 0}</span>
-                                <span className="text-slate-500 font-medium">({product.reviewCount || 0} تقييم)</span>
-                            </div>
-                            <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+                            )}
+                            {(product.averageRating ?? 0) > 0 && <div className="w-1 h-1 rounded-full bg-slate-700"></div>}
                             <div className="flex items-center gap-1.5 text-slate-400 font-medium">
                                 <ShoppingBag className="w-4 h-4 text-primary" />
                                 تم بيع <span className="text-white font-bold">+{product.salesCount || 0}</span> قطعة

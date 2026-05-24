@@ -273,6 +273,38 @@ const SPEC_LABEL_MAP: Record<string, string> = {
     'الوزن': 'الوزن',
 };
 
+// Icon map for spec facet sections
+const SPEC_ICON_MAP: Record<string, string> = {
+    connectivity: 'settings_ethernet',
+    'اتصال': 'settings_ethernet',
+    'الاتصال': 'settings_ethernet',
+    usage: 'handyman',
+    'الاستخدام': 'handyman',
+    'المعالج': 'memory',
+    'الذاكرة': 'sd_card',
+    'الشاشة': 'display_settings',
+    'نظام التشغيل': 'computer',
+    'البطارية': 'battery_std',
+    'الوزن': 'scale',
+    'نوع الباركود': 'qr_code_scanner',
+    'باركود': 'qr_code_scanner',
+    'barcode': 'qr_code_scanner',
+    'حامل مرفق': 'hardware',
+    'عرض الورق': 'straighten',
+    'نوع القاطع': 'content_cut',
+    'القاطع': 'content_cut',
+    'نوع الطباعة': 'print',
+    'طباعة': 'print',
+    'طابعة نوع': 'print',
+    'طابعة مقاس': 'straighten',
+    'الاسكنر الليزر': 'qr_code_scanner',
+    'نوع التوصيل': 'cable',
+    'التوصيل': 'cable',
+    'طابعة مدمجة': 'print',
+    'مدمجة': 'print',
+    'قارئ باركود مدمج': 'qr_code_scanner',
+};
+
 // Keys that make sense as filters (multi-value or categorizable)
 const FILTERABLE_SPEC_KEYS = new Set([
     'connectivity', 'اتصال',
@@ -752,7 +784,7 @@ export function ShopPage() {
 
                         {/* ── Dynamic Spec Facets (Amazon-style) ── */}
                         {specFacets.map((facet: { key: string; label: string; values: string[] }) => (
-                            <FilterSection key={facet.key} title={facet.label} icon="tune" defaultOpen={false}>
+                            <FilterSection key={facet.key} title={facet.label} icon={SPEC_ICON_MAP[facet.key] || 'tune'} defaultOpen={false}>
                                 <div className="flex flex-wrap gap-1.5">
                                     {facet.values.map((value: string) => {
                                         const isActive = (selectedSpecs[facet.key] || []).includes(value);
@@ -904,7 +936,7 @@ export function ShopPage() {
 
                                 {/* Dynamic Specs */}
                                 {specFacets.map((facet: { key: string; label: string; values: string[] }) => (
-                                    <FilterSection key={facet.key} title={facet.label} icon="tune" defaultOpen={false}>
+                                    <FilterSection key={facet.key} title={facet.label} icon={SPEC_ICON_MAP[facet.key] || 'tune'} defaultOpen={false}>
                                         <div className="flex flex-wrap gap-1.5">
                                             {facet.values.map((value: string) => {
                                                 const isActive = (selectedSpecs[facet.key] || []).includes(value);
