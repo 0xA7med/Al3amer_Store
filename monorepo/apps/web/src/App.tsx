@@ -45,6 +45,7 @@ const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'));
 const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage'));
 const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ReturnPolicyPage = lazy(() => import('./pages/ReturnPolicyPage'));
 
 // Lazy-loaded Admin Pages
 const DashboardOverview = lazy(() => import('./pages/admin/DashboardOverview'));
@@ -112,6 +113,7 @@ function App() {
                         />
                         <Route path="/offers" element={<OffersPage />} />
                         <Route path="/about" element={<AboutUsPage />} />
+                        <Route path="/return-policy" element={<ReturnPolicyPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                       </Routes>
                       </Suspense>

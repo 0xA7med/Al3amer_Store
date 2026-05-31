@@ -7,6 +7,7 @@ const MERCHANT_RETURN_POLICY = {
   merchantReturnDays: 14,
   returnMethod: 'https://schema.org/ReturnByMail',
   returnFees: 'https://schema.org/FreeReturn',
+  url: `${SITE_URL}/return-policy`,
 };
 
 const SHIPPING_DETAILS = {
