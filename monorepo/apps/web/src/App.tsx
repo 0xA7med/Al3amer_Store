@@ -9,6 +9,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import FloatingWhatsApp from './components/ui/FloatingWhatsApp';
 
 // Scroll to top on every route change
 function ScrollToTop() {
@@ -120,6 +121,7 @@ function App() {
                       </ErrorBoundary>
                     </main>
                     <Footer />
+                    <FloatingWhatsApp />
                   </div>
                 }
               />
