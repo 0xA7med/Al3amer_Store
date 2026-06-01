@@ -21,6 +21,7 @@ import debugRouter from './routes/debug.js';
 import metadataRouter from './routes/metadata.js';
 import checkoutRouter from './routes/checkout.js';
 import socialPreviewRouter from './routes/social-preview.js';
+import merchantFeedRouter from './routes/merchant-feed.js';
 import sitemapRouter from './routes/sitemap.js';
 
 dotenv.config();
@@ -94,6 +95,7 @@ app.use('/api/metadata', metadataRouter);
 app.use('/api/checkout', checkoutRouter);
 app.use('/api/social-preview', socialPreviewRouter);
 app.use('/api', sitemapRouter);
+app.use('/api', merchantFeedRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

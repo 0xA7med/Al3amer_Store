@@ -14,7 +14,7 @@ const ReturnPolicyPage = () => {
     <div className="bg-background-dark min-h-screen text-slate-200 font-body">
       <SEOHead
         title="سياسة الإرجاع والاستبدال"
-        description="سياسة الإرجاع والاستبدال في مركز العامر — يمكنك إرجاع أو استبدال المنتجات خلال 14 يوماً من تاريخ الشراء."
+        description="سياسة الإرجاع والاستبدال في مركز العامر — يمكنك إرجاع أو استبدال المنتجات خلال 14 يوماً من تاريخ الشراء لجميع محافظات مصر."
         canonical="/return-policy"
         jsonLd={[breadcrumbJsonLd]}
       />
@@ -40,7 +40,7 @@ const ReturnPolicyPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {[
             { icon: RefreshCw, title: 'إرجاع خلال 14 يوماً', desc: 'يمكنك إرجاع أي منتج خلال 14 يوماً من تاريخ الاستلام' },
-            { icon: Truck, title: 'الشحن على العميل', desc: 'يتم تحمل تكاليف شحن الإرجاع والاستبدال من قبل العميل' },
+            { icon: Truck, title: 'استبدال فوري', desc: 'نوفر استبدال المنتجات بنفس القيمة أو بقيمة مساوية' },
             { icon: HeadphonesIcon, title: 'دعم فني متواصل', desc: 'فريقنا جاهز لمساعدتك في أي استفسار على مدار الأسبوع' },
           ].map((item, idx) => (
             <div key={idx} className="glass-panel p-6 rounded-2xl text-center hover:bg-white/5 transition-colors">
@@ -80,7 +80,7 @@ const ReturnPolicyPage = () => {
               <li>تواصل مع فريق الدعم الفني عبر <Link to="/about" className="text-primary hover:underline">صفحة اتصل بنا</Link> أو عبر الواتساب</li>
               <li>قدم رقم الطلب ووصف المشكلة</li>
               <li>سيقوم فريقنا بتقييم الطلب والرد عليك خلال 24 ساعة</li>
-              <li>بعد الموافقة، يتم ترتيب شحن المنتج إلينا على نفقة العميل</li>
+              <li>بعد الموافقة، يتم شحن المنتج إلينا على نفقة العميل</li>
               <li>بعد فحص المنتج، سيتم الموافقة على الإرجاع أو الاستبدال</li>
             </ol>
           </Section>
