@@ -304,25 +304,28 @@ export default function SharedOrdersTable({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex -space-x-2 rtl:space-x-reverse">
-                                                    {order.items?.slice(0, 2).map((item, idx) => (
-                                                        <div
-                                                            key={idx}
-                                                            className="size-8 rounded-lg border border-white/10 bg-slate-800 overflow-hidden relative flex-shrink-0"
-                                                        >
+                                            <div className="flex flex-col gap-1.5 min-w-[140px]">
+                                                {order.items?.slice(0, 4).map((item, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <div className="size-7 rounded-lg border border-white/10 bg-slate-800 overflow-hidden flex-shrink-0">
                                                             {item.product?.images?.[0]?.url ? (
-<img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
+                                                                <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center bg-white/5">
-                                                                    <span className="material-symbols-outlined text-[14px] text-slate-500">image</span>
+                                                                    <span className="material-symbols-outlined text-[12px] text-slate-500">image</span>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                                {(order.items?.length || 0) > 2 && (
-                                                    <span className="text-xs font-bold text-slate-400">+{order.items.length - 2}</span>
+                                                        <span className="text-xs text-slate-300 truncate flex-1 min-w-0">
+                                                            {item.product?.name || item.name || 'منتج'}
+                                                        </span>
+                                                        <span className="text-xs font-bold text-white bg-white/10 px-1.5 py-0.5 rounded flex-shrink-0" dir="ltr">
+                                                            ×{item.quantity}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                                {(order.items?.length || 0) > 4 && (
+                                                    <span className="text-[11px] font-bold text-slate-500 mr-1">+{order.items.length - 4} منتج آخر</span>
                                                 )}
                                             </div>
                                         </td>
@@ -497,20 +500,26 @@ export default function SharedOrdersTable({
 
                                 {/* Footer: Products & Actions */}
                                 <div className="flex items-center justify-between pt-2">
-                                    <div className="flex -space-x-1.5 rtl:space-x-reverse">
+                                    <div className="flex flex-col gap-1 min-w-0 flex-1 ml-3">
                                         {order.items?.slice(0, 3).map((item, idx) => (
-                                            <div key={idx} className="size-7 rounded-lg border border-white/10 bg-slate-800 overflow-hidden shrink-0">
-                                                {item.product?.images?.[0]?.url ? (
-                                                    <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-[12px]">image</span></div>
-                                                )}
+                                            <div key={idx} className="flex items-center gap-1.5">
+                                                <div className="size-6 rounded border border-white/10 bg-slate-800 overflow-hidden shrink-0">
+                                                    {item.product?.images?.[0]?.url ? (
+                                                        <img src={item.product.images[0].url} alt={item.product.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-[10px]">image</span></div>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] text-slate-300 truncate flex-1 min-w-0 leading-tight">
+                                                    {item.product?.name || item.name || 'منتج'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-white bg-white/10 px-1.5 py-0.5 rounded shrink-0 leading-none" dir="ltr">
+                                                    ×{item.quantity}
+                                                </span>
                                             </div>
                                         ))}
                                         {(order.items?.length || 0) > 3 && (
-                                            <div className="size-7 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                                                +{order.items.length - 3}
-                                            </div>
+                                            <span className="text-[10px] font-bold text-slate-500 mr-1">+{order.items.length - 3} منتج آخر</span>
                                         )}
                                     </div>
 
