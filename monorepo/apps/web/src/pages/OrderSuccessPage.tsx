@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CheckCircle, Package, Home, MessageCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -108,6 +108,39 @@ ${productsList}
 
         handlePaymentSuccess();
     }, []);
+
+    // Google Customer Reviews opt-in
+    const orderEmail = order?.email || '';
+    const orderIdStr = order?.orderNumber || id?.slice(-8).toUpperCase() || '';
+    const estimatedDays = useMemo(() => {
+        if (!order?.createdAt) return 14;
+        const created = new Date(order.createdAt);
+        created.setDate(created.getDate() + 14);
+        return created.toISOString().split('T')[0];
+    }, [order?.createdAt]);
+
+    useEffect(() => {
+        if (!orderIdStr || !orderEmail) return;
+        const script = document.createElement('script');
+        script.src = 'https://apis.google.com/js/platform.js?onload=renderOptIn';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+        (window as any).renderOptIn = function () {
+            (window as any).gapi?.load('surveyoptin', function () {
+                (window as any).gapi?.surveyoptin?.render({
+                    merchant_id: 5801183579,
+                    order_id: orderIdStr,
+                    email: orderEmail,
+                    delivery_country: 'EG',
+                    estimated_delivery_date: estimatedDays,
+                });
+            });
+        };
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, [orderIdStr, orderEmail, estimatedDays]);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-transparent to-[#101622]/50">

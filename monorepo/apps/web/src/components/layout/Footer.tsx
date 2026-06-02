@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { optimizeImage } from '../../lib/image-optimizer';
@@ -7,6 +8,24 @@ const LOGO_URL = 'https://i.ibb.co/KkCv1LF/Logo-Al3amer.png';
 
 export function Footer() {
     const { settings } = useSettings();
+
+    useEffect(() => {
+        const script = document.getElementById('merchantWidgetScript');
+        if (!script) {
+            const s = document.createElement('script');
+            s.id = 'merchantWidgetScript';
+            s.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
+            s.defer = true;
+            document.body.appendChild(s);
+            s.addEventListener('load', () => {
+                (window as any).merchantwidget?.start({
+                    merchant_id: 5801183579,
+                    position: 'RIGHT',
+                    region: 'EG',
+                });
+            });
+        }
+    }, []);
 
     return (
         <footer className="bg-[#0b0f17] border-t border-white/5 pt-16 pb-8">
